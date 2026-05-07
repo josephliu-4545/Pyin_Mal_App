@@ -1,0 +1,73 @@
+# Image paths used in Pyin Mal pages
+# Drop your brand-approved images at these locations so pages load locally.
+#
+# You can keep adding to this file whenever we introduce new images.
+
+## Hero sections
+assets/images/hero/reviews-hero.jpg          # Reviews page hero
+
+## Reviews page (client portraits & case studies)
+assets/images/looks/review-client-01.jpg     # Reviews card 1 portrait
+assets/images/looks/review-client-02.jpg     # Reviews card 2 portrait
+assets/images/looks/review-client-03.jpg     # Reviews card 3 portrait
+assets/images/looks/review-case-01.jpg       # Reviews case-study image 1
+assets/images/looks/review-case-02.jpg       # Reviews case-study image 2
+
+## Haircut recommendations page
+assets/images/haircuts/haircut-feature-bob.jpg          # Featured sculpted fringe bob
+assets/images/haircuts/haircut-oval-fluid-layers.jpg    # Fluid long layers
+assets/images/haircuts/haircut-round-textured-shag.jpg  # Textured shag
+assets/images/haircuts/haircut-square-soft-pixie.jpg    # Soft pixie crop
+assets/images/haircuts/haircut-heart-curtain-lob.jpg    # Airy curtain lob
+assets/images/haircuts/haircut-oval-coils-frohawk.jpg   # Sculpted coils frohawk
+assets/images/haircuts/haircut-round-blunt-microbangs.jpg # Long blunt + micro fringe
+assets/images/haircuts/haircut-square-wave-bob.jpg      # Layered wave bob
+assets/images/haircuts/haircut-heart-cascade-layers.jpg # Cascade curtain layers
+assets/images/haircuts/haircut-oval-stacked-undercut.jpg # Stacked bob + undercut
+
+## Shop browsing (example placeholders – can be adjusted)
+assets/images/looks/shop-work-luxe-01.jpg
+assets/images/looks/shop-weekend-01.jpg
+assets/images/looks/shop-evening-01.jpg
+assets/images/looks/shop-grid-01.jpg
+assets/images/looks/shop-grid-02.jpg
+assets/images/looks/shop-grid-03.jpg
+assets/images/looks/shop-grid-04.jpg
+
+## Grooming carousel examples
+assets/images/grooming/groom-kit-glass-hair.jpg
+assets/images/grooming/groom-kit-skin-prep.jpg
+assets/images/grooming/groom-kit-curl-trio.jpg
+
+## Curated sets page
+assets/images/hero/curated-sets-hero.jpg           # Curated sets hero image
+assets/images/looks/curated-work-01.jpg            # Work capsule card
+assets/images/looks/curated-weekend-01.jpg         # Weekend capsule card
+assets/images/looks/curated-event-01.jpg           # Event capsule card
+assets/images/looks/curated-work-02.jpg            # Work capsule detail image 1
+assets/images/looks/curated-work-03.jpg            # Work capsule detail image 2
+assets/images/looks/curated-weekend-02.jpg         # Weekend capsule detail image 1
+assets/images/looks/curated-weekend-03.jpg         # Weekend capsule detail image 2
+assets/images/looks/curated-event-02.jpg           # Event capsule detail image 1
+assets/images/looks/curated-event-03.jpg           # Event capsule detail image 2
+
+## Saved fashion page
+assets/images/looks/saved-look-work-01.jpg         # Saved work look 1
+assets/images/looks/saved-look-weekend-01.jpg      # Saved weekend look 1
+assets/images/looks/saved-look-event-01.jpg        # Saved event look 1
+assets/images/looks/saved-look-hair-01.jpg         # Saved haircut preset 1
+assets/images/looks/saved-look-grooming-01.jpg     # Saved grooming kit 1
+assets/images/looks/saved-look-work-02.jpg         # Saved work look 2
+
+## Pricing page (optional visuals if needed later)
+assets/images/hero/pricing-hero.jpg                # Pricing hero (if added)
+
+## Face scan page
+assets/images/hero/face-scan-hero.jpg              # Face scan hero / overlay preview
+
+# When we add new sections/pages:
+# - Choose the correct folder (hero / looks / haircuts / grooming / models / outfits / hairstyles)
+# - Add a descriptive filename in kebab-case.
+# - List the final path here with a short comment about where it’s used.
+
+
