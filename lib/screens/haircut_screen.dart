@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pyin_mal_app/main.dart';
 
 class HaircutScreen extends StatelessWidget {
   const HaircutScreen({super.key});
@@ -12,8 +13,13 @@ class HaircutScreen extends StatelessWidget {
     final isMobile = screenWidth < 640;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
       appBar: AppBar(
-        title: Text('Hair Recommendations', style: GoogleFonts.rufina(fontWeight: FontWeight.bold)),
+        backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
+        title: Text('Hair Recommendations', style: GoogleFonts.rufina(
+          fontWeight: FontWeight.bold,
+          color: isDark ? AppColors.gold : AppColors.burgundy,
+        )),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -41,6 +47,8 @@ class HaircutScreen extends StatelessWidget {
                         ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
+                            backgroundColor: isDark ? AppColors.gold : AppColors.burgundy,
+                            foregroundColor: isDark ? AppColors.charcoal : Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
                             shape: const StadiumBorder(),
                           ),
@@ -75,7 +83,10 @@ class HaircutScreen extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: isMobile ? 40 : 80, horizontal: 24),
               child: Column(
                 children: [
-                  const Text('TRENDING NOW', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                  Text('TRENDING NOW', style: GoogleFonts.outfit(
+                    color: isDark ? AppColors.gold : AppColors.burgundy,
+                    fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 12,
+                  )),
                   const SizedBox(height: 8),
                   Text('Popular Hairstyles', style: GoogleFonts.rufina(fontSize: 40, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
@@ -104,7 +115,9 @@ class HaircutScreen extends StatelessWidget {
                 children: [
                   Text('Understanding Face Shapes', style: GoogleFonts.rufina(fontSize: 40, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  const Text('Let\'s Check', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 18)),
+                  const Text('Let\'s Check', style: TextStyle(
+                    color: Color(0xFF8B1A2F), fontWeight: FontWeight.bold, fontSize: 18,
+                  )),
                   const SizedBox(height: 48),
                   Wrap(
                     spacing: 32,

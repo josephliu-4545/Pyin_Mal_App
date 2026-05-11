@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pyin_mal_app/main.dart';
 
 class _Product {
   final String name;
@@ -45,15 +46,20 @@ class _ShopScreenState extends State<ShopScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount = screenWidth >= 1024 ? 4 : (screenWidth >= 640 ? 3 : 2);
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
 
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
         appBar: AppBar(
-          backgroundColor: isDark ? const Color(0xFF1a1a1a) : Colors.white,
-          title: Text('Shop', style: GoogleFonts.rufina(fontWeight: FontWeight.bold, color: const Color(0xFF0ea5e9))),
+          backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
+          title: Text('Shop', style: GoogleFonts.rufina(
+            fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.gold : AppColors.burgundy,
+          )),
           bottom: TabBar(
-            labelStyle: GoogleFonts.orbit(fontWeight: FontWeight.bold),
+            labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
             tabs: const [
               Tab(text: 'Fashion'),
               Tab(text: 'Barber Shop'),
@@ -81,12 +87,14 @@ class _ShopScreenState extends State<ShopScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: FilterChip(
-                            label: Text(cat, style: GoogleFonts.orbit()),
+                            label: Text(cat, style: GoogleFonts.outfit(
+                              color: isSelected ? Colors.white : (isDark ? AppColors.paleText : AppColors.inkGrey),
+                            )),
                             selected: isSelected,
                             onSelected: (_) => setState(() => _selectedCategory = cat),
-                            selectedColor: const Color(0xFF0ea5e9),
-                            checkmarkColor: Colors.white,
-                            labelStyle: TextStyle(color: isSelected ? Colors.white : null),
+                            selectedColor: accent,
+                            checkmarkColor: isDark ? AppColors.charcoal : Colors.white,
+                            backgroundColor: isDark ? AppColors.darkWarm : AppColors.creamAlt,
                           ),
                         );
                       }).toList(),
@@ -163,11 +171,15 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   Widget _buildProductCard(BuildContext context, _Product product, bool isDark) {
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF242424) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
+        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(
+          color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.07),
+          blurRadius: 12, offset: const Offset(0, 4),
+        )],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,21 +203,21 @@ class _ShopScreenState extends State<ShopScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(product.name, style: GoogleFonts.orbit(fontWeight: FontWeight.bold, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                Text(product.name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
-                Text(product.price, style: GoogleFonts.orbit(color: const Color(0xFF0ea5e9), fontWeight: FontWeight.bold, fontSize: 12)),
+                Text(product.price, style: GoogleFonts.outfit(color: accent, fontWeight: FontWeight.bold, fontSize: 12)),
                 const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0ea5e9),
-                      foregroundColor: Colors.white,
+                      backgroundColor: accent,
+                      foregroundColor: isDark ? AppColors.charcoal : Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: Text('Add to Cart', style: GoogleFonts.orbit(fontSize: 11, fontWeight: FontWeight.bold)),
+                    child: Text('Add to Cart', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],

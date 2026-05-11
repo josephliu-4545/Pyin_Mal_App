@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pyin_mal_app/main.dart';
 import 'dart:math';
 
 class LoginScreen extends StatefulWidget {
@@ -18,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final isMobile = screenWidth < 768;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFf5f5f5),
+      backgroundColor: AppColors.cream,
       body: Stack(
         children: [
           // Logo Top Left
@@ -32,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 40,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4c00ff),
+                    color: const Color(0xFF8B1A2F),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text('PM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
@@ -127,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF4c00ff), Color(0xFF4099ff)],
+                colors: [Color(0xFF8B1A2F), Color(0xFF2A1A10)],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pyin_mal_app/main.dart';
 
 class SavedItem {
   final String id;
@@ -89,8 +90,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final isMobile = screenWidth < 640;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
       appBar: AppBar(
-        title: Text('Favorites', style: GoogleFonts.rufina(fontWeight: FontWeight.bold)),
+        backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
+        title: Text('Favorites', style: GoogleFonts.rufina(
+          fontWeight: FontWeight.bold,
+          color: isDark ? AppColors.gold : AppColors.burgundy,
+        )),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -164,8 +170,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 ElevatedButton(
                                   onPressed: () => _filter(_searchController.text),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: isDark ? AppColors.gold : AppColors.burgundy,
+                                    foregroundColor: isDark ? AppColors.charcoal : Colors.white,
                                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                   ),

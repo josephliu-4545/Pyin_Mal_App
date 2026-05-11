@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/theme_notifier.dart';
 import 'package:pyin_mal_app/screens/shop_screen.dart';
 import 'package:pyin_mal_app/screens/haircut_screen.dart';
@@ -8,9 +9,9 @@ import 'package:pyin_mal_app/screens/favorites_screen.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/model_preview_screen.dart';
 
+// ── Main Shell ────────────────────────────────────────────────────────────────
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
-
   @override
   State<MainShell> createState() => _MainShellState();
 }
@@ -18,7 +19,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
+  static const _screens = [
     _HomeTab(),
     ShopScreen(),
     HaircutScreen(),
@@ -28,150 +29,145 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      extendBody: true, // body goes behind the bottom nav
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      extendBody: true,
+      body: IndexedStack(index: _currentIndex, children: _screens),
+      bottomNavigationBar: _GlassNav(
+        currentIndex: _currentIndex,
+        onTap: (i) => setState(() => _currentIndex = i),
+        isDark: isDark,
       ),
-      bottomNavigationBar: _buildGlassNav(isDark),
     );
   }
+}
 
-  Widget _buildGlassNav(bool isDark) {
-    final bgColor = isDark
-        ? Colors.black.withOpacity(0.55)
-        : Colors.white.withOpacity(0.7);
+// ── Glassmorphic Bottom Nav ───────────────────────────────────────────────────
+class _GlassNav extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+  final bool isDark;
+  const _GlassNav({required this.currentIndex, required this.onTap, required this.isDark});
+
+  static const _items = [
+    (icon: Icons.home_rounded,        outline: Icons.home_outlined,              label: 'Home'),
+    (icon: Icons.store_rounded,       outline: Icons.store_outlined,             label: 'Shop'),
+    (icon: Icons.content_cut_rounded, outline: Icons.content_cut_outlined,       label: 'Hair'),
+    (icon: Icons.favorite_rounded,    outline: Icons.favorite_outline_rounded,   label: 'Saved'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    final bg = isDark
+        ? AppColors.charcoal.withOpacity(0.75)
+        : AppColors.creamCard.withOpacity(0.82);
 
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
         child: Container(
-          height: 72,
+          height: 76,
           decoration: BoxDecoration(
-            color: bgColor,
+            color: bg,
             border: Border(
               top: BorderSide(
                 color: isDark
-                    ? Colors.white.withOpacity(0.08)
-                    : Colors.black.withOpacity(0.08),
+                    ? Colors.white.withOpacity(0.06)
+                    : AppColors.inkBlack.withOpacity(0.06),
               ),
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _navItem(0, Icons.home_rounded, Icons.home_outlined, 'Home', isDark),
-              _navItem(1, Icons.store_rounded, Icons.store_outlined, 'Shop', isDark),
-              _navItem(2, Icons.content_cut_rounded, Icons.content_cut_outlined, 'Hair', isDark),
-              _navItem(3, Icons.favorite_rounded, Icons.favorite_outline_rounded, 'Saved', isDark),
-            ],
+            children: List.generate(_items.length, (i) {
+              final item = _items[i];
+              final selected = currentIndex == i;
+              return GestureDetector(
+                onTap: () => onTap(i),
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: selected ? accent.withOpacity(0.12) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        child: Icon(
+                          selected ? item.icon : item.outline,
+                          key: ValueKey(selected),
+                          color: selected ? accent : (isDark ? AppColors.paleText : AppColors.inkGrey),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item.label,
+                        style: GoogleFonts.outfit(
+                          fontSize: 10,
+                          color: selected ? accent : (isDark ? AppColors.paleText : AppColors.inkGrey),
+                          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ),
         ),
       ),
     );
   }
-
-  Widget _navItem(int index, IconData active, IconData inactive, String label, bool isDark) {
-    final isSelected = _currentIndex == index;
-    final color = isSelected
-        ? const Color(0xFF0ea5e9)
-        : (isDark ? Colors.white54 : Colors.black38);
-
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0ea5e9).withOpacity(0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                isSelected ? active : inactive,
-                key: ValueKey(isSelected),
-                color: color,
-                size: 24,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: GoogleFonts.orbit(
-                fontSize: 10,
-                color: color,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
-// ─── Home Tab ────────────────────────────────────────────────────────────────
-
+// ── Home Tab ──────────────────────────────────────────────────────────────────
 class _HomeTab extends StatefulWidget {
   const _HomeTab();
-
   @override
   State<_HomeTab> createState() => _HomeTabState();
 }
 
 class _HomeTabState extends State<_HomeTab> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late List<Animation<Offset>> _slideAnims;
-  late List<Animation<double>> _fadeAnims;
+  late final AnimationController _ctrl;
+  late final List<Animation<Offset>> _slides;
+  late final List<Animation<double>> _fades;
+  int _selectedCategory = 0;
+
+  static const _categories = ['All', 'Fashion', 'Haircut', 'Sets'];
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-
-    _slideAnims = List.generate(6, (i) {
-      final start = i * 0.12;
-      final end = (start + 0.55).clamp(0.0, 1.0);
-      return Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-        CurvedAnimation(parent: _controller, curve: Interval(start, end, curve: Curves.easeOutCubic)),
-      );
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
+    _slides = List.generate(6, (i) {
+      final s = (i * 0.1).clamp(0.0, 1.0);
+      final e = (s + 0.5).clamp(0.0, 1.0);
+      return Tween<Offset>(begin: const Offset(0, 0.25), end: Offset.zero)
+          .animate(CurvedAnimation(parent: _ctrl, curve: Interval(s, e, curve: Curves.easeOutCubic)));
     });
-
-    _fadeAnims = List.generate(6, (i) {
-      final start = i * 0.12;
-      final end = (start + 0.55).clamp(0.0, 1.0);
-      return Tween<double>(begin: 0, end: 1).animate(
-        CurvedAnimation(parent: _controller, curve: Interval(start, end)),
-      );
+    _fades = List.generate(6, (i) {
+      final s = (i * 0.1).clamp(0.0, 1.0);
+      final e = (s + 0.5).clamp(0.0, 1.0);
+      return Tween<double>(begin: 0, end: 1)
+          .animate(CurvedAnimation(parent: _ctrl, curve: Interval(s, e)));
     });
-
-    _controller.forward();
+    _ctrl.forward();
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  void dispose() { _ctrl.dispose(); super.dispose(); }
 
-  Widget _animated(int i, Widget child) {
-    return FadeTransition(
-      opacity: _fadeAnims[i],
-      child: SlideTransition(position: _slideAnims[i], child: child),
-    );
-  }
+  Widget _anim(int i, Widget child) => FadeTransition(
+    opacity: _fades[i],
+    child: SlideTransition(position: _slides[i], child: child),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -180,66 +176,18 @@ class _HomeTabState extends State<_HomeTab> with SingleTickerProviderStateMixin 
 
     return CustomScrollView(
       slivers: [
-        // ── App Bar ──
-        SliverAppBar(
-          pinned: true,
-          backgroundColor: isDark ? const Color(0xFF1a1a1a) : Colors.white,
-          elevation: 0,
-          title: Row(
-            children: [
-              Container(
-                width: 32, height: 32,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(color: Color(0xFF0ea5e9), shape: BoxShape.circle),
-                child: const Text('PM', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(width: 10),
-              Text('Pyin Mal', style: GoogleFonts.rufina(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF38bdf8))),
-            ],
-          ),
-          actions: [
-            // Theme toggle ✅
-            ValueListenableBuilder<ThemeMode>(
-              valueListenable: themeNotifier,
-              builder: (_, mode, __) => IconButton(
-                tooltip: mode == ThemeMode.dark ? 'Switch to Light' : 'Switch to Dark',
-                icon: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Icon(
-                    mode == ThemeMode.dark ? Icons.wb_sunny_rounded : Icons.nightlight_round,
-                    key: ValueKey(mode),
-                    color: mode == ThemeMode.dark ? Colors.amber : const Color(0xFF6366f1),
-                  ),
-                ),
-                onPressed: toggleTheme,
-              ),
-            ),
-            IconButton(
-              icon: Icon(Icons.person_outline_rounded, color: isDark ? Colors.white70 : Colors.black54),
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-
+        _buildSliverAppBar(context, isDark),
         SliverToBoxAdapter(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Hero ──
-              _animated(0, _buildHero(context, isMobile)),
-
-              // ── Category chips ──
-              _animated(1, _buildCategories(context, isDark)),
-
-              // ── Features ──
-              _animated(2, _buildSectionTitle(context, 'Features', isDark)),
-              _animated(3, _buildFeatureRow(context, isDark, isMobile)),
-
-              // ── Trending ──
-              _animated(4, _buildSectionTitle(context, 'Trending', isDark)),
-              _animated(5, _buildTrendingRow(context, isDark)),
-
-              const SizedBox(height: 100), // bottom nav clearance
+              _anim(0, _buildHero(context, isMobile, isDark)),
+              _anim(1, _buildCategories(context, isDark)),
+              _anim(2, _buildSectionHeader(context, 'Features', isDark)),
+              _anim(3, _buildFeatureRow(context, isDark)),
+              _anim(4, _buildSectionHeader(context, 'Trending Now', isDark)),
+              _anim(5, _buildTrendingRow(context, isDark)),
+              const SizedBox(height: 110),
             ],
           ),
         ),
@@ -247,9 +195,66 @@ class _HomeTabState extends State<_HomeTab> with SingleTickerProviderStateMixin 
     );
   }
 
-  Widget _buildHero(BuildContext context, bool isMobile) {
+  // ── SliverAppBar ──────────────────────────────────────────────────────────
+  Widget _buildSliverAppBar(BuildContext context, bool isDark) {
+    final bg = isDark ? AppColors.charcoal : AppColors.cream;
+    return SliverAppBar(
+      pinned: true,
+      backgroundColor: bg,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      title: Row(children: [
+        Container(
+          width: 34, height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.gold : AppColors.burgundy,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text('PM', style: GoogleFonts.rufina(
+            color: isDark ? AppColors.charcoal : Colors.white,
+            fontSize: 13, fontWeight: FontWeight.bold,
+          )),
+        ),
+        const SizedBox(width: 10),
+        Text('Pyin Mal', style: GoogleFonts.rufina(
+          fontSize: 22, fontWeight: FontWeight.bold,
+          color: isDark ? AppColors.gold : AppColors.burgundy,
+        )),
+      ]),
+      actions: [
+        // Working theme toggle
+        ValueListenableBuilder<ThemeMode>(
+          valueListenable: themeNotifier,
+          builder: (_, mode, __) => IconButton(
+            tooltip: mode == ThemeMode.dark ? 'Light mode' : 'Dark mode',
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Icon(
+                mode == ThemeMode.dark ? Icons.wb_sunny_rounded : Icons.nightlight_round,
+                key: ValueKey(mode),
+                color: mode == ThemeMode.dark ? AppColors.gold : AppColors.inkGrey,
+                size: 22,
+              ),
+            ),
+            onPressed: toggleTheme,
+          ),
+        ),
+        IconButton(
+          icon: Icon(Icons.person_outline_rounded,
+            color: isDark ? AppColors.paleText : AppColors.inkGrey, size: 22),
+          onPressed: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const LoginScreen())),
+        ),
+        const SizedBox(width: 4),
+      ],
+    );
+  }
+
+  // ── Hero Card ─────────────────────────────────────────────────────────────
+  Widget _buildHero(BuildContext context, bool isMobile, bool isDark) {
     return Container(
-      height: isMobile ? 420 : 520,
+      height: isMobile ? 440 : 540,
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
@@ -261,10 +266,15 @@ class _HomeTabState extends State<_HomeTab> with SingleTickerProviderStateMixin 
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black87],
+            colors: [
+              Colors.transparent,
+              AppColors.charcoal.withOpacity(0.55),
+              AppColors.charcoal.withOpacity(0.92),
+            ],
+            stops: const [0.0, 0.5, 1.0],
           ),
         ),
         padding: const EdgeInsets.all(28),
@@ -272,127 +282,171 @@ class _HomeTabState extends State<_HomeTab> with SingleTickerProviderStateMixin 
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            // Badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
-                color: const Color(0xFF0ea5e9).withOpacity(0.9),
+                color: AppColors.gold.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text('AI-Powered Style', style: GoogleFonts.orbit(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
+              child: Text('AI-Powered Style',
+                style: GoogleFonts.outfit(
+                  color: AppColors.charcoal, fontSize: 11,
+                  fontWeight: FontWeight.bold, letterSpacing: 0.8,
+                )),
             ),
-            const SizedBox(height: 12),
-            Text('Discover Your\nPerfect Style', style: GoogleFonts.rufina(fontSize: isMobile ? 36 : 48, fontWeight: FontWeight.bold, color: Colors.white, height: 1.1)),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _heroBadge(context, Icons.content_cut_rounded, 'Hair Try-On', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()))),
-                const SizedBox(width: 12),
-                _heroBadge(context, Icons.checkroom_outlined, 'Model Preview', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelPreviewScreen()))),
-              ],
+            const SizedBox(height: 14),
+            Text(
+              'Discover Your\nPerfect Style',
+              style: GoogleFonts.rufina(
+                fontSize: isMobile ? 38 : 50,
+                fontWeight: FontWeight.bold,
+                color: Colors.white, height: 1.1,
+              ),
             ),
+            const SizedBox(height: 8),
+            Text(
+              'AI-powered fashion & grooming, tailored for you.',
+              style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+            // CTA buttons
+            Wrap(spacing: 12, runSpacing: 12, children: [
+              _heroButton(
+                context, Icons.content_cut_rounded, 'Hair Try-On',
+                () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen())),
+                isDark,
+              ),
+              _heroButton(
+                context, Icons.checkroom_outlined, 'Model Preview',
+                () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelPreviewScreen())),
+                isDark,
+              ),
+            ]),
           ],
         ),
       ),
     );
   }
 
-  Widget _heroBadge(BuildContext context, IconData icon, String label, VoidCallback onTap) {
+  Widget _heroButton(BuildContext context, IconData icon, String label,
+      VoidCallback onTap, bool isDark) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white30),
+          color: AppColors.gold.withOpacity(0.18),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.gold.withOpacity(0.55), width: 1),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Text(label, style: GoogleFonts.orbit(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-          ],
-        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: AppColors.goldLight, size: 18),
+          const SizedBox(width: 8),
+          Text(label, style: GoogleFonts.outfit(
+            color: AppColors.goldLight, fontSize: 13, fontWeight: FontWeight.bold,
+          )),
+        ]),
       ),
     );
   }
 
+  // ── Category Pills ────────────────────────────────────────────────────────
   Widget _buildCategories(BuildContext context, bool isDark) {
-    final cats = ['All', 'Fashion', 'Haircut', 'Sets', 'Grooming'];
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        scrollDirection: Axis.horizontal,
-        itemCount: cats.length,
-        itemBuilder: (_, i) {
-          final sel = i == 0;
-          return Container(
-            margin: const EdgeInsets.only(right: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: sel ? const Color(0xFF0ea5e9) : (isDark ? const Color(0xFF242424) : Colors.grey[100]),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Center(
-              child: Text(cats[i], style: GoogleFonts.orbit(
-                fontSize: 13,
-                fontWeight: sel ? FontWeight.bold : FontWeight.normal,
-                color: sel ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
-              )),
-            ),
-          );
-        },
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: SizedBox(
+        height: 42,
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          scrollDirection: Axis.horizontal,
+          itemCount: _categories.length,
+          itemBuilder: (_, i) {
+            final sel = _selectedCategory == i;
+            return GestureDetector(
+              onTap: () => setState(() => _selectedCategory = i),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 230),
+                margin: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                decoration: BoxDecoration(
+                  color: sel ? accent : (isDark ? AppColors.darkWarm : AppColors.creamAlt),
+                  borderRadius: BorderRadius.circular(21),
+                  border: Border.all(
+                    color: sel ? accent : Colors.transparent,
+                    width: 1.5,
+                  ),
+                ),
+                child: Center(
+                  child: Text(_categories[i],
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      fontWeight: sel ? FontWeight.bold : FontWeight.normal,
+                      color: sel ? Colors.white : (isDark ? AppColors.paleText : AppColors.inkGrey),
+                    )),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title, bool isDark) {
+  // ── Section Header ────────────────────────────────────────────────────────
+  Widget _buildSectionHeader(BuildContext context, String title, bool isDark) {
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 32, 20, 14),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: GoogleFonts.rufina(fontSize: 26, fontWeight: FontWeight.bold)),
-          Text('See all', style: GoogleFonts.orbit(fontSize: 13, color: const Color(0xFF0ea5e9))),
+          Text(title, style: GoogleFonts.rufina(
+            fontSize: 24, fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : AppColors.inkBlack,
+          )),
+          Text('See all', style: GoogleFonts.outfit(
+            fontSize: 13, color: accent, fontWeight: FontWeight.w600,
+          )),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureRow(BuildContext context, bool isDark, bool isMobile) {
+  // ── Feature Cards Row ─────────────────────────────────────────────────────
+  Widget _buildFeatureRow(BuildContext context, bool isDark) {
     final features = [
-      {'title': 'Hair Analysis', 'img': 'assets/images/Hero/ai hair recommendation.jpg', 'icon': Icons.face_retouching_natural_rounded},
-      {'title': 'Outfit Preview', 'img': 'assets/images/Hero/index.jpg', 'icon': Icons.checkroom_rounded},
-      {'title': 'Style Studio', 'img': 'assets/images/Hero/pyin mal studio1.jpg', 'icon': Icons.auto_awesome_rounded},
+      (title: 'Hair Analysis',   img: 'assets/images/Hero/ai hair recommendation.jpg', icon: Icons.face_retouching_natural_rounded,  screen: () => const HaircutScreen()),
+      (title: 'Outfit Preview',  img: 'assets/images/Hero/index.jpg',                  icon: Icons.checkroom_rounded,                 screen: () => const ModelPreviewScreen()),
+      (title: 'Style Studio',    img: 'assets/images/Hero/pyin mal studio1.jpg',       icon: Icons.auto_awesome_rounded,              screen: null),
     ];
 
     return SizedBox(
-      height: 200,
+      height: 210,
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
         itemCount: features.length,
         itemBuilder: (_, i) {
           final f = features[i];
           return GestureDetector(
-            onTap: () {
-              if (i == 0) Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()));
-              if (i == 1) Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelPreviewScreen()));
-            },
+            onTap: f.screen != null
+                ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => f.screen!()))
+                : null,
             child: Container(
-              width: 160,
-              margin: const EdgeInsets.only(right: 16),
+              width: 165,
+              margin: const EdgeInsets.only(right: 14),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(22),
+                color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
                 image: DecorationImage(
-                  image: AssetImage(f['img'] as String),
+                  image: AssetImage(f.img),
                   fit: BoxFit.cover,
-                  colorFilter: const ColorFilter.mode(Colors.black38, BlendMode.darken),
-                  onError: (e, s) {},
+                  colorFilter: ColorFilter.mode(
+                    AppColors.charcoal.withOpacity(0.45), BlendMode.darken,
+                  ),
                 ),
-                color: isDark ? const Color(0xFF242424) : Colors.grey[200],
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -400,9 +454,19 @@ class _HomeTabState extends State<_HomeTab> with SingleTickerProviderStateMixin 
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Icon(f['icon'] as IconData, color: Colors.white, size: 28),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.gold.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.gold.withOpacity(0.4)),
+                      ),
+                      child: Icon(f.icon, color: AppColors.goldLight, size: 20),
+                    ),
                     const SizedBox(height: 8),
-                    Text(f['title'] as String, style: GoogleFonts.rufina(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(f.title, style: GoogleFonts.rufina(
+                      color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15,
+                    )),
                   ],
                 ),
               ),
@@ -413,28 +477,36 @@ class _HomeTabState extends State<_HomeTab> with SingleTickerProviderStateMixin 
     );
   }
 
+  // ── Trending Cards Row ────────────────────────────────────────────────────
   Widget _buildTrendingRow(BuildContext context, bool isDark) {
+    final cardBg = isDark ? AppColors.darkWarm : AppColors.creamCard;
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
     final items = [
-      {'name': 'Summer Collection', 'img': 'assets/images/Photo/summer collection.jpg', 'price': 'View →'},
-      {'name': 'Trending Now', 'img': 'assets/images/Photo/Trendy now1.jpg', 'price': 'View →'},
-      {'name': 'Featured Styles', 'img': 'assets/images/Photo/featured style.jpg', 'price': 'View →'},
+      (name: 'Summer Collection', img: 'assets/images/Photo/summer collection.jpg'),
+      (name: 'Trending Now',      img: 'assets/images/Photo/Trendy now1.jpg'),
+      (name: 'Featured Styles',   img: 'assets/images/Photo/featured style.jpg'),
     ];
 
     return SizedBox(
-      height: 280,
+      height: 290,
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
         itemBuilder: (_, i) {
           final item = items[i];
           return Container(
-            width: 200,
+            width: 195,
             margin: const EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF242424) : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.07), blurRadius: 12, offset: const Offset(0, 4))],
+              color: cardBg,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.charcoal.withOpacity(isDark ? 0.35 : 0.08),
+                  blurRadius: 14, offset: const Offset(0, 5),
+                ),
+              ],
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
@@ -442,22 +514,39 @@ class _HomeTabState extends State<_HomeTab> with SingleTickerProviderStateMixin 
               children: [
                 Expanded(
                   child: Image.asset(
-                    item['img']!,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    errorBuilder: (c, e, s) => Container(color: Colors.grey[300], child: const Icon(Icons.image, color: Colors.grey, size: 40)),
+                    item.img, fit: BoxFit.cover, width: double.infinity,
+                    errorBuilder: (c, e, s) => Container(
+                      color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
+                      child: const Icon(Icons.image, color: Colors.grey, size: 40),
+                    ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(item['name']!, style: GoogleFonts.rufina(fontWeight: FontWeight.bold, fontSize: 15)),
-                      const SizedBox(height: 4),
-                      Text(item['price']!, style: GoogleFonts.orbit(color: const Color(0xFF0ea5e9), fontSize: 13, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(item.name, style: GoogleFonts.rufina(
+                      fontWeight: FontWeight.bold, fontSize: 15,
+                      color: isDark ? Colors.white : AppColors.inkBlack,
+                    )),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('View →', style: GoogleFonts.outfit(
+                          color: accent, fontSize: 13, fontWeight: FontWeight.bold,
+                        )),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: accent.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(Icons.favorite_outline_rounded,
+                            color: accent, size: 16),
+                        ),
+                      ],
+                    ),
+                  ]),
                 ),
               ],
             ),
