@@ -1,27 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class ShopScreen extends StatelessWidget {
+class _Product {
+  final String name;
+  final String price;
+  final String image;
+  final String category;
+  final String gender;
+  _Product(this.name, this.price, this.image, this.category, this.gender);
+}
+
+class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
+
+  @override
+  State<ShopScreen> createState() => _ShopScreenState();
+}
+
+class _ShopScreenState extends State<ShopScreen> {
+  String _selectedCategory = 'All';
+
+  final List<_Product> _fashionProducts = [
+    _Product('NRF Deathwish Hoodie', '45,000 MMK', 'assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg', 'Hoodie', 'Male'),
+    _Product('AJOHN V2 Hoodie', '38,000 MMK', 'assets/images/Male/Nrf/Hoodie/AJOHN V2 HOODIE.jpg', 'Hoodie', 'Male'),
+    _Product('ABCD 2XL Zip Up Hoodie', '35,000 MMK', 'assets/images/Male/Nrf/Hoodie/ABCD 2XL ZIP UP HOODIE0.jpg', 'Hoodie', 'Male'),
+    _Product('V1 Introduction Hoodie', '32,000 MMK', 'assets/images/Male/Nrf/Hoodie/V1 INTRODUCTION Hoodie .jpg', 'Hoodie', 'Male'),
+    _Product('ABCD Tee', '15,000 MMK', 'assets/images/Male/Nrf/Tee/ABCD TEE.jpg', 'T-Shirt', 'Male'),
+    _Product('ACID T-Shirt', '18,000 MMK', 'assets/images/Male/Nrf/Tee/ACID TSHIRT 0.jpg', 'T-Shirt', 'Male'),
+    _Product('NRFC Jersey', '22,000 MMK', 'assets/images/Male/Nrf/Tee/NRFC Jersey0.jpg', 'T-Shirt', 'Male'),
+    _Product('LAPSES Tee Oatmeal', '19,000 MMK', 'assets/images/Male/Nrf/Tee/LAPSES TSHIRT OATMEAL0.jpg', 'T-Shirt', 'Male'),
+    _Product('Luna Set 1', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set1.jpg', 'Set', 'Female'),
+    _Product('Luna Set 2', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set2.jpg', 'Set', 'Female'),
+    _Product('Luna Set 3', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set3.jpg', 'Set', 'Female'),
+    _Product('Luna Set 4', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set4.jpg', 'Set', 'Female'),
+  ];
+
+  List<_Product> get _filtered {
+    if (_selectedCategory == 'All') return _fashionProducts;
+    return _fashionProducts.where((p) => p.category == _selectedCategory || p.gender == _selectedCategory).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = screenWidth >= 1024 ? 4 : (screenWidth >= 640 ? 3 : 2);
 
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: isDark ? const Color(0xFF1a1a1a) : Colors.white,
-          title: Text(
-            'Shop',
-            style: GoogleFonts.rufina(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          bottom: const TabBar(
-            tabs: [
+          title: Text('Shop', style: GoogleFonts.rufina(fontWeight: FontWeight.bold, color: const Color(0xFF0ea5e9))),
+          bottom: TabBar(
+            labelStyle: GoogleFonts.orbit(fontWeight: FontWeight.bold),
+            tabs: const [
               Tab(text: 'Fashion'),
               Tab(text: 'Barber Shop'),
             ],
@@ -39,35 +72,46 @@ class ShopScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildFilters(context),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Fashion Products',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
+                  // Filter Chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: ['All', 'Male', 'Female', 'Hoodie', 'T-Shirt', 'Set'].map((cat) {
+                        final isSelected = _selectedCategory == cat;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: Text(cat, style: GoogleFonts.orbit()),
+                            selected: isSelected,
+                            onSelected: (_) => setState(() => _selectedCategory = cat),
+                            selectedColor: const Color(0xFF0ea5e9),
+                            checkmarkColor: Colors.white,
+                            labelStyle: TextStyle(color: isSelected ? Colors.white : null),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  // Mock Grid of products
+                  const SizedBox(height: 20),
+                  Text(
+                    '${_filtered.length} Products',
+                    style: GoogleFonts.orbit(color: Colors.grey, fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.7,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 0.65,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
                     ),
-                    itemCount: 4,
+                    itemCount: _filtered.length,
                     itemBuilder: (context, index) {
-                      return _buildProductCard(context, index);
+                      final product = _filtered[index];
+                      return _buildProductCard(context, product, isDark);
                     },
-                  ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: OutlinedButton(
-                      onPressed: () {},
-                      child: const Text('Load More'),
-                    ),
                   ),
                 ],
               ),
@@ -79,25 +123,33 @@ class ShopScreen extends StatelessWidget {
                 children: [
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
                     decoration: const BoxDecoration(
-                      color: Colors.blueGrey,
+                      image: DecorationImage(
+                        image: AssetImage('assets/images/Hero/baber.jpg'),
+                        fit: BoxFit.cover,
+                        colorFilter: ColorFilter.mode(Colors.black54, BlendMode.darken),
+                      ),
                     ),
                     child: Column(
                       children: [
-                        Text('Book your style', style: TextStyle(color: Colors.white70, letterSpacing: 2)),
+                        Text('BOOK YOUR STYLE', style: GoogleFonts.orbit(color: Colors.white70, letterSpacing: 3, fontSize: 12)),
                         const SizedBox(height: 8),
-                        Text('Select a Barber Shop', style: GoogleFonts.rufina(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text('Select a Barber Shop', style: GoogleFonts.rufina(fontSize: 36, color: Colors.white, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Text('Professional grooming, curated for you', style: GoogleFonts.orbit(color: Colors.white70)),
                       ],
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        _buildBarberCard(context, 'Yangon Classic Barber', '4.8 (95)', 'Bogyoke Market, Yangon'),
-                        const SizedBox(height: 16),
-                        _buildBarberCard(context, 'Mandalay Heritage Salon', '4.9 (112)', '84th Street, Mandalay'),
+                        _buildBarberCard(context, 'Yangon Classic Barber', '4.8', '95', 'Bogyoke Market, Yangon', ['Classic Haircut — 8,000 MMK', 'Fade Cut — 12,000 MMK', 'Beard Trim — 5,000 MMK'], isDark),
+                        const SizedBox(height: 20),
+                        _buildBarberCard(context, 'Mandalay Heritage Salon', '4.9', '112', '84th Street, Mandalay', ['Pompadour — 15,000 MMK', 'Textured Crop — 12,000 MMK', 'Full Groom — 20,000 MMK'], isDark),
+                        const SizedBox(height: 20),
+                        _buildBarberCard(context, 'Golden Scissors Studio', '4.7', '78', 'Sanchaung, Yangon', ['Undercut — 10,000 MMK', 'Buzz Cut — 7,000 MMK', 'Skin Fade — 13,000 MMK'], isDark),
                       ],
                     ),
                   ),
@@ -110,69 +162,28 @@ class ShopScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFilters(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
-      ),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          _buildDropdown('Category', ['All', 'Tops', 'Bottoms', 'Shoes']),
-          _buildDropdown('Price', ['All', '0-30k', '30k-60k']),
-          _buildDropdown('Sort by', ['Newest', 'Popular', 'Price Low']),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDropdown(String label, List<String> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey, letterSpacing: 1.5)),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: items[0],
-              isDense: true,
-              items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-              onChanged: (val) {},
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProductCard(BuildContext context, int index) {
+  Widget _buildProductCard(BuildContext context, _Product product, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+        color: isDark ? const Color(0xFF242424) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.asset(
+                product.image,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                errorBuilder: (c, e, s) => Container(
+                  color: Colors.grey[200],
+                  child: const Center(child: Icon(Icons.image, size: 40, color: Colors.grey)),
+                ),
               ),
-              child: const Center(child: Icon(Icons.image, size: 40, color: Colors.grey)),
             ),
           ),
           Padding(
@@ -180,9 +191,23 @@ class ShopScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Product ${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(product.name, style: GoogleFonts.orbit(fontWeight: FontWeight.bold, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
-                Text('25,000 MMK', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                Text(product.price, style: GoogleFonts.orbit(color: const Color(0xFF0ea5e9), fontWeight: FontWeight.bold, fontSize: 12)),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0ea5e9),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Text('Add to Cart', style: GoogleFonts.orbit(fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ),
               ],
             ),
           ),
@@ -191,23 +216,23 @@ class ShopScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBarberCard(BuildContext context, String name, String rating, String location) {
+  Widget _buildBarberCard(BuildContext context, String name, String rating, String reviewCount, String location, List<String> services, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        color: isDark ? const Color(0xFF242424) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
       ),
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Row(
               children: [
                 Container(
-                  width: 60, height: 60,
-                  decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.store, color: Colors.grey),
+                  width: 64, height: 64,
+                  decoration: BoxDecoration(color: const Color(0xFF0ea5e9).withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+                  child: const Icon(Icons.content_cut, color: Color(0xFF0ea5e9), size: 30),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -215,8 +240,18 @@ class ShopScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(name, style: GoogleFonts.rufina(fontSize: 18, fontWeight: FontWeight.bold)),
-                      Text('★ $rating', style: const TextStyle(color: Colors.orange, fontSize: 12)),
-                      Text(location, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Row(children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 4),
+                        Text('$rating ($reviewCount reviews)', style: GoogleFonts.orbit(fontSize: 12, color: Colors.grey)),
+                      ]),
+                      const SizedBox(height: 2),
+                      Row(children: [
+                        const Icon(Icons.location_on_outlined, color: Colors.grey, size: 14),
+                        const SizedBox(width: 4),
+                        Text(location, style: GoogleFonts.orbit(fontSize: 12, color: Colors.grey)),
+                      ]),
                     ],
                   ),
                 ),
@@ -225,17 +260,35 @@ class ShopScreen extends StatelessWidget {
           ),
           const Divider(height: 1),
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Classic Haircut'),
-                Row(
-                  children: [
-                    const Text('8,000 MMK', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
-                    Checkbox(value: false, onChanged: (v) {}),
-                  ],
+                Text('Services', style: GoogleFonts.orbit(fontWeight: FontWeight.bold, fontSize: 13)),
+                const SizedBox(height: 12),
+                ...services.map((s) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(s.split('—')[0].trim(), style: GoogleFonts.orbit(fontSize: 13)),
+                      Text(s.split('—').length > 1 ? s.split('—')[1].trim() : '', style: GoogleFonts.orbit(fontWeight: FontWeight.bold, fontSize: 13, color: const Color(0xFF0ea5e9))),
+                    ],
+                  ),
+                )),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0ea5e9),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text('Book Appointment', style: GoogleFonts.orbit(fontWeight: FontWeight.bold)),
+                  ),
                 ),
               ],
             ),
