@@ -88,14 +88,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 1024;
     final isMobile = screenWidth < 640;
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
       appBar: AppBar(
         backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
-        title: Text('Favorites', style: GoogleFonts.rufina(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text('Saved Wardrobe', style: GoogleFonts.rufina(
           fontWeight: FontWeight.bold,
-          color: isDark ? AppColors.gold : AppColors.burgundy,
+          color: accent,
         )),
         centerTitle: true,
       ),
@@ -103,119 +106,39 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Hero
-            Container(
-              color: const Color(0xFF171717),
-              padding: EdgeInsets.symmetric(vertical: isMobile ? 40 : 60, horizontal: 24),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1200),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('SAVED FASHION', style: TextStyle(color: Colors.white60, letterSpacing: 4, fontSize: 12)),
-                      const SizedBox(height: 12),
-                      Text('Your saved outfits and\nfashion picks.', style: GoogleFonts.rufina(color: Colors.white, fontSize: isMobile ? 32 : 48, fontWeight: FontWeight.bold, height: 1.1)),
-                      const SizedBox(height: 12),
-                      const Text('Every fashion look you favorite across Pyin Mal appears here in one clean, easy-to-browse grid.', style: TextStyle(color: Colors.white70, fontSize: 16)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            // 1. Premium Header Section
+            _buildHeader(isMobile, isDark, accent),
 
-            // Search & Grid
-            Container(
-              color: isDark ? const Color(0xFF1a1a1a) : Colors.grey[50],
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1200),
-                  child: Column(
-                    children: [
-                      // Search Bar
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF242424) : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Saved looks', style: GoogleFonts.rufina(fontSize: 20, fontWeight: FontWeight.bold)),
-                                Text('${_filteredFavorites.length} saved look${_filteredFavorites.length == 1 ? '' : 's'}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: _searchController,
-                                    onChanged: _filter,
-                                    decoration: InputDecoration(
-                                      hintText: 'Search by name, description, or shop',
-                                      prefixIcon: const Icon(Icons.search),
-                                      filled: true,
-                                      fillColor: isDark ? const Color(0xFF1a1a1a) : Colors.grey[100],
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                ElevatedButton(
-                                  onPressed: () => _filter(_searchController.text),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: isDark ? AppColors.gold : AppColors.burgundy,
-                                    foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                  child: const Text('Search'),
-                                )
-                              ],
-                            )
-                          ],
-                        ),
+            // 2. Search & Grid Container
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: Column(
+                children: [
+                  // Search Bar
+                  _buildSearchBar(isDark, accent),
+                  
+                  const SizedBox(height: 32),
+
+                  // Grid / Empty State
+                  if (_filteredFavorites.isEmpty)
+                    _buildEmptyState(isDark, accent)
+                  else
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: isMobile ? 1 : (isDesktop ? 3 : 2),
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.68,
                       ),
-                      
-                      const SizedBox(height: 40),
-
-                      // Grid
-                      if (_filteredFavorites.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 60),
-                          child: Column(
-                            children: [
-                              Text('No saved fashion yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                              SizedBox(height: 8),
-                              Text('Browse outfits and tap the heart icon to see them here.', style: TextStyle(color: Colors.grey)),
-                            ],
-                          ),
-                        )
-                      else
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: isMobile ? 1 : (isDesktop ? 3 : 2),
-                            crossAxisSpacing: 24,
-                            mainAxisSpacing: 24,
-                            childAspectRatio: 0.65,
-                          ),
-                          itemCount: _filteredFavorites.length,
-                          itemBuilder: (context, index) {
-                            final item = _filteredFavorites[index];
-                            return _buildSavedCard(item, isDark);
-                          },
-                        )
-                    ],
-                  ),
-                ),
+                      itemCount: _filteredFavorites.length,
+                      itemBuilder: (context, index) {
+                        final item = _filteredFavorites[index];
+                        return _buildSavedCard(item, isDark, accent);
+                      },
+                    )
+                ],
               ),
             )
           ],
@@ -224,53 +147,293 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildSavedCard(SavedItem item, bool isDark) {
+  Widget _buildHeader(bool isMobile, bool isDark, Color accent) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: isMobile ? 32 : 48, horizontal: 24),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.gold.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'PERSONAL COLLECTION',
+              style: GoogleFonts.outfit(
+                color: AppColors.charcoal,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Saved Looks',
+            style: GoogleFonts.rufina(
+              color: isDark ? Colors.white : AppColors.inkBlack,
+              fontSize: isMobile ? 36 : 48,
+              fontWeight: FontWeight.bold,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Your favorite outfits, hairstyles, and style ideas in one place.',
+            style: GoogleFonts.outfit(
+              color: isDark ? AppColors.paleText : AppColors.inkGrey,
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(bool isDark, Color accent) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Collection Items',
+                style: GoogleFonts.rufina(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.inkBlack,
+                ),
+              ),
+              Text(
+                '${_filteredFavorites.length} saved',
+                style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _filter,
+                  style: GoogleFonts.outfit(fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Search collection...',
+                    prefixIcon: Icon(Icons.search, color: accent, size: 20),
+                    filled: true,
+                    fillColor: isDark ? AppColors.charcoal : AppColors.creamAlt,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => _filter(_searchController.text),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(Icons.tune, color: isDark ? AppColors.charcoal : Colors.white, size: 20),
+                ),
+              )
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSavedCard(SavedItem item, bool isDark, Color accent) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF242424) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            flex: 3,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.asset(item.image, fit: BoxFit.cover, errorBuilder: (c,e,s) => Container(color: Colors.grey[300], child: const Icon(Icons.image, size: 50))),
+            flex: 4,
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  child: Image.asset(
+                    item.image,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (c, e, s) => Container(
+                      color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
+                      child: const Center(child: Icon(Icons.image, size: 50, color: Colors.grey)),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: GestureDetector(
+                    onTap: () => _remove(item.id),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.favorite, size: 18, color: AppColors.burgundy),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      item.category,
+                      style: GoogleFonts.outfit(
+                        color: isDark ? AppColors.charcoal : Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.title, style: GoogleFonts.rufina(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Text(item.description, style: const TextStyle(fontSize: 12, color: Colors.grey), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(
+                    item.title,
+                    style: GoogleFonts.rufina(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppColors.inkBlack,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    item.description,
+                    style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const Spacer(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(item.category, style: const TextStyle(fontSize: 10, letterSpacing: 2, color: Colors.grey)),
-                      Text(item.shop, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                      Row(
+                        children: [
+                          Icon(Icons.storefront, size: 12, color: accent),
+                          const SizedBox(width: 4),
+                          Text(
+                            item.shop,
+                            style: GoogleFonts.outfit(fontSize: 10, color: accent, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'Saved Recently',
+                        style: GoogleFonts.outfit(fontSize: 9, color: Colors.grey),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () => _remove(item.id),
-                      child: const Text('Remove'),
-                    ),
-                  )
                 ],
               ),
             ),
           )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isDark, Color accent) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 80),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.bookmark_outline, size: 64, color: accent),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No saved looks yet',
+            style: GoogleFonts.rufina(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppColors.inkBlack,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              'Browse outfits and hairstyles to build your personal style board.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(color: Colors.grey, fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: () {
+              // Usually navigate to shop, but we stay within current logic
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: accent,
+              foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: Text('Explore Trends', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );

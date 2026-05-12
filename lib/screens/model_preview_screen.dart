@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pyin_mal_app/main.dart';
 
 class ModelPreviewScreen extends StatefulWidget {
   const ModelPreviewScreen({super.key});
@@ -19,71 +20,147 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 1024;
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
       appBar: AppBar(
-        title: Text('Model Preview', style: GoogleFonts.rufina(fontWeight: FontWeight.bold)),
+        backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.inkBlack),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text('Virtual Studio', style: GoogleFonts.rufina(fontWeight: FontWeight.bold, color: accent)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Text('Model Preview', style: GoogleFonts.rufina(fontSize: 36, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(
-              'Try on different outfits and hairstyles on our virtual model. Mix and match to create your perfect look!',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.orbit(color: Colors.grey, fontSize: 16),
+            // Header Section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.charcoal : AppColors.creamAlt,
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'AI POWERED',
+                      style: GoogleFonts.outfit(
+                        color: AppColors.charcoal,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Virtual Style Studio',
+                    style: GoogleFonts.rufina(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppColors.inkBlack,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Mix outfits and preview your look with AI styling guidance.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 32),
-            Flex(
-              direction: isDesktop ? Axis.horizontal : Axis.vertical,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. Left Selection Panel (Tops / Bottoms)
-                Expanded(
-                  flex: isDesktop ? 1 : 0,
-                  child: _buildSelectionPanel(isDark),
-                ),
-                if (isDesktop) const SizedBox(width: 32),
-                if (!isDesktop) const SizedBox(height: 32),
 
-                // 2. Center Model Canvas
-                Expanded(
-                  flex: isDesktop ? 1 : 0,
-                  child: _buildModelCanvas(isDark),
-                ),
-                if (isDesktop) const SizedBox(width: 32),
-                if (!isDesktop) const SizedBox(height: 32),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Flex(
+                direction: isDesktop ? Axis.horizontal : Axis.vertical,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Left Selection Panel (Tops / Bottoms)
+                  Expanded(
+                    flex: isDesktop ? 1 : 0,
+                    child: _buildSelectionPanel(isDark, accent),
+                  ),
+                  const SizedBox(width: 16, height: 16),
 
-                // 3. Right AI Panel
-                Expanded(
-                  flex: isDesktop ? 1 : 0,
-                  child: _buildAIPanel(isDark),
-                ),
-              ],
+                  // 2. Center Model Canvas
+                  Expanded(
+                    flex: isDesktop ? 1 : 0,
+                    child: _buildModelCanvas(isDark, accent),
+                  ),
+                  const SizedBox(width: 16, height: 16),
+
+                  // 3. Right AI Panel
+                  Expanded(
+                    flex: isDesktop ? 1 : 0,
+                    child: _buildAIPanel(isDark, accent),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSelectionPanel(bool isDark) {
+  Widget _buildSelectionPanel(bool isDark, Color accent) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF242424) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Select pieces', style: GoogleFonts.rufina(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
-          Text('Tops', style: GoogleFonts.rufina(fontSize: 18, fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              Icon(Icons.checkroom, color: accent, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Wardrobe',
+                style: GoogleFonts.rufina(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.inkBlack,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Tops',
+            style: GoogleFonts.outfit(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.gold : AppColors.burgundy,
+            ),
+          ),
           const SizedBox(height: 12),
           GridView.count(
             shrinkWrap: true,
@@ -91,14 +168,21 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
             crossAxisCount: 2,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 0.8,
+            childAspectRatio: 0.85,
             children: [
-              _buildItemCard('White Shirt', 'assets/images/outfits/top-1.png', 'top', isDark),
-              _buildItemCard('Knit Tank', 'assets/images/outfits/top-2.png', 'top', isDark),
+              _buildItemCard('White Shirt', 'assets/images/outfits/top-1.png', 'top', isDark, accent),
+              _buildItemCard('Knit Tank', 'assets/images/outfits/top-2.png', 'top', isDark, accent),
             ],
           ),
           const SizedBox(height: 24),
-          Text('Bottoms', style: GoogleFonts.rufina(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            'Bottoms',
+            style: GoogleFonts.outfit(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.gold : AppColors.burgundy,
+            ),
+          ),
           const SizedBox(height: 12),
           GridView.count(
             shrinkWrap: true,
@@ -106,10 +190,10 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
             crossAxisCount: 2,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 0.8,
+            childAspectRatio: 0.85,
             children: [
-              _buildItemCard('Wide Trousers', 'assets/images/outfits/bottom-1.png', 'bottom', isDark),
-              _buildItemCard('Relaxed Denim', 'assets/images/outfits/bottom-2.png', 'bottom', isDark),
+              _buildItemCard('Wide Trousers', 'assets/images/outfits/bottom-1.png', 'bottom', isDark, accent),
+              _buildItemCard('Relaxed Denim', 'assets/images/outfits/bottom-2.png', 'bottom', isDark, accent),
             ],
           ),
         ],
@@ -117,7 +201,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
     );
   }
 
-  Widget _buildItemCard(String name, String imagePath, String category, bool isDark) {
+  Widget _buildItemCard(String name, String imagePath, String category, bool isDark, Color accent) {
     final isSelected = (category == 'top' && _selectedTop == imagePath) || 
                        (category == 'bottom' && _selectedBottom == imagePath);
 
@@ -128,94 +212,175 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
           if (category == 'bottom') _selectedBottom = imagePath;
         });
       },
-      child: Container(
-        padding: const EdgeInsets.all(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue.withOpacity(0.1) : (isDark ? const Color(0xFF1a1a1a) : Colors.grey[50]),
-          border: Border.all(color: isSelected ? Colors.blue : Colors.transparent, width: 2),
+          color: isSelected ? accent.withOpacity(0.08) : (isDark ? AppColors.darkBorder : AppColors.creamAlt),
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? accent : Colors.transparent,
+            width: 2,
+          ),
         ),
         child: Column(
           children: [
             Expanded(
               child: Container(
+                margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: isDark ? AppColors.charcoal : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Center(child: Icon(Icons.image, color: Colors.grey)), // Placeholder for actual outfit img
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (c, e, s) => const Center(child: Icon(Icons.image_outlined, color: Colors.grey, size: 30)),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Text(
+                name,
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isDark ? Colors.white : AppColors.inkBlack,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildModelCanvas(bool isDark) {
+  Widget _buildModelCanvas(bool isDark, Color accent) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF242424) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          )
+        ],
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildToggleButton('Mannequin', _mode == 'Mannequin', () => setState(() => _mode = 'Mannequin')),
-              _buildToggleButton('AI Real View', _mode == 'AI Real View', () => setState(() => _mode = 'AI Real View')),
-            ],
+          // Mode Selector
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.charcoal : AppColors.creamAlt,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Expanded(child: _buildToggleButton('Mannequin', _mode == 'Mannequin', () => setState(() => _mode = 'Mannequin'), isDark, accent)),
+                Expanded(child: _buildToggleButton('AI Real View', _mode == 'AI Real View', () => setState(() => _mode = 'AI Real View'), isDark, accent)),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          
+          // Gender Selector
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _buildToggleButton('Female', _gender == 'Female', () => setState(() => _gender = 'Female')),
-              _buildToggleButton('Male', _gender == 'Male', () => setState(() => _gender = 'Male')),
+              _buildToggleButton('Female', _gender == 'Female', () => setState(() => _gender = 'Female'), isDark, accent),
+              const SizedBox(width: 8),
+              _buildToggleButton('Male', _gender == 'Male', () => setState(() => _gender = 'Male'), isDark, accent),
             ],
           ),
-          const SizedBox(height: 24),
-          Text('Preview', style: GoogleFonts.rufina(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           
           // Canvas
           Container(
-            height: 500,
+            height: 480,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1a1a1a) : Colors.grey[100],
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1C1A1A), Color(0xFF2A2320)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
               borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1),
             ),
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Base Model Placeholder
-                Icon(Icons.person, size: 200, color: Colors.grey[400]),
+                // Glowing Background Effect
+                Positioned(
+                  top: 100,
+                  child: Container(
+                    width: 200, height: 200,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withOpacity(0.1),
+                          blurRadius: 100,
+                          spreadRadius: 20,
+                        )
+                      ],
+                    ),
+                  ),
+                ),
                 
-                // Top Overlay
+                // Base Model Placeholder
+                Icon(Icons.person, size: 240, color: Colors.white.withOpacity(0.1)),
+                
+                // Top Overlay Placeholder
                 if (_selectedTop != null)
                   Positioned(
-                    top: 100,
-                    child: Container(
-                      width: 150, height: 150,
-                      color: Colors.blue.withOpacity(0.5),
-                      child: const Center(child: Text('Top Layer', style: TextStyle(color: Colors.white))),
+                    top: 110,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 160, height: 160,
+                      decoration: BoxDecoration(
+                        color: AppColors.burgundy.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          _selectedTop!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (c, e, s) => Center(child: Text('Top Preview', style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
+                        ),
+                      ),
                     ),
                   ),
                   
-                // Bottom Overlay
+                // Bottom Overlay Placeholder
                 if (_selectedBottom != null)
                   Positioned(
-                    top: 250,
-                    child: Container(
-                      width: 150, height: 200,
-                      color: Colors.red.withOpacity(0.5),
-                      child: const Center(child: Text('Bottom Layer', style: TextStyle(color: Colors.white))),
+                    top: 260,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 140, height: 180,
+                      decoration: BoxDecoration(
+                        color: AppColors.inkBlack.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          _selectedBottom!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (c, e, s) => Center(child: Text('Bottom Preview', style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
+                        ),
+                      ),
                     ),
                   ),
               ],
@@ -225,14 +390,40 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
           const SizedBox(height: 24),
           Row(
             children: [
-              Expanded(child: OutlinedButton(onPressed: () {
-                setState(() {
-                  _selectedTop = null;
-                  _selectedBottom = null;
-                });
-              }, child: const Text('Reset'))),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedTop = null;
+                      _selectedBottom = null;
+                    });
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: isDark ? AppColors.paleText : AppColors.inkGrey),
+                    foregroundColor: isDark ? AppColors.paleText : AppColors.inkGrey,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: Text('Reset', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: ElevatedButton(onPressed: () {}, child: const Text('Save Screenshot'))),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Result saved to collection!')),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: Text('Save Result', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                ),
+              ),
             ],
           )
         ],
@@ -240,76 +431,154 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
     );
   }
 
-  Widget _buildAIPanel(bool isDark) {
+  Widget _buildAIPanel(bool isDark, Color accent) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF242424) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('AI Real View (Demo)', style: GoogleFonts.rufina(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
-          const Text('1. Upload your photo', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.upload),
-            label: const Text('Choose File'),
-            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, color: AppColors.gold, size: 24),
+              const SizedBox(width: 10),
+              Text(
+                'AI Styling Insights',
+                style: GoogleFonts.rufina(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.inkBlack,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
-          const Text('2. Choose an item', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
+          
+          // Style Metrics
+          _buildMetricRow(Icons.bolt, 'Style Match', '92%', isDark),
+          const SizedBox(height: 12),
+          _buildMetricRow(Icons.event, 'Best Occasion', 'Casual Out', isDark),
+          const SizedBox(height: 12),
+          _buildMetricRow(Icons.palette, 'Color Balance', 'Neutral', isDark),
+          
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 24),
+          
+          Text(
+            'Upload for Real View',
+            style: GoogleFonts.outfit(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppColors.inkBlack,
             ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                isExpanded: true,
-                value: 'Select from your wardrobe',
-                items: const [
-                  DropdownMenuItem(value: 'Select from your wardrobe', child: Text('Select from your wardrobe'))
+          ),
+          const SizedBox(height: 16),
+          
+          DottedBorderPlaceholder(isDark: isDark),
+          
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? AppColors.darkBorder : AppColors.creamAlt,
+                foregroundColor: isDark ? Colors.white : AppColors.inkBlack,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.upload_file, size: 20, color: accent),
+                  const SizedBox(width: 8),
+                  Text('Upload Photo', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                 ],
-                onChanged: (v) {},
               ),
             ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-            child: const Text('Generate Demo Result'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildToggleButton(String text, bool isSelected, VoidCallback onTap) {
+  Widget _buildMetricRow(IconData icon, String label, String value, bool isDark) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.gold.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.gold, size: 16),
+        ),
+        const SizedBox(width: 12),
+        Text(label, style: GoogleFonts.outfit(color: isDark ? AppColors.paleText : AppColors.inkGrey, fontSize: 13)),
+        const Spacer(),
+        Text(value, style: GoogleFonts.outfit(color: isDark ? Colors.white : AppColors.inkBlack, fontWeight: FontWeight.bold, fontSize: 13)),
+      ],
+    );
+  }
+
+  Widget _buildToggleButton(String text, bool isSelected, VoidCallback onTap, bool isDark, Color accent) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)] : [],
+          color: isSelected ? accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: isSelected && !isDark ? [BoxShadow(color: accent.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))] : [],
         ),
         child: Text(
           text,
-          style: TextStyle(
+          textAlign: TextAlign.center,
+          style: GoogleFonts.outfit(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.black : Colors.grey,
+            color: isSelected ? (isDark ? AppColors.charcoal : Colors.white) : (isDark ? AppColors.paleText : AppColors.inkGrey),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class DottedBorderPlaceholder extends StatelessWidget {
+  final bool isDark;
+  const DottedBorderPlaceholder({super.key, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 120,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.charcoal.withOpacity(0.5) : Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.3), width: 2, style: BorderStyle.solid),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.add_a_photo_outlined, color: Colors.grey.withOpacity(0.5), size: 32),
+          const SizedBox(height: 8),
+          Text('Drop photo here', style: GoogleFonts.outfit(color: Colors.grey.withOpacity(0.5), fontSize: 12)),
+        ],
       ),
     );
   }
