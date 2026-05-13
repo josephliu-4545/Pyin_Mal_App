@@ -19,19 +19,24 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  static const _screens = [
-    _HomeTab(),
-    ShopScreen(),
-    HaircutScreen(),
-    FavoritesScreen(),
-  ];
+  void _switchTab(int index) {
+    setState(() => _currentIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _HomeTab(onTabRequested: _switchTab),
+          const ShopScreen(),
+          const HaircutScreen(),
+          const FavoritesScreen(),
+        ],
+      ),
       bottomNavigationBar: _GlassNav(
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),
@@ -129,429 +134,709 @@ class _GlassNav extends StatelessWidget {
 
 // ── Home Tab ──────────────────────────────────────────────────────────────────
 class _HomeTab extends StatefulWidget {
-  const _HomeTab();
+  final Function(int)? onTabRequested;
+  const _HomeTab({this.onTabRequested});
   @override
   State<_HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<_HomeTab> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final List<Animation<Offset>> _slides;
-  late final List<Animation<double>> _fades;
-  int _selectedCategory = 0;
-
-  static const _categories = ['All', 'Fashion', 'Haircut', 'Sets'];
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
-    _slides = List.generate(6, (i) {
-      final s = (i * 0.1).clamp(0.0, 1.0);
-      final e = (s + 0.5).clamp(0.0, 1.0);
-      return Tween<Offset>(begin: const Offset(0, 0.25), end: Offset.zero)
-          .animate(CurvedAnimation(parent: _ctrl, curve: Interval(s, e, curve: Curves.easeOutCubic)));
-    });
-    _fades = List.generate(6, (i) {
-      final s = (i * 0.1).clamp(0.0, 1.0);
-      final e = (s + 0.5).clamp(0.0, 1.0);
-      return Tween<double>(begin: 0, end: 1)
-          .animate(CurvedAnimation(parent: _ctrl, curve: Interval(s, e)));
-    });
-    _ctrl.forward();
-  }
-
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  Widget _anim(int i, Widget child) => FadeTransition(
-    opacity: _fades[i],
-    child: SlideTransition(position: _slides[i], child: child),
-  );
-
+class _HomeTabState extends State<_HomeTab> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isMobile = MediaQuery.of(context).size.width < 640;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 640;
 
     return CustomScrollView(
       slivers: [
-        _buildSliverAppBar(context, isDark),
-        SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _anim(0, _buildHero(context, isMobile, isDark)),
-              _anim(1, _buildCategories(context, isDark)),
-              _anim(2, _buildSectionHeader(context, 'Features', isDark)),
-              _anim(3, _buildFeatureRow(context, isDark)),
-              _anim(4, _buildSectionHeader(context, 'Trending Now', isDark)),
-              _anim(5, _buildTrendingRow(context, isDark)),
-              const SizedBox(height: 110),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── SliverAppBar ──────────────────────────────────────────────────────────
-  Widget _buildSliverAppBar(BuildContext context, bool isDark) {
-    final bg = isDark ? AppColors.charcoal : AppColors.cream;
-    return SliverAppBar(
-      pinned: true,
-      backgroundColor: bg,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      title: Row(children: [
-        Container(
-          width: 34, height: 34,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.gold : AppColors.burgundy,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Text('PM', style: GoogleFonts.rufina(
-            color: isDark ? AppColors.charcoal : Colors.white,
-            fontSize: 13, fontWeight: FontWeight.bold,
-          )),
-        ),
-        const SizedBox(width: 10),
-        Text('Pyin Mal', style: GoogleFonts.rufina(
-          fontSize: 22, fontWeight: FontWeight.bold,
-          color: isDark ? AppColors.gold : AppColors.burgundy,
-        )),
-      ]),
-      actions: [
-        // Working theme toggle
-        ValueListenableBuilder<ThemeMode>(
-          valueListenable: themeNotifier,
-          builder: (_, mode, __) => IconButton(
-            tooltip: mode == ThemeMode.dark ? 'Light mode' : 'Dark mode',
-            icon: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: Icon(
-                mode == ThemeMode.dark ? Icons.wb_sunny_rounded : Icons.nightlight_round,
-                key: ValueKey(mode),
-                color: mode == ThemeMode.dark ? AppColors.gold : AppColors.inkGrey,
-                size: 22,
+        // Custom App Bar
+        SliverAppBar(
+          pinned: true,
+          backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: GestureDetector(
+              onTap: () => _showMenuBottomSheet(context, isDark),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.menu_rounded,
+                  color: isDark ? Colors.white : AppColors.inkBlack,
+                  size: 20,
+                ),
               ),
             ),
-            onPressed: toggleTheme,
+          ),
+          actions: [
+            // Search
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => _showSearchBottomSheet(context, isDark),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.search_rounded,
+                    color: isDark ? Colors.white : AppColors.inkBlack,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+            // Notification
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No new notifications')),
+                ),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.notifications_none_rounded,
+                    color: isDark ? Colors.white : AppColors.inkBlack,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+            // Theme Toggle
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ValueListenableBuilder<ThemeMode>(
+                valueListenable: themeNotifier,
+                builder: (_, mode, __) => GestureDetector(
+                  onTap: toggleTheme,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      mode == ThemeMode.dark ? Icons.wb_sunny_rounded : Icons.nightlight_round,
+                      color: isDark ? Colors.white : AppColors.inkBlack,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Profile Avatar
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                ),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.burgundy,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'H',
+                      style: GoogleFonts.rufina(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        // Main Content
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Greeting Section
+                _buildGreetingSection(isDark),
+                const SizedBox(height: 32),
+                
+                // Today's Outfit Suggestions
+                _buildOutfitSuggestionsCard(isDark, isMobile),
+                const SizedBox(height: 24),
+                
+                // Wardrobe Recommendations
+                _buildSectionLabel('Wardrobe recommendations', isDark),
+                const SizedBox(height: 16),
+                _buildWardrobeRecommendations(isDark, isMobile),
+                const SizedBox(height: 24),
+                
+                // AI Styling Tools
+                _buildSectionLabel('Your AI styling tools', isDark),
+                const SizedBox(height: 16),
+                _buildAIToolsSection(isDark),
+              ],
+            ),
           ),
         ),
-        IconButton(
-          icon: Icon(Icons.person_outline_rounded,
-            color: isDark ? AppColors.paleText : AppColors.inkGrey, size: 22),
-          onPressed: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const LoginScreen())),
-        ),
-        const SizedBox(width: 4),
       ],
     );
   }
 
-  // ── Hero Card ─────────────────────────────────────────────────────────────
-  Widget _buildHero(BuildContext context, bool isMobile, bool isDark) {
+  // ── Greeting Section ──────────────────────────────────────────────────────
+  Widget _buildGreetingSection(bool isDark) {
+    final now = DateTime.now();
+    final hour = now.hour;
+    String greeting;
+    if (hour < 12) {
+      greeting = 'good morning,';
+    } else if (hour < 17) {
+      greeting = 'good afternoon,';
+    } else {
+      greeting = 'good evening,';
+    }
+    
+    final days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    final months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    final dateStr = '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          greeting,
+          style: GoogleFonts.rufina(
+            fontSize: 18,
+            fontStyle: FontStyle.italic,
+            color: isDark ? AppColors.paleText : AppColors.inkGrey,
+            height: 1.2,
+          ),
+        ),
+        Text(
+          'Hein',
+          style: GoogleFonts.rufina(
+            fontSize: 42,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : AppColors.inkBlack,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          dateStr,
+          style: GoogleFonts.outfit(
+            fontSize: 14,
+            color: isDark ? AppColors.paleText : AppColors.inkGrey,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Section Label ─────────────────────────────────────────────────────────
+  Widget _buildSectionLabel(String title, bool isDark) {
+    return Text(
+      title,
+      style: GoogleFonts.rufina(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: isDark ? Colors.white : AppColors.inkBlack,
+      ),
+    );
+  }
+
+  // ── Outfit Suggestions Card ────────────────────────────────────────────────
+  Widget _buildOutfitSuggestionsCard(bool isDark, bool isMobile) {
     return Container(
-      height: isMobile ? 440 : 540,
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        image: const DecorationImage(
-          image: AssetImage('assets/images/Hero/index bg.jpg'),
+        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Today's outfit suggestions",
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Smart Casual',
+                    style: GoogleFonts.rufina(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppColors.inkBlack,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: isDark ? Colors.white : AppColors.inkBlack,
+                  size: 18,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Perfect for creative workspaces, weekend brunches, or urban exploring',
+            style: GoogleFonts.outfit(
+              fontSize: 14,
+              color: isDark ? AppColors.paleText : AppColors.inkGrey,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Clothing Thumbnails
+          Row(
+            children: [
+              _buildClothingThumbnail('assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg', isDark),
+              const SizedBox(width: 12),
+              _buildClothingThumbnail('assets/images/Male/Nrf/Tee/ABCD TEE.jpg', isDark),
+              const SizedBox(width: 12),
+              _buildClothingThumbnail('assets/images/Male/Set/outfit set from sian store/', isDark),
+              const SizedBox(width: 12),
+              _buildClothingThumbnail('assets/images/Female/dress.set/Luna/luna set1.jpg', isDark),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClothingThumbnail(String assetPath, bool isDark) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.asset(
+          assetPath,
           fit: BoxFit.cover,
+          errorBuilder: (c, e, s) => Icon(
+            Icons.image_outlined,
+            color: isDark ? AppColors.paleText : AppColors.inkGrey,
+            size: 24,
+          ),
         ),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              AppColors.charcoal.withOpacity(0.55),
-              AppColors.charcoal.withOpacity(0.92),
-            ],
-            stops: const [0.0, 0.5, 1.0],
+    );
+  }
+
+  // ── Wardrobe Recommendations ────────────────────────────────────────────────
+  Widget _buildWardrobeRecommendations(bool isDark, bool isMobile) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildWardrobeCard(
+            'Seasonal Additions',
+            'assets/images/Photo/summer collection.jpg',
+            '+3',
+            isDark,
+            true,
           ),
         ),
-        padding: const EdgeInsets.all(28),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildWardrobeCard(
+            'Footwear Suggestions',
+            'assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg',
+            '',
+            isDark,
+            false,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWardrobeCard(String title, String imagePath, String badge, bool isDark, bool isAccent) {
+    return Container(
+      height: 180,
+      decoration: BoxDecoration(
+        color: isAccent 
+            ? (isDark ? AppColors.burgundy.withOpacity(0.15) : AppColors.burgundy.withOpacity(0.08))
+            : (isDark ? AppColors.darkWarm : AppColors.creamCard),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withOpacity(isDark ? 0.25 : 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Background Image
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Opacity(
+                opacity: 0.3,
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (c, e, s) => Container(
+                    color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.rufina(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : AppColors.inkBlack,
+                      ),
+                    ),
+                    if (badge.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          badge,
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : AppColors.inkBlack,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                // Small thumbnails
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkBorder : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.shopping_bag_outlined,
+                        color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkBorder : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.checkroom,
+                        color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                        size: 18,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Menu Bottom Sheet ───────────────────────────────────────────────────────
+  void _showMenuBottomSheet(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.charcoal : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-              decoration: BoxDecoration(
-                color: AppColors.gold.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text('AI-Powered Style',
-                style: GoogleFonts.outfit(
-                  color: AppColors.charcoal, fontSize: 11,
-                  fontWeight: FontWeight.bold, letterSpacing: 0.8,
-                )),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Discover Your\nPerfect Style',
-              style: GoogleFonts.rufina(
-                fontSize: isMobile ? 38 : 50,
-                fontWeight: FontWeight.bold,
-                color: Colors.white, height: 1.1,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'AI-powered fashion & grooming, tailored for you.',
-              style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
-            ),
             const SizedBox(height: 20),
-            // CTA buttons
-            Wrap(spacing: 12, runSpacing: 12, children: [
-              _heroButton(
-                context, Icons.content_cut_rounded, 'Hair Try-On',
-                () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen())),
-                isDark,
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkBorder : AppColors.inkGrey.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
               ),
-              _heroButton(
-                context, Icons.checkroom_outlined, 'Model Preview',
-                () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelPreviewScreen())),
-                isDark,
-              ),
-            ]),
+            ),
+            const SizedBox(height: 24),
+            _buildMenuItem(Icons.person_rounded, 'Profile', () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+            }, isDark),
+            _buildMenuItem(Icons.settings_rounded, 'Settings', () => Navigator.pop(context), isDark),
+            _buildMenuItem(Icons.info_outline_rounded, 'About Pyin Mal', () => Navigator.pop(context), isDark),
+            const SizedBox(height: 32),
           ],
         ),
       ),
     );
   }
 
-  Widget _heroButton(BuildContext context, IconData icon, String label,
-      VoidCallback onTap, bool isDark) {
+  Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap, bool isDark) {
+    return ListTile(
+      leading: Icon(icon, color: isDark ? Colors.white : AppColors.inkBlack),
+      title: Text(
+        title,
+        style: GoogleFonts.outfit(
+          fontSize: 16,
+          color: isDark ? Colors.white : AppColors.inkBlack,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+
+  // ── Search Bottom Sheet ─────────────────────────────────────────────────────
+  void _showSearchBottomSheet(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.charcoal : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            Text(
+              'Search',
+              style: GoogleFonts.rufina(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : AppColors.inkBlack,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search products, styles...',
+                  hintStyle: GoogleFonts.outfit(
+                    color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                    fontSize: 14,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+                style: GoogleFonts.outfit(
+                  color: isDark ? Colors.white : AppColors.inkBlack,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Search coming soon',
+              style: GoogleFonts.outfit(
+                fontSize: 13,
+                color: isDark ? AppColors.paleText : AppColors.inkGrey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── AI Styling Tools Section ─────────────────────────────────────────────────
+  Widget _buildAIToolsSection(bool isDark) {
+    return Column(
+      children: [
+        _buildAIToolCard(
+          'Model Try-On',
+          'Preview outfits on your virtual avatar',
+          Icons.view_in_ar_rounded,
+          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelPreviewScreen())),
+          isDark,
+        ),
+        const SizedBox(height: 12),
+        _buildAIToolCard(
+          'Haircut Recommendation',
+          'AI-powered hairstyle suggestions',
+          Icons.face_retouching_natural_rounded,
+          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen())),
+          isDark,
+        ),
+        const SizedBox(height: 12),
+        _buildAIToolCard(
+          'Shop Outfits',
+          'Browse curated fashion collections',
+          Icons.store_rounded,
+          () => widget.onTabRequested?.call(1),
+          isDark,
+        ),
+        const SizedBox(height: 12),
+        _buildAIToolCard(
+          'Saved Looks',
+          'View your favorite outfits',
+          Icons.favorite_rounded,
+          () => widget.onTabRequested?.call(3),
+          isDark,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAIToolCard(String title, String subtitle, IconData icon, VoidCallback onTap, bool isDark) {
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.gold.withOpacity(0.18),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.gold.withOpacity(0.55), width: 1),
+          color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.charcoal.withOpacity(isDark ? 0.2 : 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: AppColors.goldLight, size: 18),
-          const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.outfit(
-            color: AppColors.goldLight, fontSize: 13, fontWeight: FontWeight.bold,
-          )),
-        ]),
-      ),
-    );
-  }
-
-  // ── Category Pills ────────────────────────────────────────────────────────
-  Widget _buildCategories(BuildContext context, bool isDark) {
-    final accent = isDark ? AppColors.gold : AppColors.burgundy;
-    return Padding(
-      padding: const EdgeInsets.only(top: 20),
-      child: SizedBox(
-        height: 42,
-        child: ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          scrollDirection: Axis.horizontal,
-          itemCount: _categories.length,
-          itemBuilder: (_, i) {
-            final sel = _selectedCategory == i;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedCategory = i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 230),
-                margin: const EdgeInsets.only(right: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 22),
-                decoration: BoxDecoration(
-                  color: sel ? accent : (isDark ? AppColors.darkWarm : AppColors.creamAlt),
-                  borderRadius: BorderRadius.circular(21),
-                  border: Border.all(
-                    color: sel ? accent : Colors.transparent,
-                    width: 1.5,
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: accent.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                icon,
+                color: accent,
+                size: 26,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.rufina(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppColors.inkBlack,
+                    ),
                   ),
-                ),
-                child: Center(
-                  child: Text(_categories[i],
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
                     style: GoogleFonts.outfit(
                       fontSize: 13,
-                      fontWeight: sel ? FontWeight.bold : FontWeight.normal,
-                      color: sel ? Colors.white : (isDark ? AppColors.paleText : AppColors.inkGrey),
-                    )),
-                ),
+                      color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                    ),
+                  ),
+                ],
               ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  // ── Section Header ────────────────────────────────────────────────────────
-  Widget _buildSectionHeader(BuildContext context, String title, bool isDark) {
-    final accent = isDark ? AppColors.gold : AppColors.burgundy;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: GoogleFonts.rufina(
-            fontSize: 24, fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : AppColors.inkBlack,
-          )),
-          Text('See all', style: GoogleFonts.outfit(
-            fontSize: 13, color: accent, fontWeight: FontWeight.w600,
-          )),
-        ],
-      ),
-    );
-  }
-
-  // ── Feature Cards Row ─────────────────────────────────────────────────────
-  Widget _buildFeatureRow(BuildContext context, bool isDark) {
-    final features = [
-      (title: 'Hair Analysis',   img: 'assets/images/Hero/ai hair recommendation.jpg', icon: Icons.face_retouching_natural_rounded,  screen: () => const HaircutScreen()),
-      (title: 'Outfit Preview',  img: 'assets/images/Hero/index.jpg',                  icon: Icons.checkroom_rounded,                 screen: () => const ModelPreviewScreen()),
-      (title: 'Style Studio',    img: 'assets/images/Hero/pyin mal studio1.jpg',       icon: Icons.auto_awesome_rounded,              screen: null),
-    ];
-
-    return SizedBox(
-      height: 210,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: features.length,
-        itemBuilder: (_, i) {
-          final f = features[i];
-          return GestureDetector(
-            onTap: f.screen != null
-                ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => f.screen!()))
-                : null,
-            child: Container(
-              width: 165,
-              margin: const EdgeInsets.only(right: 14),
+            ),
+            Container(
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
-                image: DecorationImage(
-                  image: AssetImage(f.img),
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    AppColors.charcoal.withOpacity(0.45), BlendMode.darken,
-                  ),
-                ),
+                color: accent.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.gold.withOpacity(0.4)),
-                      ),
-                      child: Icon(f.icon, color: AppColors.goldLight, size: 20),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(f.title, style: GoogleFonts.rufina(
-                      color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15,
-                    )),
-                  ],
-                ),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: accent,
+                size: 16,
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ── Trending Cards Row ────────────────────────────────────────────────────
-  Widget _buildTrendingRow(BuildContext context, bool isDark) {
-    final cardBg = isDark ? AppColors.darkWarm : AppColors.creamCard;
-    final accent = isDark ? AppColors.gold : AppColors.burgundy;
-    final items = [
-      (name: 'Summer Collection', img: 'assets/images/Photo/summer collection.jpg'),
-      (name: 'Trending Now',      img: 'assets/images/Photo/Trendy now1.jpg'),
-      (name: 'Featured Styles',   img: 'assets/images/Photo/featured style.jpg'),
-    ];
-
-    return SizedBox(
-      height: 290,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: items.length,
-        itemBuilder: (_, i) {
-          final item = items[i];
-          return Container(
-            width: 195,
-            margin: const EdgeInsets.only(right: 16),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.charcoal.withOpacity(isDark ? 0.35 : 0.08),
-                  blurRadius: 14, offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Image.asset(
-                    item.img, fit: BoxFit.cover, width: double.infinity,
-                    errorBuilder: (c, e, s) => Container(
-                      color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
-                      child: const Icon(Icons.image, color: Colors.grey, size: 40),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(item.name, style: GoogleFonts.rufina(
-                      fontWeight: FontWeight.bold, fontSize: 15,
-                      color: isDark ? Colors.white : AppColors.inkBlack,
-                    )),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('View →', style: GoogleFonts.outfit(
-                          color: accent, fontSize: 13, fontWeight: FontWeight.bold,
-                        )),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: accent.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(Icons.favorite_outline_rounded,
-                            color: accent, size: 16),
-                        ),
-                      ],
-                    ),
-                  ]),
-                ),
-              ],
-            ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/model_preview_screen.dart';
+import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 
 class _Product {
   final String name;
@@ -10,7 +11,8 @@ class _Product {
   final String image;
   final String category;
   final String gender;
-  _Product(this.name, this.price, this.image, this.category, this.gender);
+  final String brand;
+  _Product(this.name, this.price, this.image, this.category, this.gender, {this.brand = 'NRF'});
 }
 
 class ShopScreen extends StatefulWidget {
@@ -24,25 +26,34 @@ class _ShopScreenState extends State<ShopScreen> {
   // Track favorite items locally
   final Set<String> _favorites = {};
   String _selectedCategory = 'All';
+  final TextEditingController _searchController = TextEditingController();
 
   final List<_Product> _fashionProducts = [
-    _Product('NRF Deathwish Hoodie', '45,000 MMK', 'assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg', 'Hoodie', 'Male'),
-    _Product('AJOHN V2 Hoodie', '38,000 MMK', 'assets/images/Male/Nrf/Hoodie/AJOHN V2 HOODIE.jpg', 'Hoodie', 'Male'),
-    _Product('ABCD 2XL Zip Up Hoodie', '35,000 MMK', 'assets/images/Male/Nrf/Hoodie/ABCD 2XL ZIP UP HOODIE0.jpg', 'Hoodie', 'Male'),
-    _Product('V1 Introduction Hoodie', '32,000 MMK', 'assets/images/Male/Nrf/Hoodie/V1 INTRODUCTION Hoodie .jpg', 'Hoodie', 'Male'),
-    _Product('ABCD Tee', '15,000 MMK', 'assets/images/Male/Nrf/Tee/ABCD TEE.jpg', 'T-Shirt', 'Male'),
-    _Product('ACID T-Shirt', '18,000 MMK', 'assets/images/Male/Nrf/Tee/ACID TSHIRT 0.jpg', 'T-Shirt', 'Male'),
-    _Product('NRFC Jersey', '22,000 MMK', 'assets/images/Male/Nrf/Tee/NRFC Jersey0.jpg', 'T-Shirt', 'Male'),
-    _Product('LAPSES Tee Oatmeal', '19,000 MMK', 'assets/images/Male/Nrf/Tee/LAPSES TSHIRT OATMEAL0.jpg', 'T-Shirt', 'Male'),
-    _Product('Luna Set 1', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set1.jpg', 'Set', 'Female'),
-    _Product('Luna Set 2', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set2.jpg', 'Set', 'Female'),
-    _Product('Luna Set 3', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set3.jpg', 'Set', 'Female'),
-    _Product('Luna Set 4', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set4.jpg', 'Set', 'Female'),
+    _Product('NRF Deathwish Hoodie', '45,000 MMK', 'assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg', 'Hoodie', 'Male', brand: 'NRF'),
+    _Product('AJOHN V2 Hoodie', '38,000 MMK', 'assets/images/Male/Nrf/Hoodie/AJOHN V2 HOODIE.jpg', 'Hoodie', 'Male', brand: 'AJOHN'),
+    _Product('ABCD 2XL Zip Up Hoodie', '35,000 MMK', 'assets/images/Male/Nrf/Hoodie/ABCD 2XL ZIP UP HOODIE0.jpg', 'Hoodie', 'Male', brand: 'ABCD'),
+    _Product('V1 Introduction Hoodie', '32,000 MMK', 'assets/images/Male/Nrf/Hoodie/V1 INTRODUCTION Hoodie .jpg', 'Hoodie', 'Male', brand: 'NRF'),
+    _Product('ABCD Tee', '15,000 MMK', 'assets/images/Male/Nrf/Tee/ABCD TEE.jpg', 'T-Shirt', 'Male', brand: 'ABCD'),
+    _Product('ACID T-Shirt', '18,000 MMK', 'assets/images/Male/Nrf/Tee/ACID TSHIRT 0.jpg', 'T-Shirt', 'Male', brand: 'NRF'),
+    _Product('NRFC Jersey', '22,000 MMK', 'assets/images/Male/Nrf/Tee/NRFC Jersey0.jpg', 'T-Shirt', 'Male', brand: 'NRF'),
+    _Product('LAPSES Tee Oatmeal', '19,000 MMK', 'assets/images/Male/Nrf/Tee/LAPSES TSHIRT OATMEAL0.jpg', 'T-Shirt', 'Male', brand: 'LAPSES'),
+    _Product('Luna Set 1', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set1.jpg', 'Set', 'Female', brand: 'Luna'),
+    _Product('Luna Set 2', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set2.jpg', 'Set', 'Female', brand: 'Luna'),
+    _Product('Luna Set 3', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set3.jpg', 'Set', 'Female', brand: 'Luna'),
+    _Product('Luna Set 4', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set4.jpg', 'Set', 'Female', brand: 'Luna'),
   ];
+
+  final List<String> _categories = ['All', 'Shoes', 'T-Shirts', 'Pants', 'Hoodie', 'Sets', 'Burmese Wear'];
 
   List<_Product> get _filtered {
     if (_selectedCategory == 'All') return _fashionProducts;
     return _fashionProducts.where((p) => p.category == _selectedCategory || p.gender == _selectedCategory).toList();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -55,15 +66,11 @@ class _ShopScreenState extends State<ShopScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
+        backgroundColor: isDark ? AppColors.charcoal : Colors.white,
         appBar: AppBar(
-          backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
+          backgroundColor: isDark ? AppColors.charcoal : Colors.white,
           elevation: 0,
           scrolledUnderElevation: 0,
-          title: Text('Shop', style: GoogleFonts.rufina(
-            fontWeight: FontWeight.bold,
-            color: accent,
-          )),
           bottom: TabBar(
             indicatorColor: accent,
             labelColor: accent,
@@ -74,158 +81,48 @@ class _ShopScreenState extends State<ShopScreen> {
               Tab(text: 'Barber Shop'),
             ],
           ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.search, color: accent),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Search functionality available soon')),
-                );
-              },
-            ),
-            IconButton(
-              icon: Icon(Icons.shopping_bag_outlined, color: accent),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Your shopping bag is currently empty')),
-                );
-              },
-            ),
-          ],
         ),
         body: TabBarView(
           children: [
             // Fashion Tab
             SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Premium Banner
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      width: double.infinity,
-                      height: 180,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        gradient: const LinearGradient(
-                          colors: [AppColors.burgundy, Color(0xFF1C1A1A)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        image: const DecorationImage(
-                          image: AssetImage('assets/images/Hero/index.jpg'),
-                          fit: BoxFit.cover,
-                          opacity: 0.4,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Curated pieces\nfor your style',
-                              style: GoogleFonts.rufina(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                height: 1.1,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Explore outfits that match your personality.',
-                              style: GoogleFonts.outfit(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  // Header Section
+                  _buildHeaderSection(isDark),
                   const SizedBox(height: 24),
                   
-                  // Filter Chips
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: ['All', 'Male', 'Female', 'Hoodie', 'T-Shirt', 'Set'].map((cat) {
-                          final isSelected = _selectedCategory == cat;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: Text(cat, style: GoogleFonts.outfit(
-                                color: isSelected ? (isDark ? AppColors.charcoal : Colors.white) : (isDark ? AppColors.paleText : AppColors.inkGrey),
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              )),
-                              selected: isSelected,
-                              onSelected: (_) => setState(() => _selectedCategory = cat),
-                              selectedColor: accent,
-                              checkmarkColor: isDark ? AppColors.charcoal : Colors.white,
-                              backgroundColor: isDark ? AppColors.darkWarm : AppColors.creamAlt,
-                              shape: const StadiumBorder(),
-                              side: BorderSide.none,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
+                  // Search Bar with Filter
+                  _buildSearchBar(isDark, accent),
                   const SizedBox(height: 24),
                   
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Fashion Products',
-                          style: GoogleFonts.rufina(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : AppColors.inkBlack,
-                          ),
-                        ),
-                        Text(
-                          '${_filtered.length} Items',
-                          style: GoogleFonts.outfit(color: Colors.grey, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  // Category Chips
+                  _buildCategoryChips(isDark, accent),
+                  const SizedBox(height: 24),
                   
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        childAspectRatio: 0.62,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
-                      itemCount: _filtered.length,
-                      itemBuilder: (context, index) {
-                        final product = _filtered[index];
-                        return _buildProductCard(context, product, isDark);
-                      },
+                  // Product Grid
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 0.68,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
                     ),
+                    itemCount: _filtered.length,
+                    itemBuilder: (context, index) {
+                      final product = _filtered[index];
+                      return _buildProductCard(context, product, isDark, accent);
+                    },
                   ),
                 ],
               ),
             ),
 
-            // Barber Shop Tab
+            // Barber Shop Tab (keep existing design)
             SingleChildScrollView(
               child: Column(
                 children: [
@@ -274,26 +171,167 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 
-  Widget _buildProductCard(BuildContext context, _Product product, bool isDark) {
-    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+  // ── Header Section ─────────────────────────────────────────────────────
+  Widget _buildHeaderSection(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Put together your',
+          style: GoogleFonts.rufina(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : AppColors.inkBlack,
+            height: 1.2,
+          ),
+        ),
+        Text(
+          'Perfect Look',
+          style: GoogleFonts.rufina(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : AppColors.inkBlack,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Discover pieces that match your style and body preview.',
+          style: GoogleFonts.outfit(
+            fontSize: 14,
+            color: isDark ? AppColors.paleText : AppColors.inkGrey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Search Bar with Filter ─────────────────────────────────────────────
+  Widget _buildSearchBar(bool isDark, Color accent) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 52,
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search products...',
+                hintStyle: GoogleFonts.outfit(
+                  color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                  fontSize: 14,
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+              style: GoogleFonts.outfit(
+                color: isDark ? Colors.white : AppColors.inkBlack,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        GestureDetector(
+          onTap: () => _showFilterBottomSheet(isDark, accent),
+          child: Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: accent,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.tune_rounded,
+              color: isDark ? AppColors.charcoal : Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Category Chips ────────────────────────────────────────────────────
+  Widget _buildCategoryChips(bool isDark, Color accent) {
+    return SizedBox(
+      height: 44,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _categories.length,
+        itemBuilder: (context, index) {
+          final category = _categories[index];
+          final isSelected = _selectedCategory == category;
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedCategory = category),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? accent : (isDark ? AppColors.darkWarm : AppColors.creamAlt),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: isSelected ? accent : Colors.transparent,
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  category,
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? (isDark ? AppColors.charcoal : Colors.white) : (isDark ? AppColors.paleText : AppColors.inkGrey),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ── Product Card ───────────────────────────────────────────────────────
+  Widget _buildProductCard(BuildContext context, _Product product, bool isDark, Color accent) {
     final isFav = _favorites.contains(product.name);
     return GestureDetector(
-      onTap: () => _showProductDetails(context, product, isDark, accent),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProductDetailScreen(
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            brand: product.brand,
+            category: product.category,
+          ),
+        ),
+      ),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+          color: isDark ? AppColors.darkWarm : Colors.white,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: AppColors.charcoal.withValues(alpha: isDark ? 0.3 : 0.08),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            )
+              color: AppColors.charcoal.withOpacity(isDark ? 0.2 : 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Product Image
             Expanded(
               child: Stack(
                 children: [
@@ -310,6 +348,7 @@ class _ShopScreenState extends State<ShopScreen> {
                       ),
                     ),
                   ),
+                  // Favorite Button
                   Positioned(
                     top: 12,
                     right: 12,
@@ -324,9 +363,10 @@ class _ShopScreenState extends State<ShopScreen> {
                         });
                       },
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withOpacity(0.9),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -337,33 +377,24 @@ class _ShopScreenState extends State<ShopScreen> {
                       ),
                     ),
                   ),
-                  Positioned(
-                    bottom: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${product.gender} • ${product.category}',
-                        style: GoogleFonts.outfit(
-                          color: isDark ? AppColors.charcoal : Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
+            // Product Info
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    product.brand,
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   Text(
                     product.name,
                     style: GoogleFonts.outfit(
@@ -371,10 +402,10 @@ class _ShopScreenState extends State<ShopScreen> {
                       fontSize: 14,
                       color: isDark ? Colors.white : AppColors.inkBlack,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -383,28 +414,23 @@ class _ShopScreenState extends State<ShopScreen> {
                         style: GoogleFonts.outfit(
                           color: accent,
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 15,
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.all(6),
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
-                          color: accent.withValues(alpha: 0.1),
+                          color: accent.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(Icons.shopping_bag_outlined, size: 18, color: accent),
+                        child: Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: accent,
+                          size: 14,
+                        ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    onPressed: () => _showProductDetails(context, product, isDark, accent),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: accent),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    ),
-                    child: Text('View Details', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: accent)),
                   ),
                 ],
               ),
@@ -415,107 +441,100 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 
-  void _showProductDetails(BuildContext context, _Product product, bool isDark, Color accent) {
+  // ── Filter Bottom Sheet ────────────────────────────────────────────────
+  void _showFilterBottomSheet(bool isDark, Color accent) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        padding: const EdgeInsets.all(24),
+        height: MediaQuery.of(context).size.height * 0.7,
         decoration: BoxDecoration(
-          color: isDark ? AppColors.charcoal : AppColors.cream,
+          color: isDark ? AppColors.charcoal : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Handle
             Center(
-              child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(product.image, width: 100, height: 100, fit: BoxFit.cover, errorBuilder: (c, e, s) => Container(width: 100, height: 100, color: Colors.grey)),
+              child: Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkBorder : AppColors.inkGrey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(product.name, style: GoogleFonts.rufina(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack)),
-                      const SizedBox(height: 8),
-                      Text(product.price, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: accent)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Text('Available Colors', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack)),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _buildColorCircle(Colors.black),
-                _buildColorCircle(Colors.white),
-                _buildColorCircle(AppColors.burgundy),
-                _buildColorCircle(AppColors.gold),
-                _buildColorCircle(Colors.grey),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Text('Related Items', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack)),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 100,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: _fashionProducts.take(4).map((p) => Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(p.image, width: 80, height: 100, fit: BoxFit.cover, errorBuilder: (c, e, s) => Container(width: 80, height: 100, color: Colors.grey)),
-                  ),
-                )).toList(),
               ),
             ),
-            const Spacer(),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // In a real app we would set the selected item globally and go to ModelPreviewScreen
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelPreviewScreen()));
-                    },
-                    icon: Icon(Icons.person_add_alt_1, color: accent),
-                    label: Text('Try on Model', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: accent)),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: accent),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            const SizedBox(height: 24),
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Filters',
+                    style: GoogleFonts.rufina(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppColors.inkBlack,
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.shopping_bag, color: isDark ? AppColors.charcoal : Colors.white),
-                    label: Text('Add to Bag', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accent,
-                      foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: isDark ? Colors.white : AppColors.inkBlack,
+                      size: 28,
                     ),
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Style
+                    _buildFilterSection('Style', ['Basic', 'Classic', 'Streetwear', 'Formal', 'Traditional'], isDark, accent),
+                    const SizedBox(height: 24),
+                    // Event
+                    _buildFilterSection('Event', ['Daily', 'University', 'Work', 'Party'], isDark, accent),
+                    const SizedBox(height: 24),
+                    // Season
+                    _buildFilterSection('Season', ['Summer', 'Rainy', 'Winter'], isDark, accent),
+                    const SizedBox(height: 24),
+                    // Weather
+                    _buildFilterSection('Weather', ['Sunny', 'Cloudy', 'Rainy'], isDark, accent),
+                    const SizedBox(height: 32),
+                  ],
                 ),
-              ],
+              ),
+            ),
+            // Apply Button
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: Text(
+                    'Apply Filters',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -523,16 +542,43 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 
-  Widget _buildColorCircle(Color color) {
-    return Container(
-      margin: const EdgeInsets.only(right: 12),
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.grey.withOpacity(0.3), width: 1),
-      ),
+  Widget _buildFilterSection(String title, List<String> options, bool isDark, Color accent) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.outfit(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : AppColors.inkBlack,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: options.map((option) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.inkGrey.withOpacity(0.2),
+                ),
+              ),
+              child: Text(
+                option,
+                style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  color: isDark ? Colors.white : AppColors.inkBlack,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 

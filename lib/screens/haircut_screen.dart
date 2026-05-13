@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
+import 'package:pyin_mal_app/screens/ar_hair_filter_screen.dart';
 
 class HaircutScreen extends StatefulWidget {
   const HaircutScreen({super.key});
@@ -110,9 +111,14 @@ class _HaircutScreenState extends State<HaircutScreen> {
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ARHairFilterScreen()),
+              );
+            },
             icon: const Icon(Icons.face_retouching_natural),
-            label: const Text('Analyze My Face Shape'),
+            label: const Text('Try AR Hair Filter'),
             style: ElevatedButton.styleFrom(
               backgroundColor: accent,
               foregroundColor: isDark ? AppColors.charcoal : Colors.white,

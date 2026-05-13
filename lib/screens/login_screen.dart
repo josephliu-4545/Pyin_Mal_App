@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
+import 'package:pyin_mal_app/screens/onboarding_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -324,6 +325,25 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: Text('SIGN IN', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                );
+              },
+              icon: Icon(Icons.auto_awesome_rounded, size: 20, color: accent),
+              label: Text('Start Styling', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: accent)),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: accent),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+            ),
           )
         ],
       ),
@@ -367,6 +387,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 elevation: 0,
               ),
               child: Text('SIGN UP', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                );
+              },
+              icon: Icon(Icons.auto_awesome_rounded, size: 20, color: accent),
+              label: Text('Start Styling', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: accent)),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: accent),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
             ),
           )
         ],
