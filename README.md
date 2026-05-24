@@ -2,6 +2,8 @@
 
 > A Flutter mobile application migrated from a web-based fashion and grooming platform. Built for a design competition showcasing AI-powered styling, virtual outfit preview, and hairstyle recommendations.
 
+read me
+
 ---
 
 ## ✨ Features
