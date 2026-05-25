@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
@@ -12,7 +11,14 @@ class _Product {
   final String category;
   final String gender;
   final String brand;
-  _Product(this.name, this.price, this.image, this.category, this.gender, {this.brand = 'NRF'});
+  _Product(
+    this.name,
+    this.price,
+    this.image,
+    this.category,
+    this.gender, {
+    this.brand = 'NRF',
+  });
 }
 
 class ShopScreen extends StatefulWidget {
@@ -29,25 +35,122 @@ class _ShopScreenState extends State<ShopScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   final List<_Product> _fashionProducts = [
-    _Product('NRF Deathwish Hoodie', '45,000 MMK', 'assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg', 'Hoodie', 'Male', brand: 'NRF'),
-    _Product('AJOHN V2 Hoodie', '38,000 MMK', 'assets/images/Male/Nrf/Hoodie/AJOHN V2 HOODIE.jpg', 'Hoodie', 'Male', brand: 'AJOHN'),
-    _Product('ABCD 2XL Zip Up Hoodie', '35,000 MMK', 'assets/images/Male/Nrf/Hoodie/ABCD 2XL ZIP UP HOODIE0.jpg', 'Hoodie', 'Male', brand: 'ABCD'),
-    _Product('V1 Introduction Hoodie', '32,000 MMK', 'assets/images/Male/Nrf/Hoodie/V1 INTRODUCTION Hoodie .jpg', 'Hoodie', 'Male', brand: 'NRF'),
-    _Product('ABCD Tee', '15,000 MMK', 'assets/images/Male/Nrf/Tee/ABCD TEE.jpg', 'T-Shirt', 'Male', brand: 'ABCD'),
-    _Product('ACID T-Shirt', '18,000 MMK', 'assets/images/Male/Nrf/Tee/ACID TSHIRT 0.jpg', 'T-Shirt', 'Male', brand: 'NRF'),
-    _Product('NRFC Jersey', '22,000 MMK', 'assets/images/Male/Nrf/Tee/NRFC Jersey0.jpg', 'T-Shirt', 'Male', brand: 'NRF'),
-    _Product('LAPSES Tee Oatmeal', '19,000 MMK', 'assets/images/Male/Nrf/Tee/LAPSES TSHIRT OATMEAL0.jpg', 'T-Shirt', 'Male', brand: 'LAPSES'),
-    _Product('Luna Set 1', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set1.jpg', 'Set', 'Female', brand: 'Luna'),
-    _Product('Luna Set 2', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set2.jpg', 'Set', 'Female', brand: 'Luna'),
-    _Product('Luna Set 3', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set3.jpg', 'Set', 'Female', brand: 'Luna'),
-    _Product('Luna Set 4', '55,000 MMK', 'assets/images/Female/dress.set/Luna/luna set4.jpg', 'Set', 'Female', brand: 'Luna'),
+    _Product(
+      'NRF Deathwish Hoodie',
+      '45,000 MMK',
+      'assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg',
+      'Hoodie',
+      'Male',
+      brand: 'NRF',
+    ),
+    _Product(
+      'AJOHN V2 Hoodie',
+      '38,000 MMK',
+      'assets/images/Male/Nrf/Hoodie/AJOHN V2 HOODIE.jpg',
+      'Hoodie',
+      'Male',
+      brand: 'AJOHN',
+    ),
+    _Product(
+      'ABCD 2XL Zip Up Hoodie',
+      '35,000 MMK',
+      'assets/images/Male/Nrf/Hoodie/ABCD 2XL ZIP UP HOODIE0.jpg',
+      'Hoodie',
+      'Male',
+      brand: 'ABCD',
+    ),
+    _Product(
+      'V1 Introduction Hoodie',
+      '32,000 MMK',
+      'assets/images/Male/Nrf/Hoodie/V1 INTRODUCTION Hoodie .jpg',
+      'Hoodie',
+      'Male',
+      brand: 'NRF',
+    ),
+    _Product(
+      'ABCD Tee',
+      '15,000 MMK',
+      'assets/images/Male/Nrf/Tee/ABCD TEE.jpg',
+      'T-Shirt',
+      'Male',
+      brand: 'ABCD',
+    ),
+    _Product(
+      'ACID T-Shirt',
+      '18,000 MMK',
+      'assets/images/Male/Nrf/Tee/ACID TSHIRT 0.jpg',
+      'T-Shirt',
+      'Male',
+      brand: 'NRF',
+    ),
+    _Product(
+      'NRFC Jersey',
+      '22,000 MMK',
+      'assets/images/Male/Nrf/Tee/NRFC Jersey0.jpg',
+      'T-Shirt',
+      'Male',
+      brand: 'NRF',
+    ),
+    _Product(
+      'LAPSES Tee Oatmeal',
+      '19,000 MMK',
+      'assets/images/Male/Nrf/Tee/LAPSES TSHIRT OATMEAL0.jpg',
+      'T-Shirt',
+      'Male',
+      brand: 'LAPSES',
+    ),
+    _Product(
+      'Luna Set 1',
+      '55,000 MMK',
+      'assets/images/Female/dress.set/Luna/luna set1.jpg',
+      'Set',
+      'Female',
+      brand: 'Luna',
+    ),
+    _Product(
+      'Luna Set 2',
+      '55,000 MMK',
+      'assets/images/Female/dress.set/Luna/luna set2.jpg',
+      'Set',
+      'Female',
+      brand: 'Luna',
+    ),
+    _Product(
+      'Luna Set 3',
+      '55,000 MMK',
+      'assets/images/Female/dress.set/Luna/luna set3.jpg',
+      'Set',
+      'Female',
+      brand: 'Luna',
+    ),
+    _Product(
+      'Luna Set 4',
+      '55,000 MMK',
+      'assets/images/Female/dress.set/Luna/luna set4.jpg',
+      'Set',
+      'Female',
+      brand: 'Luna',
+    ),
   ];
 
-  final List<String> _categories = ['All', 'Shoes', 'T-Shirts', 'Pants', 'Hoodie', 'Sets', 'Burmese Wear'];
+  final List<String> _categories = [
+    'All',
+    'Shoes',
+    'T-Shirts',
+    'Pants',
+    'Hoodie',
+    'Sets',
+    'Burmese Wear',
+  ];
 
   List<_Product> get _filtered {
     if (_selectedCategory == 'All') return _fashionProducts;
-    return _fashionProducts.where((p) => p.category == _selectedCategory || p.gender == _selectedCategory).toList();
+    return _fashionProducts
+        .where(
+          (p) =>
+              p.category == _selectedCategory || p.gender == _selectedCategory,
+        )
+        .toList();
   }
 
   @override
@@ -60,7 +163,9 @@ class _ShopScreenState extends State<ShopScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = screenWidth >= 1024 ? 4 : (screenWidth >= 640 ? 3 : 2);
+    final crossAxisCount = screenWidth >= 1024
+        ? 4
+        : (screenWidth >= 640 ? 3 : 2);
     final accent = isDark ? AppColors.gold : AppColors.burgundy;
 
     return DefaultTabController(
@@ -74,7 +179,9 @@ class _ShopScreenState extends State<ShopScreen> {
           bottom: TabBar(
             indicatorColor: accent,
             labelColor: accent,
-            unselectedLabelColor: isDark ? AppColors.paleText : AppColors.inkGrey,
+            unselectedLabelColor: isDark
+                ? AppColors.paleText
+                : AppColors.inkGrey,
             labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
             tabs: const [
               Tab(text: 'Fashion'),
@@ -93,15 +200,15 @@ class _ShopScreenState extends State<ShopScreen> {
                   // Header Section
                   _buildHeaderSection(isDark),
                   const SizedBox(height: 24),
-                  
+
                   // Search Bar with Filter
                   _buildSearchBar(isDark, accent),
                   const SizedBox(height: 24),
-                  
+
                   // Category Chips
                   _buildCategoryChips(isDark, accent),
                   const SizedBox(height: 24),
-                  
+
                   // Product Grid
                   GridView.builder(
                     shrinkWrap: true,
@@ -115,7 +222,12 @@ class _ShopScreenState extends State<ShopScreen> {
                     itemCount: _filtered.length,
                     itemBuilder: (context, index) {
                       final product = _filtered[index];
-                      return _buildProductCard(context, product, isDark, accent);
+                      return _buildProductCard(
+                        context,
+                        product,
+                        isDark,
+                        accent,
+                      );
                     },
                   ),
                 ],
@@ -135,17 +247,38 @@ class _ShopScreenState extends State<ShopScreen> {
                       image: const DecorationImage(
                         image: AssetImage('assets/images/Hero/baber.jpg'),
                         fit: BoxFit.cover,
-                        colorFilter: ColorFilter.mode(Colors.black54, BlendMode.darken),
+                        colorFilter: ColorFilter.mode(
+                          Colors.black54,
+                          BlendMode.darken,
+                        ),
                       ),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('BOOK YOUR STYLE', style: GoogleFonts.outfit(color: AppColors.gold, letterSpacing: 3, fontSize: 12, fontWeight: FontWeight.bold)),
+                        Text(
+                          'BOOK YOUR STYLE',
+                          style: GoogleFonts.outfit(
+                            color: AppColors.gold,
+                            letterSpacing: 3,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 8),
-                        Text('Select a Barber Shop', style: GoogleFonts.rufina(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Select a Barber Shop',
+                          style: GoogleFonts.rufina(
+                            fontSize: 32,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 8),
-                        Text('Professional grooming, curated for you', style: GoogleFonts.outfit(color: Colors.white70)),
+                        Text(
+                          'Professional grooming, curated for you',
+                          style: GoogleFonts.outfit(color: Colors.white70),
+                        ),
                       ],
                     ),
                   ),
@@ -153,11 +286,47 @@ class _ShopScreenState extends State<ShopScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Column(
                       children: [
-                        _buildBarberCard(context, 'Yangon Classic Barber', '4.8', '95', 'Bogyoke Market, Yangon', ['Classic Haircut — 8,000 MMK', 'Fade Cut — 12,000 MMK', 'Beard Trim — 5,000 MMK'], isDark),
+                        _buildBarberCard(
+                          context,
+                          'Yangon Classic Barber',
+                          '4.8',
+                          '95',
+                          'Bogyoke Market, Yangon',
+                          [
+                            'Classic Haircut — 8,000 MMK',
+                            'Fade Cut — 12,000 MMK',
+                            'Beard Trim — 5,000 MMK',
+                          ],
+                          isDark,
+                        ),
                         const SizedBox(height: 16),
-                        _buildBarberCard(context, 'Mandalay Heritage Salon', '4.9', '112', '84th Street, Mandalay', ['Pompadour — 15,000 MMK', 'Textured Crop — 12,000 MMK', 'Full Groom — 20,000 MMK'], isDark),
+                        _buildBarberCard(
+                          context,
+                          'Mandalay Heritage Salon',
+                          '4.9',
+                          '112',
+                          '84th Street, Mandalay',
+                          [
+                            'Pompadour — 15,000 MMK',
+                            'Textured Crop — 12,000 MMK',
+                            'Full Groom — 20,000 MMK',
+                          ],
+                          isDark,
+                        ),
                         const SizedBox(height: 16),
-                        _buildBarberCard(context, 'Golden Scissors Studio', '4.7', '78', 'Sanchaung, Yangon', ['Undercut — 10,000 MMK', 'Buzz Cut — 7,000 MMK', 'Skin Fade — 13,000 MMK'], isDark),
+                        _buildBarberCard(
+                          context,
+                          'Golden Scissors Studio',
+                          '4.7',
+                          '78',
+                          'Sanchaung, Yangon',
+                          [
+                            'Undercut — 10,000 MMK',
+                            'Buzz Cut — 7,000 MMK',
+                            'Skin Fade — 13,000 MMK',
+                          ],
+                          isDark,
+                        ),
                       ],
                     ),
                   ),
@@ -230,7 +399,10 @@ class _ShopScreenState extends State<ShopScreen> {
                   color: isDark ? AppColors.paleText : AppColors.inkGrey,
                 ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
               ),
               style: GoogleFonts.outfit(
                 color: isDark ? Colors.white : AppColors.inkBlack,
@@ -275,9 +447,14 @@ class _ShopScreenState extends State<ShopScreen> {
             child: GestureDetector(
               onTap: () => setState(() => _selectedCategory = category),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: isSelected ? accent : (isDark ? AppColors.darkWarm : AppColors.creamAlt),
+                  color: isSelected
+                      ? accent
+                      : (isDark ? AppColors.darkWarm : AppColors.creamAlt),
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
                     color: isSelected ? accent : Colors.transparent,
@@ -288,8 +465,12 @@ class _ShopScreenState extends State<ShopScreen> {
                   category,
                   style: GoogleFonts.outfit(
                     fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected ? (isDark ? AppColors.charcoal : Colors.white) : (isDark ? AppColors.paleText : AppColors.inkGrey),
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: isSelected
+                        ? (isDark ? AppColors.charcoal : Colors.white)
+                        : (isDark ? AppColors.paleText : AppColors.inkGrey),
                   ),
                 ),
               ),
@@ -301,7 +482,12 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   // ── Product Card ───────────────────────────────────────────────────────
-  Widget _buildProductCard(BuildContext context, _Product product, bool isDark, Color accent) {
+  Widget _buildProductCard(
+    BuildContext context,
+    _Product product,
+    bool isDark,
+    Color accent,
+  ) {
     final isFav = _favorites.contains(product.name);
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -336,15 +522,25 @@ class _ShopScreenState extends State<ShopScreen> {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
                     child: Image.asset(
                       product.image,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
                       errorBuilder: (c, e, s) => Container(
-                        color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
-                        child: const Center(child: Icon(Icons.image, size: 40, color: Colors.grey)),
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.creamAlt,
+                        child: const Center(
+                          child: Icon(
+                            Icons.image,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -462,7 +658,9 @@ class _ShopScreenState extends State<ShopScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkBorder : AppColors.inkGrey.withOpacity(0.3),
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : AppColors.inkGrey.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -501,16 +699,42 @@ class _ShopScreenState extends State<ShopScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Style
-                    _buildFilterSection('Style', ['Basic', 'Classic', 'Streetwear', 'Formal', 'Traditional'], isDark, accent),
+                    _buildFilterSection(
+                      'Style',
+                      [
+                        'Basic',
+                        'Classic',
+                        'Streetwear',
+                        'Formal',
+                        'Traditional',
+                      ],
+                      isDark,
+                      accent,
+                    ),
                     const SizedBox(height: 24),
                     // Event
-                    _buildFilterSection('Event', ['Daily', 'University', 'Work', 'Party'], isDark, accent),
+                    _buildFilterSection(
+                      'Event',
+                      ['Daily', 'University', 'Work', 'Party'],
+                      isDark,
+                      accent,
+                    ),
                     const SizedBox(height: 24),
                     // Season
-                    _buildFilterSection('Season', ['Summer', 'Rainy', 'Winter'], isDark, accent),
+                    _buildFilterSection(
+                      'Season',
+                      ['Summer', 'Rainy', 'Winter'],
+                      isDark,
+                      accent,
+                    ),
                     const SizedBox(height: 24),
                     // Weather
-                    _buildFilterSection('Weather', ['Sunny', 'Cloudy', 'Rainy'], isDark, accent),
+                    _buildFilterSection(
+                      'Weather',
+                      ['Sunny', 'Cloudy', 'Rainy'],
+                      isDark,
+                      accent,
+                    ),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -527,11 +751,16 @@ class _ShopScreenState extends State<ShopScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accent,
                     foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   child: Text(
                     'Apply Filters',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
               ),
@@ -542,7 +771,12 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 
-  Widget _buildFilterSection(String title, List<String> options, bool isDark, Color accent) {
+  Widget _buildFilterSection(
+    String title,
+    List<String> options,
+    bool isDark,
+    Color accent,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -565,7 +799,9 @@ class _ShopScreenState extends State<ShopScreen> {
                 color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.inkGrey.withOpacity(0.2),
+                  color: isDark
+                      ? AppColors.darkBorder
+                      : AppColors.inkGrey.withOpacity(0.2),
                 ),
               ),
               child: Text(
@@ -582,7 +818,15 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 
-  Widget _buildBarberCard(BuildContext context, String name, String rating, String reviewCount, String location, List<String> services, bool isDark) {
+  Widget _buildBarberCard(
+    BuildContext context,
+    String name,
+    String rating,
+    String reviewCount,
+    String location,
+    List<String> services,
+    bool isDark,
+  ) {
     final accent = isDark ? AppColors.gold : AppColors.burgundy;
     return Container(
       decoration: BoxDecoration(
@@ -593,7 +837,7 @@ class _ShopScreenState extends State<ShopScreen> {
             color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
             blurRadius: 15,
             offset: const Offset(0, 5),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -605,7 +849,8 @@ class _ShopScreenState extends State<ShopScreen> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    width: 64, height: 64,
+                    width: 64,
+                    height: 64,
                     color: accent.withOpacity(0.15),
                     child: Icon(Icons.content_cut, color: accent, size: 30),
                   ),
@@ -615,19 +860,50 @@ class _ShopScreenState extends State<ShopScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, style: GoogleFonts.rufina(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack)),
+                      Text(
+                        name,
+                        style: GoogleFonts.rufina(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppColors.inkBlack,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Row(children: [
-                        const Icon(Icons.star, color: AppColors.gold, size: 14),
-                        const SizedBox(width: 4),
-                        Text('$rating ($reviewCount reviews)', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
-                      ]),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            color: AppColors.gold,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$rating ($reviewCount reviews)',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 2),
-                      Row(children: [
-                        const Icon(Icons.location_on_outlined, color: Colors.grey, size: 14),
-                        const SizedBox(width: 4),
-                        Text(location, style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
-                      ]),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            color: Colors.grey,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            location,
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -640,18 +916,42 @@ class _ShopScreenState extends State<ShopScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Services', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: isDark ? Colors.white : AppColors.inkBlack)),
-                const SizedBox(height: 12),
-                ...services.map((s) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(s.split('—')[0].trim(), style: GoogleFonts.outfit(fontSize: 13, color: isDark ? AppColors.paleText : AppColors.inkGrey)),
-                      Text(s.split('—').length > 1 ? s.split('—')[1].trim() : '', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: accent)),
-                    ],
+                Text(
+                  'Services',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: isDark ? Colors.white : AppColors.inkBlack,
                   ),
-                )),
+                ),
+                const SizedBox(height: 12),
+                ...services.map(
+                  (s) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          s.split('—')[0].trim(),
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            color: isDark
+                                ? AppColors.paleText
+                                : AppColors.inkGrey,
+                          ),
+                        ),
+                        Text(
+                          s.split('—').length > 1 ? s.split('—')[1].trim() : '',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: accent,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
@@ -659,11 +959,18 @@ class _ShopScreenState extends State<ShopScreen> {
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
                       backgroundColor: accent,
-                      foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                      foregroundColor: isDark
+                          ? AppColors.charcoal
+                          : Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-                    child: Text('Book Appointment', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                    child: Text(
+                      'Book Appointment',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
