@@ -8,6 +8,7 @@ import 'package:pyin_mal_app/screens/haircut_screen.dart';
 import 'package:pyin_mal_app/screens/favorites_screen.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/model_preview_screen.dart';
+import 'package:pyin_mal_app/screens/try_on_screen.dart';
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
 class MainShell extends StatefulWidget {
@@ -736,6 +737,14 @@ class _HomeTabState extends State<_HomeTab> {
           'Preview outfits on your virtual avatar',
           Icons.view_in_ar_rounded,
           () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelPreviewScreen())),
+          isDark,
+        ),
+        const SizedBox(height: 12),
+        _buildAIToolCard(
+          'Virtual Try-On',
+          'See clothes on yourself using AI',
+          Icons.checkroom_rounded,
+          () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TryOnScreen())),
           isDark,
         ),
         const SizedBox(height: 12),
