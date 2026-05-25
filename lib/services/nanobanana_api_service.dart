@@ -4,8 +4,6 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class NanoBananaApiService {
@@ -101,7 +99,7 @@ class NanoBananaApiService {
       // -------------------------------------------------
       final List<String> publicImageUrls = [];
 
-      Future<void> _processAndUpload(String name, XFile? file) async {
+      Future<void> processAndUpload(String name, XFile? file) async {
         if (file == null) return;
         final bytes = await _compressImage(file);
         final publicUrl = await _uploadToTempStorage(bytes, name);
@@ -110,10 +108,10 @@ class NanoBananaApiService {
         }
       }
 
-      await _processAndUpload('person', userPhoto);
-      await _processAndUpload('shirt', shirtPhoto);
-      await _processAndUpload('pants', pantsPhoto);
-      await _processAndUpload('shoes', shoesPhoto);
+      await processAndUpload('person', userPhoto);
+      await processAndUpload('shirt', shirtPhoto);
+      await processAndUpload('pants', pantsPhoto);
+      await processAndUpload('shoes', shoesPhoto);
 
       if (publicImageUrls.isEmpty) {
         debugPrint('❗ Failed to get any public URLs for the images.');
@@ -202,6 +200,107 @@ class NanoBananaApiService {
       }
     } catch (e, stack) {
       debugPrint('🚨 Exception in generateTryOnImage: $e');
+      debugPrint('Stacktrace: $stack');
+      return null;
+    }
+  }
+
+  /// Build the payload, upload images to get URLs, and call NanoBanana for Hair Style.
+  static Future<String?> generateHairStyleImage({
+    required XFile userPhoto,
+    XFile? referenceHairPhoto,
+    String? promptOverride,
+  }) async {
+    try {
+      final List<String> publicImageUrls = [];
+
+      Future<void> processAndUpload(String name, XFile? file) async {
+        if (file == null) return;
+        final bytes = await _compressImage(file);
+        final publicUrl = await _uploadToTempStorage(bytes, name);
+        if (publicUrl != null) {
+          publicImageUrls.add(publicUrl);
+        }
+      }
+
+      await processAndUpload('person_hair', userPhoto);
+      await processAndUpload('reference_hair', referenceHairPhoto);
+
+      if (publicImageUrls.isEmpty) {
+        debugPrint('❗ Failed to get any public URLs for the images.');
+        return null;
+      }
+
+      final Map<String, dynamic> payload = {
+        'prompt': promptOverride ?? 'Virtual hair try-on, replace the person\'s hairstyle with the reference hairstyle or style described, realistic, high quality.',
+        'type': 'IMAGETOIAMGE', // Assuming NanoBanana uses this type for hair generation as well
+        'numImages': 1,
+        'imageUrls': publicImageUrls,
+        'callBackUrl': 'https://example.com/webhook',
+      };
+
+      debugPrint('Sending request to NanoBanana with URLs: $publicImageUrls');
+      final response = await http.post(
+        Uri.parse(_endpoint),
+        headers: {
+          'Authorization': 'Bearer $_apiKey',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+
+      debugPrint('🔁 Generate Response status: ${response.statusCode}');
+      debugPrint('🔁 Generate Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['code'] != 200) {
+          debugPrint('❗ API error message: ${data['msg']}');
+          return null;
+        }
+
+        final taskId = data['data']?['taskId'];
+        if (taskId == null) {
+          debugPrint('❗ No taskId returned.');
+          return null;
+        }
+
+        debugPrint('✅ Task created: $taskId. Polling for results...');
+
+        for (int i = 0; i < 30; i++) {
+          await Future.delayed(const Duration(seconds: 3));
+
+          final pollResponse = await http.get(
+            Uri.parse(
+              'https://api.nanobananaapi.ai/api/v1/nanobanana/record-info?taskId=$taskId',
+            ),
+            headers: {'Authorization': 'Bearer $_apiKey'},
+          );
+
+          if (pollResponse.statusCode == 200) {
+            final pollData = jsonDecode(pollResponse.body);
+            if (pollData['code'] == 200) {
+              final status = pollData['data']?['successFlag'];
+              if (status == 1) {
+                return pollData['data']['response']?['resultImageUrl'] ??
+                    pollData['data']['response']?['originImageUrl'];
+              } else if (status == 2 || status == 3) {
+                debugPrint(
+                  '❗ Task failed: ${pollData['data']?['errorMessage']}',
+                );
+                return null;
+              }
+            }
+          }
+        }
+        debugPrint('❗ Polling timed out.');
+        return null;
+      } else {
+        debugPrint('❗ API error: ${response.statusCode} – ${response.body}');
+        return null;
+      }
+    } catch (e, stack) {
+      debugPrint('🚨 Exception in generateHairStyleImage: $e');
       debugPrint('Stacktrace: $stack');
       return null;
     }

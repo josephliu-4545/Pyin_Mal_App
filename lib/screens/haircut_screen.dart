@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/ar_hair_filter_screen.dart';
+import 'package:pyin_mal_app/screens/hair_try_on_screen.dart';
 
 class HaircutScreen extends StatefulWidget {
   const HaircutScreen({super.key});
@@ -110,23 +111,47 @@ class _HaircutScreenState extends State<HaircutScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ARHairFilterScreen()),
-              );
-            },
-            icon: const Icon(Icons.face_retouching_natural),
-            label: const Text('Try AR Hair Filter'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: accent,
-              foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 8,
-              shadowColor: accent.withOpacity(0.4),
-            ),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ARHairFilterScreen()),
+                  );
+                },
+                icon: const Icon(Icons.face_retouching_natural),
+                label: const Text('AR Filter'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark ? AppColors.darkWarm : AppColors.creamCard,
+                  foregroundColor: isDark ? Colors.white : AppColors.inkBlack,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 2,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HairTryOnScreen()),
+                  );
+                },
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('AI Try-On'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 8,
+                  shadowColor: accent.withOpacity(0.4),
+                ),
+              ),
+            ],
           ),
         ],
       ),
