@@ -6,23 +6,8 @@ import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/core/constants/api_constants.dart';
-
-class _Product {
-  final String name;
-  final String price;
-  final String image;
-  final String category;
-  final String gender;
-  final String brand;
-  _Product(
-    this.name,
-    this.price,
-    this.image,
-    this.category,
-    this.gender, {
-    this.brand = 'NRF',
-  });
-}
+import 'package:pyin_mal_app/models/product.dart';
+import 'package:pyin_mal_app/data/product_repository.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -37,105 +22,6 @@ class _ShopScreenState extends State<ShopScreen> {
   String _selectedCategory = 'All';
   final TextEditingController _searchController = TextEditingController();
 
-  final List<_Product> _fashionProducts = [
-    _Product(
-      'NRF Deathwish Hoodie',
-      '45,000 MMK',
-      'assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg',
-      'Hoodie',
-      'Male',
-      brand: 'NRF',
-    ),
-    _Product(
-      'AJOHN V2 Hoodie',
-      '38,000 MMK',
-      'assets/images/Male/Nrf/Hoodie/AJOHN V2 HOODIE.jpg',
-      'Hoodie',
-      'Male',
-      brand: 'AJOHN',
-    ),
-    _Product(
-      'ABCD 2XL Zip Up Hoodie',
-      '35,000 MMK',
-      'assets/images/Male/Nrf/Hoodie/ABCD 2XL ZIP UP HOODIE0.jpg',
-      'Hoodie',
-      'Male',
-      brand: 'ABCD',
-    ),
-    _Product(
-      'V1 Introduction Hoodie',
-      '32,000 MMK',
-      'assets/images/Male/Nrf/Hoodie/V1 INTRODUCTION Hoodie .jpg',
-      'Hoodie',
-      'Male',
-      brand: 'NRF',
-    ),
-    _Product(
-      'ABCD Tee',
-      '15,000 MMK',
-      'assets/images/Male/Nrf/Tee/ABCD TEE.jpg',
-      'T-Shirt',
-      'Male',
-      brand: 'ABCD',
-    ),
-    _Product(
-      'ACID T-Shirt',
-      '18,000 MMK',
-      'assets/images/Male/Nrf/Tee/ACID TSHIRT 0.jpg',
-      'T-Shirt',
-      'Male',
-      brand: 'NRF',
-    ),
-    _Product(
-      'NRFC Jersey',
-      '22,000 MMK',
-      'assets/images/Male/Nrf/Tee/NRFC Jersey0.jpg',
-      'T-Shirt',
-      'Male',
-      brand: 'NRF',
-    ),
-    _Product(
-      'LAPSES Tee Oatmeal',
-      '19,000 MMK',
-      'assets/images/Male/Nrf/Tee/LAPSES TSHIRT OATMEAL0.jpg',
-      'T-Shirt',
-      'Male',
-      brand: 'LAPSES',
-    ),
-    _Product(
-      'Luna Set 1',
-      '55,000 MMK',
-      'assets/images/Female/dress.set/Luna/luna set1.jpg',
-      'Set',
-      'Female',
-      brand: 'Luna',
-    ),
-    _Product(
-      'Luna Set 2',
-      '55,000 MMK',
-      'assets/images/Female/dress.set/Luna/luna set2.jpg',
-      'Set',
-      'Female',
-      brand: 'Luna',
-    ),
-    _Product(
-      'Luna Set 3',
-      '55,000 MMK',
-      'assets/images/Female/dress.set/Luna/luna set3.jpg',
-      'Set',
-      'Female',
-      brand: 'Luna',
-    ),
-    _Product(
-      'Luna Set 4',
-      '55,000 MMK',
-      'assets/images/Female/dress.set/Luna/luna set4.jpg',
-      'Set',
-      'Female',
-      brand: 'Luna',
-    ),
-  ];
-
   final List<String> _categories = [
     'All',
     'Shoes',
@@ -146,9 +32,9 @@ class _ShopScreenState extends State<ShopScreen> {
     'Burmese Wear',
   ];
 
-  List<_Product> get _filtered {
-    if (_selectedCategory == 'All') return _fashionProducts;
-    return _fashionProducts
+  List<Product> get _filtered {
+    if (_selectedCategory == 'All') return ProductRepository.allProducts;
+    return ProductRepository.allProducts
         .where(
           (p) =>
               p.category == _selectedCategory || p.gender == _selectedCategory,
@@ -487,7 +373,7 @@ class _ShopScreenState extends State<ShopScreen> {
   // ── Product Card ───────────────────────────────────────────────────────
   Widget _buildProductCard(
     BuildContext context,
-    _Product product,
+    Product product,
     bool isDark,
     Color accent,
   ) {

@@ -9,6 +9,7 @@ import 'package:pyin_mal_app/screens/favorites_screen.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/model_preview_screen.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
+import 'package:pyin_mal_app/screens/ai_chat_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
@@ -38,6 +39,16 @@ class _MainShellState extends State<MainShell> {
           const HaircutScreen(),
           const FavoritesScreen(),
         ],
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 20.0),
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const AiChatScreen()));
+          },
+          backgroundColor: isDark ? AppColors.gold : AppColors.burgundy,
+          child: Icon(Icons.auto_awesome_rounded, color: isDark ? AppColors.charcoal : Colors.white),
+        ),
       ),
       bottomNavigationBar: _GlassNav(
         currentIndex: _currentIndex,

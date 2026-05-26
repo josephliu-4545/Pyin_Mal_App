@@ -3,4 +3,6 @@ class ApiConstants {
   // Example: 'https://cdn.jsdelivr.net/gh/johndoe/pyin-mal-assets@main/'
   static const String cdnBaseUrl =
       'https://cdn.jsdelivr.net/gh/josephliu-4545/pyin-mal-assets@main/assets/images/';
+      
+  static const String geminiApiKey = 'YOUR_API_KEY_HERE'; // DO NOT COMMIT THIS KEY
 }
