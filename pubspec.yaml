@@ -43,6 +43,7 @@ dependencies:
   flutter_image_compress: ^2.4.0
   image: ^4.8.0
   http_parser: ^4.1.2
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
@@ -66,46 +67,8 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
-    - assets/images/Hero/
-    - assets/images/Photo/
-    - assets/images/outfits/
-    - assets/images/HairStyle/
-    - assets/images/HairStyle/Male/
-    - assets/images/HairStyle/Male/Diamond Face/
-    - assets/images/HairStyle/Male/Heart Face/
-    - assets/images/HairStyle/Male/Oval Face/
-    - assets/images/HairStyle/Male/Round Face/
-    - assets/images/HairStyle/Male/Square Face/
-    - assets/images/HairStyle/Male/Triangle Face/
-    - assets/images/HairStyle/Female/
-    - assets/images/HairStyle/Female/Diamond Face/
-    - assets/images/HairStyle/Female/Heart Face/
-    - assets/images/HairStyle/Female/Oval Face/
-    - assets/images/HairStyle/Female/Round Face/
-    - assets/images/HairStyle/Female/Square Face/
-    - assets/images/HairStyle/Female/Triangle Face/
-    - assets/images/Male/
-    - assets/images/Male/Nrf/
-    - assets/images/Male/Nrf/Hoodie/
-    - assets/images/Male/Nrf/Tee/
-    - assets/images/Male/Malory/
-    - assets/images/Male/Malory/T shirt/
-    - assets/images/Male/Malory/pants/
-    - assets/images/Male/VAL3/
-    - assets/images/Male/Set/
-    - assets/images/Male/Set/outfit set from sian store/
-    - assets/images/Male/Burmese dress for men/
-    - assets/images/Female/
-    - assets/images/Female/dress.set/
-    - assets/images/Female/dress.set/Luna/
-    - assets/images/Female/dress.set/oro set/
-    - assets/images/Female/dress.burmese/
-    - assets/images/Female/dress.skirt/
-    - assets/images/cart/
-    - assets/images/grooming/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

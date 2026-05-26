@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
-
+import '../widgets/cdn_image.dart';
 class ProductDetailScreen extends StatefulWidget {
   final String name;
   final String price;
@@ -115,7 +115,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(32),
-                        child: Image.asset(
+                        child: CdnImage(
                           widget.image,
                           fit: BoxFit.cover,
                           errorBuilder: (c, e, s) => Container(

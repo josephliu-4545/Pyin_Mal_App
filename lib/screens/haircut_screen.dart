@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/ar_hair_filter_screen.dart';
 import 'package:pyin_mal_app/screens/hair_try_on_screen.dart';
+import '../widgets/cdn_image.dart';
 
 class HaircutScreen extends StatefulWidget {
   const HaircutScreen({super.key});
@@ -221,7 +222,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                           shape: BoxShape.circle,
                         ),
                         padding: const EdgeInsets.all(8),
-                        child: Image.asset(
+                        child: CdnImage(
                           shape['img']!,
                           fit: BoxFit.contain,
                           errorBuilder: (c, e, s) => Icon(Icons.face, color: isSelected ? Colors.white : Colors.grey),
@@ -328,7 +329,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                  child: Image.asset(
+                  child: CdnImage(
                     img,
                     fit: BoxFit.cover,
                     width: double.infinity,

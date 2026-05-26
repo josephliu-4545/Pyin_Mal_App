@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
+import '../widgets/cdn_image.dart';
 
 class SavedItem {
   final String id;
@@ -288,7 +289,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                  child: Image.asset(
+                  child: CdnImage(
                     item.image,
                     fit: BoxFit.cover,
                     width: double.infinity,

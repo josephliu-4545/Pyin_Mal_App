@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
+import '../widgets/cdn_image.dart';
 
 class ModelPreviewScreen extends StatefulWidget {
   const ModelPreviewScreen({super.key});
@@ -231,7 +232,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                   color: isDark ? AppColors.charcoal : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Image.asset(
+                child: CdnImage(
                   imagePath,
                   fit: BoxFit.cover,
                   errorBuilder: (c, e, s) => const Center(child: Icon(Icons.image_outlined, color: Colors.grey, size: 30)),
@@ -352,7 +353,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
+                        child: CdnImage(
                           _selectedTop!,
                           fit: BoxFit.cover,
                           errorBuilder: (c, e, s) => Center(child: Text('Top Preview', style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
@@ -375,7 +376,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
+                        child: CdnImage(
                           _selectedBottom!,
                           fit: BoxFit.cover,
                           errorBuilder: (c, e, s) => Center(child: Text('Bottom Preview', style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
+import '../widgets/cdn_image.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -86,7 +87,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               shape: BoxShape.circle,
             ),
             child: ClipOval(
-              child: Image.asset(
+              child: CdnImage(
                 'assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg',
                 fit: BoxFit.cover,
                 errorBuilder: (c, e, s) => Icon(
@@ -572,7 +573,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(24),
-                        child: Image.asset(
+                        child: CdnImage(
                           'assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg',
                           fit: BoxFit.cover,
                           errorBuilder: (c, e, s) => Icon(

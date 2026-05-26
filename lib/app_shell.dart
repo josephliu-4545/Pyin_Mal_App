@@ -9,6 +9,7 @@ import 'package:pyin_mal_app/screens/favorites_screen.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/model_preview_screen.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
+import 'package:pyin_mal_app/widgets/cdn_image.dart';
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
 class MainShell extends StatefulWidget {
@@ -463,7 +464,7 @@ class _HomeTabState extends State<_HomeTab> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: Image.asset(
+        child: CdnImage(
           assetPath,
           fit: BoxFit.cover,
           errorBuilder: (c, e, s) => Icon(
@@ -527,7 +528,7 @@ class _HomeTabState extends State<_HomeTab> {
               borderRadius: BorderRadius.circular(24),
               child: Opacity(
                 opacity: 0.3,
-                child: Image.asset(
+                child: CdnImage(
                   imagePath,
                   fit: BoxFit.cover,
                   errorBuilder: (c, e, s) => Container(

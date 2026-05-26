@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/model_preview_screen.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:pyin_mal_app/widgets/cdn_image.dart';
+import 'package:pyin_mal_app/core/constants/api_constants.dart';
 
 class _Product {
   final String name;
@@ -245,7 +248,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(28),
                       image: const DecorationImage(
-                        image: AssetImage('assets/images/Hero/baber.jpg'),
+                        image: CachedNetworkImageProvider('${ApiConstants.cdnBaseUrl}Hero/baber.jpg'),
                         fit: BoxFit.cover,
                         colorFilter: ColorFilter.mode(
                           Colors.black54,
@@ -525,7 +528,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(24),
                     ),
-                    child: Image.asset(
+                    child: CdnImage(
                       product.image,
                       fit: BoxFit.cover,
                       width: double.infinity,
