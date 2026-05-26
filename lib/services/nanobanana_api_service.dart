@@ -3,12 +3,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class NanoBananaApiService {
-  // 👉 Replace with the **real** API key you received from Nano‑Banana.
-  static const String _apiKey = '84dee9e49dfb2b2f75399bc3e39c24a9';
+  // API key loaded securely from .env file
+  static String get _apiKey => dotenv.env['NANOBANANA_API_KEY'] ?? '';
   static const String _endpoint =
       'https://api.nanobananaapi.ai/api/v1/nanobanana/generate';
 

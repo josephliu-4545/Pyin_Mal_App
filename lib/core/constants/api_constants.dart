@@ -1,8 +1,7 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiConstants {
-  // Replace YOUR_USERNAME and YOUR_REPO with the actual GitHub details
-  // Example: 'https://cdn.jsdelivr.net/gh/johndoe/pyin-mal-assets@main/'
-  static const String cdnBaseUrl =
-      'https://cdn.jsdelivr.net/gh/josephliu-4545/pyin-mal-assets@main/assets/images/';
-      
-  static const String geminiApiKey = 'YOUR_API_KEY_HERE'; // DO NOT COMMIT THIS KEY
+  static const String cdnBaseUrl = 'https://cdn.jsdelivr.net/gh/josephliu-4545/pyin-mal-assets@main/assets/images/';
+  
+  static String get geminiApiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
 }
