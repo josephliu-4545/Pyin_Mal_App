@@ -6,6 +6,7 @@ import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/models/user_profile.dart';
 import 'package:pyin_mal_app/utils/ranking_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:pyin_mal_app/screens/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,95 +19,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _auth = AuthService();
   final DatabaseService _db = DatabaseService();
 
-  // Login form controllers
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
-  bool _isLoginMode = true;
-  bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  void _submitAuth() async {
-    setState(() => _isLoading = true);
-    
-    if (_isLoginMode) {
-      await _auth.signInWithEmail(_emailController.text, _passwordController.text);
-    } else {
-      await _auth.registerWithEmail(
-        _emailController.text, 
-        _passwordController.text,
-        _nameController.text.isNotEmpty ? _nameController.text : 'Fashionista',
-      );
-    }
-    
-    setState(() => _isLoading = false);
-  }
-
-  Widget _buildAuthForm() {
+  Widget _buildAuthPrompt() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Icon(Icons.person_outline_rounded, size: 80, color: AppColors.burgundy.withOpacity(0.5)),
+          const SizedBox(height: 24),
           Text(
-            _isLoginMode ? 'Welcome Back' : 'Join the Club',
-            style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.gold),
-          ),
-          const SizedBox(height: 32),
-          if (!_isLoginMode) ...[
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Display Name',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          TextField(
-            controller: _emailController,
-            decoration: InputDecoration(
-              labelText: 'Email',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+            'Create your style profile',
+            style: GoogleFonts.rufina(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.inkBlack),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: _passwordController,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: 'Password',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+          Text(
+            'Log in to view your points, rank, and get personalized fashion recommendations from our AI.',
+            style: GoogleFonts.outfit(fontSize: 16, color: Colors.grey),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
-            height: 50,
+            height: 56,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.burgundy,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
-              onPressed: _isLoading ? null : _submitAuth,
-              child: _isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : Text(_isLoginMode ? 'Sign In' : 'Sign Up', style: GoogleFonts.outfit(fontSize: 18, color: Colors.white)),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: () => setState(() => _isLoginMode = !_isLoginMode),
-            child: Text(
-              _isLoginMode ? 'Need an account? Sign Up' : 'Already have an account? Sign In',
-              style: GoogleFonts.outfit(color: AppColors.burgundy),
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+              },
+              child: Text('LOG IN OR SIGN UP', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.5)),
             ),
           ),
         ],
@@ -231,7 +175,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         
         final user = authSnapshot.data;
         if (user == null) {
-          return Scaffold(body: _buildAuthForm());
+          return Scaffold(body: _buildAuthPrompt());
         }
         
         return StreamBuilder<UserProfile?>(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/onboarding_screen.dart';
+import 'package:pyin_mal_app/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,6 +13,49 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
+  bool _isLoading = false;
+
+  final AuthService _auth = AuthService();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _submitAuth() async {
+    setState(() => _isLoading = true);
+
+    try {
+      if (_isLogin) {
+        final user = await _auth.signInWithEmail(_emailController.text.trim(), _passwordController.text);
+        if (user != null && mounted) {
+          Navigator.pop(context); // Go back after success
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Login failed. Check your email and password.')));
+        }
+      } else {
+        final profile = await _auth.registerWithEmail(
+          _emailController.text.trim(), 
+          _passwordController.text,
+          _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : 'Fashionista',
+        );
+        if (profile != null && mounted) {
+          // Send them to onboarding after sign up to get preferences and image
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const OnboardingScreen()));
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration failed. Password must be at least 6 characters.')));
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -303,9 +347,9 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 24),
           Text('or use your email account', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
           const SizedBox(height: 24),
-          _buildTextField('Email', Icons.email_outlined, false, isDark, accent),
+          _buildTextField('Email', Icons.email_outlined, false, isDark, accent, controller: _emailController),
           const SizedBox(height: 16),
-          _buildTextField('Password', Icons.lock_outline, true, isDark, accent),
+          _buildTextField('Password', Icons.lock_outline, true, isDark, accent, controller: _passwordController),
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
@@ -315,7 +359,7 @@ class _LoginScreenState extends State<LoginScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: _isLoading ? null : _submitAuth,
               style: ElevatedButton.styleFrom(
                 backgroundColor: accent,
                 foregroundColor: isDark ? AppColors.charcoal : Colors.white,
@@ -323,7 +367,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
-              child: Text('SIGN IN', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              child: _isLoading 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : Text('SIGN IN', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             ),
           ),
           const SizedBox(height: 16),
@@ -369,16 +415,16 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 24),
           Text('or use your email for registration', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
           const SizedBox(height: 24),
-          _buildTextField('Name', Icons.person_outline, false, isDark, accent),
+          _buildTextField('Name', Icons.person_outline, false, isDark, accent, controller: _nameController),
           const SizedBox(height: 16),
-          _buildTextField('Email', Icons.email_outlined, false, isDark, accent),
+          _buildTextField('Email', Icons.email_outlined, false, isDark, accent, controller: _emailController),
           const SizedBox(height: 16),
-          _buildTextField('Password', Icons.lock_outline, true, isDark, accent),
+          _buildTextField('Password', Icons.lock_outline, true, isDark, accent, controller: _passwordController),
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: _isLoading ? null : _submitAuth,
               style: ElevatedButton.styleFrom(
                 backgroundColor: accent,
                 foregroundColor: isDark ? AppColors.charcoal : Colors.white,
@@ -386,7 +432,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
-              child: Text('SIGN UP', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              child: _isLoading 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : Text('SIGN UP', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             ),
           ),
           const SizedBox(height: 16),
@@ -427,8 +475,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildTextField(String hint, IconData icon, bool obscure, bool isDark, Color accent) {
+  Widget _buildTextField(String hint, IconData icon, bool obscure, bool isDark, Color accent, {TextEditingController? controller}) {
     return TextField(
+      controller: controller,
       obscureText: obscure,
       style: GoogleFonts.outfit(fontSize: 14, color: isDark ? Colors.white : AppColors.inkBlack),
       decoration: InputDecoration(
