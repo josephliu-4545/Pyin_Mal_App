@@ -8,6 +8,7 @@ import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/core/constants/api_constants.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
+import 'package:pyin_mal_app/services/database_service.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -379,18 +380,21 @@ class _ShopScreenState extends State<ShopScreen> {
   ) {
     final isFav = _favorites.contains(product.name);
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ProductDetailScreen(
-            name: product.name,
-            price: product.price,
-            image: product.image,
-            brand: product.brand,
-            category: product.category,
+      onTap: () {
+        DatabaseService().trackProductView(product.id);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailScreen(
+              name: product.name,
+              price: product.price,
+              image: product.image,
+              brand: product.brand,
+              category: product.category,
+            ),
           ),
-        ),
-      ),
+        );
+      },
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkWarm : Colors.white,

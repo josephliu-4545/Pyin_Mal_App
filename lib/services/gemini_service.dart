@@ -5,34 +5,54 @@ import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/models/ai_message.dart';
 import 'package:pyin_mal_app/models/product.dart';
 
+import 'package:pyin_mal_app/services/database_service.dart';
+
 class GeminiService {
-  late ChatSession _chat;
-  
-  GeminiService() {
-    // 1. Build the list of products for the prompt
+  final GenerativeModel _model;
+  late final ChatSession _chat;
+  final DatabaseService _db = DatabaseService();
+
+  GeminiService()
+      : _model = GenerativeModel(
+          model: 'gemini-2.5-flash',
+          apiKey: ApiConstants.geminiApiKey,
+          generationConfig: GenerationConfig(
+            responseMimeType: 'application/json',
+          ),
+        ) {
+    _chat = _model.startChat();
+  }
+
+  /// Sends a message to Gemini and returns the AI's response as an AiMessage.
+  Future<AiMessage> sendMessage(String text) async {
+    // 1. Fetch user history context dynamically per request
+    final userContext = await _db.getRecentHistoryContext();
+    
+    // 1b. Build the list of products for the prompt
     final productsContext = ProductRepository.allProducts.map((p) {
       return '- ${p.name} (ID: ${p.id}, Category: ${p.category}, Price: ${p.price})';
     }).join('\n');
 
-    // 2. Define the system instruction
+    // 2. Build system instruction
     final systemInstruction = Content.system('''
-You are an expert AI fashion stylist and haircut advisor for the Pyin Mal App. 
-Your ONLY purpose is to discuss fashion, clothing, style advice, and haircuts. 
-If a user asks about anything else (e.g., coding, politics, math, general knowledge), politely refuse and guide the conversation back to fashion or haircuts.
+You are an expert personal stylist and shopping assistant for the 'Pyin Mal' fashion app.
+Your job is to help users find the perfect outfits, provide fashion advice, and recommend specific items from our catalog.
 
-When giving advice, you can recommend products from our shop. 
 Here are the available products you can recommend:
 $productsContext
 
-IMPORTANT: You must ALWAYS respond in valid JSON format matching this exact schema:
+$userContext
+
+You MUST output your response in valid JSON format.
+The JSON must have this exact structure:
 {
-  "message": "Your conversational text response here...",
-  "recommended_product_ids": ["id1", "id2"] // Only include IDs of products you genuinely recommend based on the user's query. Empty list if none.
+  "message": "Your conversational text response here.",
+  "recommended_product_ids": ["id1", "id2"] // Only include IDs of products you genuinely recommend based on the user's query and their history. Empty list if none.
 }
 ''');
 
-    // 3. Initialize the model
-    final model = GenerativeModel(
+    // Update model system instruction temporarily for this chat
+    final modelWithInstruction = GenerativeModel(
       model: 'gemini-2.5-flash',
       apiKey: ApiConstants.geminiApiKey,
       systemInstruction: systemInstruction,
@@ -40,18 +60,18 @@ IMPORTANT: You must ALWAYS respond in valid JSON format matching this exact sche
         responseMimeType: 'application/json',
       ),
     );
+    final tempChat = modelWithInstruction.startChat(history: _chat.history.toList());
 
-    // 4. Start chat session
-    _chat = model.startChat();
-  }
 
-  /// Sends a message to Gemini and returns the AI's response as an AiMessage.
-  Future<AiMessage> sendMessage(String text) async {
     const maxRetries = 2;
     
     for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        final response = await _chat.sendMessage(Content.text(text));
+        final response = await tempChat.sendMessage(Content.text(text));
+        
+        // Save the updated history back to the main session
+        _chat = modelWithInstruction.startChat(history: tempChat.history.toList());
+        
         final responseText = response.text;
         
         if (responseText == null) {

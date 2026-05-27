@@ -11,6 +11,7 @@ import 'package:pyin_mal_app/screens/model_preview_screen.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
 import 'package:pyin_mal_app/screens/ai_chat_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
+import 'package:pyin_mal_app/screens/profile_screen.dart';
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
 class MainShell extends StatefulWidget {
@@ -38,6 +39,7 @@ class _MainShellState extends State<MainShell> {
           const ShopScreen(),
           const HaircutScreen(),
           const FavoritesScreen(),
+          const ProfileScreen(),
         ],
       ),
       floatingActionButton: Padding(
@@ -71,6 +73,7 @@ class _GlassNav extends StatelessWidget {
     (icon: Icons.store_rounded,       outline: Icons.store_outlined,             label: 'Shop'),
     (icon: Icons.content_cut_rounded, outline: Icons.content_cut_outlined,       label: 'Hair'),
     (icon: Icons.favorite_rounded,    outline: Icons.favorite_outline_rounded,   label: 'Saved'),
+    (icon: Icons.person_rounded,      outline: Icons.person_outline_rounded,     label: 'Profile'),
   ];
 
   @override
@@ -253,14 +256,11 @@ class _HomeTabState extends State<_HomeTab> {
                 ),
               ),
             ),
-            // Profile Avatar
+            // Profile Avatar - Removed from top nav since we have a bottom tab
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                ),
+                onTap: () => widget.onTabRequested?.call(4),
                 child: Container(
                   width: 40,
                   height: 40,
@@ -270,7 +270,7 @@ class _HomeTabState extends State<_HomeTab> {
                   ),
                   child: Center(
                     child: Text(
-                      'H',
+                      'P',
                       style: GoogleFonts.rufina(
                         color: Colors.white,
                         fontSize: 16,

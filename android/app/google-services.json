@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "828020795062",
+    "project_id": "ta-chat-nhate",
+    "storage_bucket": "ta-chat-nhate.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:828020795062:android:00d6a93437fd462633a817",
+        "android_client_info": {
+          "package_name": "com.example.pyin_mal_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCz7G6J21ycbH95mvTyKPqk_SUZIo8XpJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
