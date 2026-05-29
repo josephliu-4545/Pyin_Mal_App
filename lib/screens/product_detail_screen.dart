@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/cdn_image.dart';
+import 'package:pyin_mal_app/services/cart_service.dart';
+
 class ProductDetailScreen extends StatefulWidget {
+  final String productId;
   final String name;
   final String price;
   final String image;
@@ -11,6 +14,7 @@ class ProductDetailScreen extends StatefulWidget {
 
   const ProductDetailScreen({
     super.key,
+    required this.productId,
     required this.name,
     required this.price,
     required this.image,
@@ -323,6 +327,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
+                        CartService.instance.addToCart(
+                          CartItem(
+                            productId: widget.productId,
+                            name: widget.name,
+                            price: widget.price,
+                            image: widget.image,
+                            brand: widget.brand,
+                            size: _selectedSize,
+                          ),
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Added to cart'),

@@ -9,6 +9,8 @@ import 'package:pyin_mal_app/core/constants/api_constants.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
+import 'package:pyin_mal_app/services/cart_service.dart';
+import 'package:pyin_mal_app/screens/cart_screen.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -66,6 +68,46 @@ class _ShopScreenState extends State<ShopScreen> {
           backgroundColor: isDark ? AppColors.charcoal : Colors.white,
           elevation: 0,
           scrolledUnderElevation: 0,
+          actions: [
+            ListenableBuilder(
+              listenable: CartService.instance,
+              builder: (context, _) {
+                final count = CartService.instance.itemCount;
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.shopping_cart_outlined, color: isDark ? Colors.white : AppColors.inkBlack),
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen()));
+                      },
+                    ),
+                    if (count > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: accent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '$count',
+                            style: GoogleFonts.outfit(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? AppColors.charcoal : Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+          ],
           bottom: TabBar(
             indicatorColor: accent,
             labelColor: accent,
@@ -278,6 +320,11 @@ class _ShopScreenState extends State<ShopScreen> {
             ),
             child: TextField(
               controller: _searchController,
+              onSubmitted: (value) {
+                if (value.trim().isNotEmpty) {
+                  DatabaseService().trackSearch(value.trim());
+                }
+              },
               decoration: InputDecoration(
                 hintText: 'Search products...',
                 hintStyle: GoogleFonts.outfit(
@@ -386,6 +433,7 @@ class _ShopScreenState extends State<ShopScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => ProductDetailScreen(
+              productId: product.id,
               name: product.name,
               price: product.price,
               image: product.image,

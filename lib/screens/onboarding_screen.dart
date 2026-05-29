@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/cdn_image.dart';
+import 'package:pyin_mal_app/services/database_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -13,6 +14,12 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+
+  // Survey state
+  String _selectedStyle = 'Casual';
+  String _selectedSize = 'M';
+  final Set<String> _selectedClothing = {};
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -153,10 +160,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // ── Page 2: Style Preferences ───────────────────────────────────────────
   Widget _buildStylePreferencesPage(bool isDark, Color accent) {
-    String selectedStyle = 'Casual';
-    String selectedSize = 'M';
-    final selectedClothing = <String>{};
-
     return StatefulBuilder(
       builder: (context, setLocalState) {
         return Padding(
@@ -214,9 +217,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 spacing: 10,
                 runSpacing: 10,
                 children: ['Casual', 'Formal', 'Sporty', 'Streetwear', 'Classic', 'Trendy', 'Other'].map((style) {
-                  final isSelected = selectedStyle == style;
+                  final isSelected = _selectedStyle == style;
                   return GestureDetector(
-                    onTap: () => setLocalState(() => selectedStyle = style),
+                    onTap: () => setLocalState(() => _selectedStyle = style),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
@@ -253,11 +256,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(height: 12),
               Row(
                 children: ['XS', 'S', 'M', 'L', 'XL'].map((size) {
-                  final isSelected = selectedSize == size;
+                  final isSelected = _selectedSize == size;
                   return Padding(
                     padding: const EdgeInsets.only(right: 12),
                     child: GestureDetector(
-                      onTap: () => setLocalState(() => selectedSize = size),
+                      onTap: () => setLocalState(() => _selectedSize = size),
                       child: Container(
                         width: 52,
                         height: 52,
@@ -300,14 +303,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 spacing: 10,
                 runSpacing: 10,
                 children: ['Casual shirts', 'Dress shirts', 'Jeans', 'Chinos', 'Sneakers', 'Boots', 'Coats', 'Hats'].map((item) {
-                  final isSelected = selectedClothing.contains(item);
+                  final isSelected = _selectedClothing.contains(item);
                   return GestureDetector(
                     onTap: () {
                       setLocalState(() {
                         if (isSelected) {
-                          selectedClothing.remove(item);
+                          _selectedClothing.remove(item);
                         } else {
-                          selectedClothing.add(item);
+                          _selectedClothing.add(item);
                         }
                       });
                     },
@@ -545,15 +548,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Text(
-                      'Done',
-                      style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: accent,
-                      ),
-                    ),
+                    onTap: () async {
+                      if (_isSaving) return;
+                      setState(() => _isSaving = true);
+                      
+                      // Combine preferences
+                      final prefs = [
+                        'Style: $_selectedStyle',
+                        'Size: $_selectedSize',
+                        if (_selectedClothing.isNotEmpty) 'Clothing: ${_selectedClothing.join(", ")}'
+                      ];
+                      
+                      await DatabaseService().updateUserPreferences(prefs);
+                      
+                      if (mounted) {
+                        setState(() => _isSaving = false);
+                        Navigator.pop(context); // Go back to app
+                      }
+                    },
+                    child: _isSaving
+                        ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: accent, strokeWidth: 2))
+                        : Text(
+                            'Done',
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: accent,
+                            ),
+                          ),
                   ),
                 ],
               ),

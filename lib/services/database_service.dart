@@ -31,6 +31,13 @@ class DatabaseService {
     });
   }
 
+  Future<void> updateUserPreferences(List<String> preferences) async {
+    if (_uid == null) return;
+    await _db.collection('users').doc(_uid).update({
+      'preferences': preferences,
+    });
+  }
+
   // ── Tracking ───────────────────────────────────────────────────────────────
 
   Future<void> trackProductView(String productId) async {
@@ -93,10 +100,30 @@ class DatabaseService {
           .limit(5)
           .get();
 
+      final purchasesSnap = await _db.collection('users').doc(_uid)
+          .collection('purchases')
+          .orderBy('timestamp', descending: true)
+          .limit(5)
+          .get();
+
       List<String> viewedItems = viewsSnap.docs.map((d) => d.data()['productId'] as String).toList();
       List<String> recentSearches = searchesSnap.docs.map((d) => d.data()['query'] as String).toList();
+      List<String> recentPurchases = purchasesSnap.docs.map((d) => d.data()['productId'] as String).toList();
+
+      // Fetch user profile to get survey preferences
+      final userDoc = await _db.collection('users').doc(_uid).get();
+      List<String> surveyPreferences = [];
+      if (userDoc.exists && userDoc.data() != null) {
+        surveyPreferences = List<String>.from(userDoc.data()!['preferences'] ?? []);
+      }
 
       String context = "";
+      if (surveyPreferences.isNotEmpty) {
+        context += "User's stated style preferences (from onboarding survey): ${surveyPreferences.join(', ')}.\n";
+      }
+      if (recentPurchases.isNotEmpty) {
+        context += "User recently bought product IDs: ${recentPurchases.join(', ')}.\n";
+      }
       if (viewedItems.isNotEmpty) {
         context += "User recently viewed product IDs: ${viewedItems.join(', ')}.\n";
       }
