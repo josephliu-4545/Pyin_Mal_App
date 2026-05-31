@@ -171,6 +171,9 @@ GEMINI_API_KEY=your_google_gemini_api_key
 ### Install & Run
 
 ```bash
+# Clone the repository
+https://github.com/josephliu-4545/Pyin_Mal_App.git
+
 # Navigate to the app directory
 cd Pyin_Mal_App
 
@@ -218,6 +221,28 @@ dependencies:
 - [ ] Push notifications for checkout confirmations and rank-ups
 - [ ] Order history screen with purchase timeline
 - [ ] App Store / Play Store deployment
+
+---
+
+## 🤝 Contributions
+
+We welcome contributions to improve this project! To get started:
+
+1. **Fork the repository** and create your feature branch:
+   ```bash
+   git checkout -b feature/AmazingFeature
+   ```
+2. **Commit your changes**:
+   ```bash
+   git commit -m 'Add some AmazingFeature'
+   ```
+3. **Push to the branch**:
+   ```bash
+   git push origin feature/AmazingFeature
+   ```
+4. **Open a pull request** explaining your changes in detail.
+
+For major changes, please open an issue first to discuss what you would like to change.
 
 ---
 
