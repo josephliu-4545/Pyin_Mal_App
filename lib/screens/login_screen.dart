@@ -212,65 +212,71 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Stack(
               children: [
                 // Right Text (Visible when in Login mode)
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 400),
-                  opacity: _isLogin ? 1.0 : 0.0,
-                  child: Padding(
-                    padding: const EdgeInsets.all(48),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('New Here?', style: GoogleFonts.rufina(fontSize: 32, fontWeight: FontWeight.bold, color: isDark ? AppColors.charcoal : Colors.white)),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Join our community to save looks, preview outfits, and discover your best style.',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.outfit(color: isDark ? AppColors.charcoal.withOpacity(0.7) : Colors.white70, fontSize: 15),
-                        ),
-                        const SizedBox(height: 40),
-                        OutlinedButton(
-                          onPressed: () => setState(() => _isLogin = false),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                            side: BorderSide(color: isDark ? AppColors.charcoal : Colors.white, width: 2),
-                            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                IgnorePointer(
+                  ignoring: !_isLogin,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 400),
+                    opacity: _isLogin ? 1.0 : 0.0,
+                    child: Padding(
+                      padding: const EdgeInsets.all(48),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('New Here?', style: GoogleFonts.rufina(fontSize: 32, fontWeight: FontWeight.bold, color: isDark ? AppColors.charcoal : Colors.white)),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Join our community to save looks, preview outfits, and discover your best style.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.outfit(color: isDark ? AppColors.charcoal.withOpacity(0.7) : Colors.white70, fontSize: 15),
                           ),
-                          child: Text('CREATE ACCOUNT', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1)),
-                        )
-                      ],
+                          const SizedBox(height: 40),
+                          OutlinedButton(
+                            onPressed: () => setState(() => _isLogin = false),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                              side: BorderSide(color: isDark ? AppColors.charcoal : Colors.white, width: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: Text('CREATE ACCOUNT', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 ),
 
                 // Left Text (Visible when in Register mode)
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 400),
-                  opacity: !_isLogin ? 1.0 : 0.0,
-                  child: Padding(
-                    padding: const EdgeInsets.all(48),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('Welcome Back!', style: GoogleFonts.rufina(fontSize: 32, fontWeight: FontWeight.bold, color: isDark ? AppColors.charcoal : Colors.white)),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Continue your style journey with your personalized AI fashion assistant.',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.outfit(color: isDark ? AppColors.charcoal.withOpacity(0.7) : Colors.white70, fontSize: 15),
-                        ),
-                        const SizedBox(height: 40),
-                        OutlinedButton(
-                          onPressed: () => setState(() => _isLogin = true),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                            side: BorderSide(color: isDark ? AppColors.charcoal : Colors.white, width: 2),
-                            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                IgnorePointer(
+                  ignoring: _isLogin,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 400),
+                    opacity: !_isLogin ? 1.0 : 0.0,
+                    child: Padding(
+                      padding: const EdgeInsets.all(48),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Welcome Back!', style: GoogleFonts.rufina(fontSize: 32, fontWeight: FontWeight.bold, color: isDark ? AppColors.charcoal : Colors.white)),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Continue your style journey with your personalized AI fashion assistant.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.outfit(color: isDark ? AppColors.charcoal.withOpacity(0.7) : Colors.white70, fontSize: 15),
                           ),
-                          child: Text('SIGN IN', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1)),
-                        )
-                      ],
+                          const SizedBox(height: 40),
+                          OutlinedButton(
+                            onPressed: () => setState(() => _isLogin = true),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                              side: BorderSide(color: isDark ? AppColors.charcoal : Colors.white, width: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: Text('SIGN IN', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 ),
