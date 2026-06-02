@@ -6,6 +6,8 @@ class Product {
   final String category;
   final String gender;
   final String brand;
+  final String? description;
+  final String? shopName;
 
   Product({
     required this.id,
@@ -15,5 +17,7 @@ class Product {
     required this.category,
     required this.gender,
     this.brand = 'NRF',
+    this.description,
+    this.shopName,
   });
 }

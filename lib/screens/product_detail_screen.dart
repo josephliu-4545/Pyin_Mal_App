@@ -11,6 +11,8 @@ class ProductDetailScreen extends StatefulWidget {
   final String image;
   final String brand;
   final String category;
+  final String? description;
+  final String? shopName;
 
   const ProductDetailScreen({
     super.key,
@@ -20,6 +22,8 @@ class ProductDetailScreen extends StatefulWidget {
     required this.image,
     required this.brand,
     required this.category,
+    this.description,
+    this.shopName,
   });
 
   @override
@@ -370,8 +374,56 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 32),
-                    
+                    const SizedBox(height: 16),
+
+                    // Shop Row
+                    if (widget.shopName != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.storefront_rounded, size: 16, color: accent),
+                            const SizedBox(width: 8),
+                            Text(
+                              widget.shopName!,
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : AppColors.inkBlack,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 24),
+
+                    // Description
+                    if (widget.description != null) ...[
+                      Text(
+                        'Description',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppColors.inkBlack,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        widget.description!,
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          height: 1.6,
+                          color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
                     // Size Selector
                     Text(
                       'Select Size',

@@ -13,6 +13,7 @@ import 'package:pyin_mal_app/screens/try_on_screen.dart';
 import 'package:pyin_mal_app/screens/ai_chat_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/profile_screen.dart';
+import 'package:pyin_mal_app/screens/scan_screen.dart';
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
 class MainShell extends StatefulWidget {
@@ -954,7 +955,7 @@ class _HomeTabState extends State<_HomeTab> {
       _AICard(label: 'Regional\nFashion',   sub: 'Trending near you',     icon: Icons.public_rounded,                  color: const Color(0xFF3D9BE9), onTap: () => _comingSoon('Regional Fashion')),
       _AICard(label: 'Size\nRecommender',   sub: 'Perfect fit',           icon: Icons.straighten_rounded,              color: const Color(0xFF7C6AF7), onTap: () => _comingSoon('Size Recommender')),
       _AICard(label: 'Outfit\nSharing',     sub: 'Community looks',       icon: Icons.people_alt_rounded,              color: const Color(0xFFE07A5F), onTap: () => _comingSoon('Outfit Sharing')),
-      _AICard(label: 'Smart\nScan',         sub: 'Avoid duplicates',      icon: Icons.document_scanner_rounded,        color: const Color(0xFF52B788), onTap: () => _comingSoon('Smart Closet Scan')),
+      _AICard(label: 'Smart\nScan',         sub: 'Avoid duplicates',      icon: Icons.document_scanner_rounded,        color: const Color(0xFF52B788), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanScreen()))),
     ];
     return _buildHorizontalCardRow(items, isDark);
   }

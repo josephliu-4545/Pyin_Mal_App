@@ -217,6 +217,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
               image: product.image,
               brand: product.brand,
               category: product.category,
+              description: product.description,
+              shopName: product.shopName,
             ),
           ),
         );

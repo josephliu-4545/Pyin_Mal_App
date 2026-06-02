@@ -482,6 +482,8 @@ class _ShopScreenState extends State<ShopScreen> {
               image: product.image,
               brand: product.brand,
               category: product.category,
+              description: product.description,
+              shopName: product.shopName,
             ),
           ),
         );

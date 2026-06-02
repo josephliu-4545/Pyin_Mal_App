@@ -10,6 +10,8 @@ class ProductRepository {
       category: 'Hoodie',
       gender: 'Male',
       brand: 'NRF',
+      shopName: 'Pyin Mal Official',
+      description: 'A bold heavyweight hoodie with gothic-inspired graphics. Crafted from premium brushed fleece for ultimate warmth and street-ready style.',
     ),
     Product(
       id: 'hoodie_ajohn',
@@ -19,6 +21,8 @@ class ProductRepository {
       category: 'Hoodie',
       gender: 'Male',
       brand: 'AJOHN',
+      shopName: 'Pyin Mal Official',
+      description: 'The second generation AJOHN hoodie featuring a refined silhouette and signature embroidered logo. Made from a soft cotton-polyester blend.',
     ),
     Product(
       id: 'hoodie_abcd',
@@ -28,6 +32,8 @@ class ProductRepository {
       category: 'Hoodie',
       gender: 'Male',
       brand: 'ABCD',
+      shopName: 'Pyin Mal Official',
+      description: 'A versatile zip-up hoodie in an oversized 2XL cut. Features a full front zipper and kangaroo pocket for an effortlessly relaxed look.',
     ),
     Product(
       id: 'hoodie_v1',
@@ -37,6 +43,8 @@ class ProductRepository {
       category: 'Hoodie',
       gender: 'Male',
       brand: 'NRF',
+      shopName: 'Pyin Mal Official',
+      description: 'The debut piece from NRF. A clean, minimal hoodie with the classic NRF wordmark — the foundation of every wardrobe.',
     ),
     Product(
       id: 'tee_abcd',
@@ -46,6 +54,8 @@ class ProductRepository {
       category: 'T-Shirt',
       gender: 'Male',
       brand: 'ABCD',
+      shopName: 'Pyin Mal Official',
+      description: 'A lightweight everyday tee with clean lettering graphics. 100% combed cotton construction keeps it breathable all day.',
     ),
     Product(
       id: 'tee_acid',
@@ -55,6 +65,8 @@ class ProductRepository {
       category: 'T-Shirt',
       gender: 'Male',
       brand: 'NRF',
+      shopName: 'Pyin Mal Official',
+      description: 'An edgy statement tee with acid-wash inspired print. Relaxed fit with dropped shoulders for a contemporary streetwear silhouette.',
     ),
     Product(
       id: 'tee_nrfc',
@@ -64,6 +76,8 @@ class ProductRepository {
       category: 'T-Shirt',
       gender: 'Male',
       brand: 'NRF',
+      shopName: 'Pyin Mal Official',
+      description: 'Sport-meets-street jersey with moisture-wicking mesh fabric. The NRFC crest on the chest makes it an instant statement piece.',
     ),
     Product(
       id: 'tee_lapses',
@@ -73,6 +87,8 @@ class ProductRepository {
       category: 'T-Shirt',
       gender: 'Male',
       brand: 'LAPSES',
+      shopName: 'Pyin Mal Official',
+      description: 'A neutral oatmeal tee from LAPSES with a subtle tonal logo. The go-to blank canvas for any outfit — pairs with everything.',
     ),
     Product(
       id: 'set_luna_1',
@@ -82,6 +98,8 @@ class ProductRepository {
       category: 'Set',
       gender: 'Female',
       brand: 'Luna',
+      shopName: 'Luna Boutique',
+      description: 'A coordinated two-piece set from Luna. Elegant fabric with a feminine cut — perfect for both casual outings and evening wear.',
     ),
     Product(
       id: 'set_luna_2',
@@ -91,6 +109,8 @@ class ProductRepository {
       category: 'Set',
       gender: 'Female',
       brand: 'Luna',
+      shopName: 'Luna Boutique',
+      description: 'Flowing co-ord set with a relaxed fit top and matching wide-leg trousers. Lightweight summer fabric with a soft drape.',
     ),
     Product(
       id: 'set_luna_3',
@@ -100,6 +120,8 @@ class ProductRepository {
       category: 'Set',
       gender: 'Female',
       brand: 'Luna',
+      shopName: 'Luna Boutique',
+      description: 'A chic monochrome set featuring a structured blazer-style top paired with tailored shorts. Effortlessly polished for any occasion.',
     ),
     Product(
       id: 'set_luna_4',
@@ -109,6 +131,8 @@ class ProductRepository {
       category: 'Set',
       gender: 'Female',
       brand: 'Luna',
+      shopName: 'Luna Boutique',
+      description: 'Luna\'s signature wrap-style set with adjustable ties. Flattering on all body types with its draped silhouette and rich fabric.',
     ),
   ];
 
