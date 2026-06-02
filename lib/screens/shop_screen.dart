@@ -274,6 +274,49 @@ class _ShopScreenState extends State<ShopScreen> {
 
   // ── Header Section ─────────────────────────────────────────────────────
   Widget _buildHeaderSection(bool isDark) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Discover',
+              style: GoogleFonts.rufina(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : AppColors.inkBlack,
+              ),
+            ),
+            Text(
+              'Your Best Clothes',
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                color: isDark ? AppColors.paleText : AppColors.inkGrey,
+              ),
+            ),
+          ],
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+            shape: BoxShape.circle,
+            border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('%', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.inkBlack)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeaderSectionOld(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -446,49 +489,42 @@ class _ShopScreenState extends State<ShopScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkWarm : Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.charcoal.withOpacity(isDark ? 0.2 : 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: AppColors.charcoal.withOpacity(isDark ? 0.15 : 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Product Image
             Expanded(
+              flex: 4,
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(24),
-                    ),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     child: CdnImage(
                       product.image,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
                       errorBuilder: (c, e, s) => Container(
-                        color: isDark
-                            ? AppColors.darkBorder
-                            : AppColors.creamAlt,
+                        color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
                         child: const Center(
-                          child: Icon(
-                            Icons.image,
-                            size: 40,
-                            color: Colors.grey,
-                          ),
+                          child: Icon(Icons.image, size: 40, color: Colors.grey),
                         ),
                       ),
                     ),
                   ),
                   // Favorite Button
                   Positioned(
-                    top: 12,
-                    right: 12,
+                    top: 10,
+                    right: 10,
                     child: GestureDetector(
                       onTap: () {
                         setState(() {
@@ -503,13 +539,15 @@ class _ShopScreenState extends State<ShopScreen> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withOpacity(0.95),
                           shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1),
+                              blurRadius: 6, offset: const Offset(0, 2))],
                         ),
                         child: Icon(
                           isFav ? Icons.favorite : Icons.favorite_outline,
                           size: 18,
-                          color: AppColors.burgundy,
+                          color: accent,
                         ),
                       ),
                     ),
@@ -518,58 +556,90 @@ class _ShopScreenState extends State<ShopScreen> {
               ),
             ),
             // Product Info
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.brand,
-                    style: GoogleFonts.outfit(
-                      fontSize: 12,
-                      color: isDark ? AppColors.paleText : AppColors.inkGrey,
-                      fontWeight: FontWeight.w500,
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.name,
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: isDark ? Colors.white : AppColors.inkBlack,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'Sizes in Stock',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    product.name,
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: isDark ? Colors.white : AppColors.inkBlack,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product.price,
+                              style: GoogleFonts.outfit(
+                                color: accent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            DatabaseService().trackProductView(product.id);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ProductDetailScreen(
+                                  productId: product.id,
+                                  name: product.name,
+                                  price: product.price,
+                                  image: product.image,
+                                  brand: product.brand,
+                                  category: product.category,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: accent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Shop',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: accent,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        product.price,
-                        style: GoogleFonts.outfit(
-                          color: accent,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: accent.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          color: accent,
-                          size: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
