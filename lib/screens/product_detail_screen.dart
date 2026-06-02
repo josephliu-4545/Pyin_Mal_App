@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/cdn_image.dart';
+import '../widgets/product_3d_viewer.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -50,8 +51,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.gold : AppColors.burgundy;
 
+    // Adaptive background: Off-white for light, dark charcoal for dark
+    final bgColor = isDark ? AppColors.charcoal : Color(0xFFFAF8F6); // Off-white cream
+
     return Scaffold(
-      backgroundColor: isDark ? AppColors.charcoal : Colors.white,
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -115,10 +119,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
             
-            // Scrollable Content
+            // Scrollable Content - REFINED PADDING
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -151,168 +155,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Product Image with 360 Rotation - INTERACTIVE DRAG
-                    GestureDetector(
-                      onHorizontalDragUpdate: (details) {
-                        setState(() => _rotation += details.delta.dx * 0.01);
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        height: 320,
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkWarm : Colors.white,
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        child: Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(28),
-                              child: Transform.rotate(
-                                angle: _rotation,
-                                child: CdnImage(
-                                  widget.image,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (c, e, s) => Container(
-                                    color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
-                                    child: const Center(child: Icon(Icons.image, size: 60, color: Colors.grey)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          // 360 Rotation Indicator with curved design at bottom - INTERACTIVE
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08),
-                                      blurRadius: 12, offset: const Offset(0, -2))],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Left arrow - rotate left
-                                    GestureDetector(
-                                      onTap: () => setState(() => _rotation -= 0.3),
-                                      child: MouseRegion(
-                                        cursor: SystemMouseCursors.click,
-                                        child: Text('<', style: GoogleFonts.outfit(
-                                            fontSize: 18, fontWeight: FontWeight.bold,
-                                            color: isDark ? Colors.white : AppColors.inkBlack)),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 20),
-                                    // Progress slider
-                                    Container(
-                                      width: 40,
-                                      height: 3,
-                                      decoration: BoxDecoration(
-                                        color: (isDark ? AppColors.paleText : AppColors.inkGrey).withOpacity(0.3),
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 20),
-                                    // Right arrow - rotate right
-                                    GestureDetector(
-                                      onTap: () => setState(() => _rotation += 0.3),
-                                      child: MouseRegion(
-                                        cursor: SystemMouseCursors.click,
-                                        child: Text('>', style: GoogleFonts.outfit(
-                                            fontSize: 18, fontWeight: FontWeight.bold,
-                                            color: isDark ? Colors.white : AppColors.inkBlack)),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Product 3D Viewer (HERO IMAGE)
+                    Product3DViewer(
+                      height: 400,
+                      isDark: isDark,
                     ),
                     const SizedBox(height: 20),
 
-                    // Color Variants - ENHANCED STYLING
-                    SizedBox(
-                      height: 90,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Colors',
-                            style: GoogleFonts.outfit(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : AppColors.inkBlack,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Expanded(
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _colors.length,
-                              separatorBuilder: (_, __) => const SizedBox(width: 14),
-                              itemBuilder: (_, i) {
-                                final colorData = _colors[i];
-                                final isSelected = _selectedColor == colorData['name'];
-                                return GestureDetector(
-                                  onTap: () => setState(() => _selectedColor = colorData['name']),
-                                  child: AnimatedScale(
-                                    scale: isSelected ? 1.1 : 1.0,
-                                    duration: const Duration(milliseconds: 200),
-                                    child: Container(
-                                      width: 70,
-                                      height: 70,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: isSelected ? accent : Colors.transparent,
-                                          width: 3,
-                                        ),
-                                        borderRadius: BorderRadius.circular(18),
-                                        boxShadow: isSelected ? [
-                                          BoxShadow(
-                                            color: accent.withOpacity(0.4),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ] : [],
-                                      ),
-                                      padding: const EdgeInsets.all(3),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: colorData['color'],
-                                          borderRadius: BorderRadius.circular(15),
-                                          border: Border.all(
-                                            color: isDark ? AppColors.darkBorder : Colors.grey.withOpacity(0.2),
-                                            width: 1,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: colorData['color'].withOpacity(0.2),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // Product Info
+                    // Product Details - MINIMAL & REFINED (Design Plan Spec)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,116 +171,285 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Brand/Category Label
                               Text(
                                 widget.brand,
                                 style: GoogleFonts.outfit(
-                                  fontSize: 14,
-                                  color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                                  fontSize: 12,
+                                  color: isDark ? AppColors.paleText : Color(0xFF999999),
                                   fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.3,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
+                              // Product Name (Hero Text)
                               Text(
                                 widget.name,
-                                style: GoogleFonts.rufina(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
                                   color: isDark ? Colors.white : AppColors.inkBlack,
                                   height: 1.2,
                                 ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        // Price (Right Aligned)
                         Text(
                           widget.price,
-                          style: GoogleFonts.rufina(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                             color: accent,
                           ),
+                          textAlign: TextAlign.right,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    
-                    // Rating Row
+                    const SizedBox(height: 8),
+
+                    // Rating - MINIMAL STYLE
                     Row(
                       children: [
                         Row(
-                          children: List.generate(5, (index) => Icon(
-                            Icons.star_rounded,
-                            color: AppColors.gold,
-                            size: 18,
-                          )),
+                          children: List.generate(5, (index) =>
+                            Icon(
+                              Icons.star_rounded,
+                              color: AppColors.gold,
+                              size: 13,
+                            )
+                          ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Text(
                           '4.8 (128 reviews)',
                           style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: isDark ? Color(0xFFAAAAAA) : Color(0xFF888888),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                    // Shop Row
-                    if (widget.shopName != null)
+                    // CTA Buttons - REFINED (Design Plan Spec: 13px, 600w, 44px touch targets)
+                    Row(
+                      children: [
+                        // Try On Button (Outlined)
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Try-On feature coming soon'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              side: BorderSide(
+                                color: isDark ? Color(0xFF444444) : AppColors.inkBlack,
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              backgroundColor: Colors.transparent,
+                            ),
+                            child: Text(
+                              'Try On',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : AppColors.inkBlack,
+                                fontSize: 13,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // Shop Now Button (Filled/Elevated)
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              CartService.instance.addToCart(
+                                CartItem(
+                                  productId: widget.productId,
+                                  name: widget.name,
+                                  price: widget.price,
+                                  image: widget.image,
+                                  brand: widget.brand,
+                                  size: _selectedSize,
+                                ),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Added to cart'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isDark ? Colors.white : AppColors.inkBlack,
+                              foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              'Shop Now',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Color Variants - INLINE LAYOUT (Design Plan: Label + Swatches)
+                    Row(
+                      children: [
+                        Text(
+                          'Colors',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : AppColors.inkBlack,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: List.generate(_colors.length, (i) {
+                                final colorData = _colors[i];
+                                final isSelected = _selectedColor == colorData['name'];
+                                return Padding(
+                                  padding: EdgeInsets.only(right: i < _colors.length - 1 ? 12 : 0),
+                                  child: GestureDetector(
+                                    onTap: () => setState(() => _selectedColor = colorData['name']),
+                                    child: AnimatedScale(
+                                      scale: isSelected ? 1.08 : 1.0,
+                                      duration: const Duration(milliseconds: 200),
+                                      child: Container(
+                                        width: 56,
+                                        height: 56,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: isSelected ? accent : Colors.transparent,
+                                            width: 2.5,
+                                          ),
+                                          borderRadius: BorderRadius.circular(13),
+                                          boxShadow: isSelected
+                                              ? [
+                                                  BoxShadow(
+                                                    color: accent.withOpacity(0.25),
+                                                    blurRadius: 10,
+                                                    offset: const Offset(0, 3),
+                                                  ),
+                                                ]
+                                              : [
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(isDark ? 0.15 : 0.06),
+                                                    blurRadius: 6,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                        ),
+                                        padding: const EdgeInsets.all(2),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: colorData['color'],
+                                            borderRadius: BorderRadius.circular(11),
+                                            border: Border.all(
+                                              color: isDark
+                                                  ? AppColors.darkBorder.withOpacity(0.3)
+                                                  : Colors.grey.withOpacity(0.1),
+                                              width: 0.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Shop Info - MINIMAL STYLE
+                    if (widget.shopName != null) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
-                          borderRadius: BorderRadius.circular(14),
+                          color: isDark ? AppColors.darkWarm : Color(0xFFF5F3F0),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.storefront_rounded, size: 16, color: accent),
-                            const SizedBox(width: 8),
+                            Icon(Icons.storefront_rounded, size: 14, color: accent),
+                            const SizedBox(width: 6),
                             Text(
                               widget.shopName!,
                               style: GoogleFonts.outfit(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : AppColors.inkBlack,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: isDark ? Color(0xFFDDDDDD) : AppColors.inkBlack,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 20),
+                    ],
 
-                    // Description
+                    // Description Section
                     if (widget.description != null) ...[
                       Text(
                         'Description',
                         style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                           color: isDark ? Colors.white : AppColors.inkBlack,
+                          letterSpacing: 0.2,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       Text(
                         widget.description!,
                         style: GoogleFonts.outfit(
-                          fontSize: 14,
+                          fontSize: 13,
                           height: 1.6,
-                          color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                          fontWeight: FontWeight.w400,
+                          color: isDark ? Color(0xFFCCCCCC) : Color(0xFF666666),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                     ],
 
-                    // Size Selector
+                    // Size Selector Section
                     Text(
                       'Select Size',
                       style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white : AppColors.inkBlack,
+                        letterSpacing: 0.2,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -467,18 +486,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 32),
-                    
+                    const SizedBox(height: 24),
+
                     // Characteristics Section
                     Text(
                       'Characteristics',
                       style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white : AppColors.inkBlack,
+                        letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _buildCharacteristicCard('Comfort', 'Soft & breathable fabric', isDark),
                     const SizedBox(height: 12),
                     _buildCharacteristicCard('Textile', '100% Cotton', isDark),
@@ -492,99 +512,37 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
             
-            // Bottom Action Area
+            // Bottom Area - Floating Action Bar (Fixed)
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkWarm : Colors.white,
+                color: isDark
+                    ? AppColors.darkWarm
+                    : Color(0xFFFAF8F6), // Same as background
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.charcoal.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, -4),
+                    color: Colors.black.withOpacity(isDark ? 0.15 : 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, -6),
                   ),
                 ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Try On & Shop Now Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Try-On feature coming soon'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: BorderSide(
-                              color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
-                              width: 1.5,
-                            ),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: Text(
-                            'Try On',
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : AppColors.inkBlack,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            CartService.instance.addToCart(
-                              CartItem(
-                                productId: widget.productId,
-                                name: widget.name,
-                                price: widget.price,
-                                image: widget.image,
-                                brand: widget.brand,
-                                size: _selectedSize,
-                              ),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Added to cart'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isDark ? Colors.white : AppColors.inkBlack,
-                            foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            'Shop Now',
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  // Floating Action Bar
+                  // Floating Action Bar - REFINED (Design Plan: Dark, rounded, 5 icons)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: isDark ? Color(0xFF1A1A1A) : AppColors.charcoal,
+                      color: isDark ? Color(0xFF1F1F1F) : Color(0xFF2A2A2A),
                       borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,

@@ -2,6 +2,18 @@ import 'package:pyin_mal_app/models/product.dart';
 
 class ProductRepository {
   static final List<Product> allProducts = [
+    // 3D Test Product
+    Product(
+      id: 'hoodie_cotton_3d',
+      name: 'Cotton Sweatshirt',
+      price: '50,000 MMK',
+      image: 'assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg',
+      category: 'Hoodie',
+      gender: 'Male',
+      brand: 'Fartech',
+      shopName: 'Pyin Mal Official',
+      description: '3D Interactive Black Cotton Sweatshirt. Experience our revolutionary 3D viewer - rotate to see all angles of this premium quality hoodie made from 100% soft cotton fabric.',
+    ),
     Product(
       id: 'hoodie_deathwish',
       name: 'NRF Deathwish Hoodie',
