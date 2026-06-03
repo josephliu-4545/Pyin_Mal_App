@@ -269,77 +269,72 @@ class _ArcsPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final cx = size.width / 2;  // 80
-    final cy = size.height / 2; // 22
+    final cx = size.width / 2;   // 80
+    final cy = size.height / 2;  // 22
 
-    // Arc sweep: curve that bends slightly upward, from circle edge outward
-    // Each arc is a portion of an ellipse centered above the handle
-    const circleR = 18.0; // half of circle widget
-    const arcH    = 10.0; // how much the arc bows upward
-    const arcW    = 52.0; // horizontal reach of each arc
+    const circleR = 19.0; // half of circle widget + small gap
+    const arcW    = 50.0; // horizontal reach from circle edge to arrow tip
+    const arcH    = 14.0; // how high the arc bows UPWARD above cy
 
-    // ── Left arc (from circle edge leftward) ────────────────────────────────
-    final leftPath = Path();
-    // Start just left of circle, end at far left
-    leftPath.moveTo(cx - circleR - 2, cy);
-    leftPath.cubicTo(
-      cx - circleR - arcW * 0.35, cy - arcH,  // cp1
-      cx - circleR - arcW * 0.65, cy - arcH,  // cp2
-      cx - circleR - arcW,        cy,          // end
-    );
+    // Quadratic bezier: single control point pulled straight UP at midpoint
+    // → creates a clean symmetric arch bowing upward
+
+    // ── Left arc ─────────────────────────────────────────────────────────────
+    final leftStart = Offset(cx - circleR, cy);
+    final leftEnd   = Offset(cx - circleR - arcW, cy);
+    final leftCtrl  = Offset((leftStart.dx + leftEnd.dx) / 2, cy - arcH);
+
+    final leftPath = Path()
+      ..moveTo(leftStart.dx, leftStart.dy)
+      ..quadraticBezierTo(leftCtrl.dx, leftCtrl.dy, leftEnd.dx, leftEnd.dy);
     canvas.drawPath(leftPath, paint);
 
-    // Left arrowhead (points left)
-    _drawArrowhead(canvas, paint,
-      tip: Offset(cx - circleR - arcW, cy),
-      direction: -1, // left
-    );
+    // Arrowhead at the left tip — pointing left, angled to match arc arrival
+    _drawHead(canvas, paint, tip: leftEnd, towardX: leftCtrl.dx, towardY: leftCtrl.dy);
 
-    // ── Right arc (from circle edge rightward) ───────────────────────────────
-    final rightPath = Path();
-    rightPath.moveTo(cx + circleR + 2, cy);
-    rightPath.cubicTo(
-      cx + circleR + arcW * 0.35, cy - arcH,
-      cx + circleR + arcW * 0.65, cy - arcH,
-      cx + circleR + arcW,        cy,
-    );
+    // ── Right arc ────────────────────────────────────────────────────────────
+    final rightStart = Offset(cx + circleR, cy);
+    final rightEnd   = Offset(cx + circleR + arcW, cy);
+    final rightCtrl  = Offset((rightStart.dx + rightEnd.dx) / 2, cy - arcH);
+
+    final rightPath = Path()
+      ..moveTo(rightStart.dx, rightStart.dy)
+      ..quadraticBezierTo(rightCtrl.dx, rightCtrl.dy, rightEnd.dx, rightEnd.dy);
     canvas.drawPath(rightPath, paint);
 
-    // Right arrowhead (points right)
-    _drawArrowhead(canvas, paint,
-      tip: Offset(cx + circleR + arcW, cy),
-      direction: 1, // right
-    );
+    // Arrowhead at the right tip
+    _drawHead(canvas, paint, tip: rightEnd, towardX: rightCtrl.dx, towardY: rightCtrl.dy);
   }
 
-  void _drawArrowhead(
-    Canvas canvas,
-    Paint paint, {
-    required Offset tip,
-    required int direction, // -1 = left, 1 = right
-  }) {
-    const headLen = 7.0;
-    const headAngle = 0.45; // radians
+  /// Draws a V-shaped arrowhead at [tip], with the opening facing [toward].
+  void _drawHead(Canvas canvas, Paint paint,
+      {required Offset tip, required double towardX, required double towardY}) {
+    // Direction vector from tip back toward the arc (so we know arrival angle)
+    final dx = towardX - tip.dx;
+    final dy = towardY - tip.dy;
+    final len = math.sqrt(dx * dx + dy * dy);
+    final ux = dx / len; // unit vector
+    final uy = dy / len;
 
-    // The arc arrives roughly horizontally, so arrow points along x
-    final p1 = Offset(
-      tip.dx - direction * headLen * cos(headAngle),
-      tip.dy - headLen * sin(headAngle),
+    const headLen = 7.0;
+    const spread  = 0.38; // radians for half-angle of arrowhead
+
+    // Two arms of the V
+    final arm1 = Offset(
+      tip.dx + headLen * (ux * math.cos(spread) - uy * math.sin(spread)),
+      tip.dy + headLen * (ux * math.sin(spread) + uy * math.cos(spread)),
     );
-    final p2 = Offset(
-      tip.dx - direction * headLen * cos(headAngle),
-      tip.dy + headLen * sin(headAngle),
+    final arm2 = Offset(
+      tip.dx + headLen * (ux * math.cos(spread) + uy * math.sin(spread)),
+      tip.dy + headLen * (-ux * math.sin(spread) + uy * math.cos(spread)),
     );
 
     final path = Path()
-      ..moveTo(p1.dx, p1.dy)
+      ..moveTo(arm1.dx, arm1.dy)
       ..lineTo(tip.dx, tip.dy)
-      ..lineTo(p2.dx, p2.dy);
+      ..lineTo(arm2.dx, arm2.dy);
     canvas.drawPath(path, paint);
   }
-
-  double cos(double r) => math.cos(r);
-  double sin(double r) => math.sin(r);
 
   @override
   bool shouldRepaint(covariant CustomPainter old) => false;
