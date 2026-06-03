@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,13 +20,13 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   bool _isScanning = false;
   String? _errorMessage;
-  File? _capturedImage;
+  Uint8List? _previewBytes;
 
   Future<void> _scan(ImageSource source) async {
     setState(() {
       _isScanning = true;
       _errorMessage = null;
-      _capturedImage = null;
+      _previewBytes = null;
     });
 
     try {
@@ -44,10 +43,8 @@ class _ScanScreenState extends State<ScanScreen> {
         return;
       }
 
-      final imageFile = File(picked.path);
-      setState(() => _capturedImage = imageFile);
-
-      final imageBytes = await imageFile.readAsBytes();
+      final imageBytes = await picked.readAsBytes();
+      setState(() => _previewBytes = imageBytes);
 
       final product = await _identifyProduct(imageBytes);
 
@@ -201,12 +198,12 @@ If no product is a reasonable match, set matched_product_id to null.
           // Preview image or placeholder
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
-            child: _capturedImage != null
+            child: _previewBytes != null
                 ? ClipRRect(
                     key: const ValueKey('preview'),
                     borderRadius: BorderRadius.circular(24),
-                    child: Image.file(
-                      _capturedImage!,
+                    child: Image.memory(
+                      _previewBytes!,
                       height: 280,
                       width: double.infinity,
                       fit: BoxFit.cover,
@@ -360,13 +357,13 @@ If no product is a reasonable match, set matched_product_id to null.
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (_capturedImage != null)
+        if (_previewBytes != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
-              child: Image.file(
-                _capturedImage!,
+              child: Image.memory(
+                _previewBytes!,
                 height: 220,
                 width: double.infinity,
                 fit: BoxFit.cover,
