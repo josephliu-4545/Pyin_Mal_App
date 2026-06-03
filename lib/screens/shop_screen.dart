@@ -15,15 +15,10 @@ class ShopScreen extends StatefulWidget {
   State<ShopScreen> createState() => _ShopScreenState();
 }
 
-class _ShopScreenState extends State<ShopScreen>
-    with SingleTickerProviderStateMixin {
+class _ShopScreenState extends State<ShopScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All';
   final Set<String> _favorites = {};
-
-  // Auto-sliding shops controller
-  late final ScrollController _shopsScrollController;
-  late final AnimationController _slideController;
 
   // Categories matching reference design
   final List<String> _categories = [
@@ -63,29 +58,7 @@ class _ShopScreenState extends State<ShopScreen>
   }
 
   @override
-  void initState() {
-    super.initState();
-    _shopsScrollController = ScrollController();
-    _slideController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 12),
-    )..repeat();
-
-    _slideController.addListener(_autoScroll);
-  }
-
-  void _autoScroll() {
-    if (!_shopsScrollController.hasClients) return;
-    final max = _shopsScrollController.position.maxScrollExtent;
-    final pos = _slideController.value * max;
-    _shopsScrollController.jumpTo(pos);
-  }
-
-  @override
   void dispose() {
-    _slideController.removeListener(_autoScroll);
-    _slideController.dispose();
-    _shopsScrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -301,15 +274,9 @@ class _ShopScreenState extends State<ShopScreen>
                   ),
                   SizedBox(
                     height: 100,
-                    child: GestureDetector(
-                      // Pause auto-scroll when user drags manually
-                      onHorizontalDragStart: (_) => _slideController.stop(),
-                      onHorizontalDragEnd: (_) => _slideController.repeat(),
-                      child: ListView.separated(
-                        controller: _shopsScrollController,
+                    child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        physics: const NeverScrollableScrollPhysics(),
                         itemCount: _shops.length,
                         separatorBuilder: (_, __) => const SizedBox(width: 16),
                         itemBuilder: (context, index) {
@@ -362,7 +329,6 @@ class _ShopScreenState extends State<ShopScreen>
                             ],
                           );
                         },
-                      ),
                     ),
                   ),
                 ],
