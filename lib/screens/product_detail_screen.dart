@@ -4,6 +4,7 @@ import 'package:pyin_mal_app/main.dart';
 import '../widgets/cdn_image.dart';
 import '../widgets/product_3d_viewer.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
+import 'package:pyin_mal_app/screens/try_on_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -52,7 +53,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final accent = isDark ? AppColors.gold : AppColors.burgundy;
 
     // Adaptive background: Off-white for light, dark charcoal for dark
-    final bgColor = isDark ? AppColors.charcoal : Color(0xFFFAF8F6); // Off-white cream
+    final bgColor =
+        isDark ? AppColors.charcoal : Color(0xFFFAF8F6); // Off-white cream
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -89,12 +91,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                            color: isDark
+                                ? AppColors.darkWarm
+                                : AppColors.creamAlt,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            _isFavorite ? Icons.favorite : Icons.favorite_outline,
-                            color: _isFavorite ? AppColors.burgundy : (isDark ? Colors.white : AppColors.inkBlack),
+                            _isFavorite
+                                ? Icons.favorite
+                                : Icons.favorite_outline,
+                            color: _isFavorite
+                                ? AppColors.burgundy
+                                : (isDark ? Colors.white : AppColors.inkBlack),
                             size: 22,
                           ),
                         ),
@@ -104,7 +112,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                          color:
+                              isDark ? AppColors.darkWarm : AppColors.creamAlt,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -118,7 +127,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ],
               ),
             ),
-            
+
             // Scrollable Content - REFINED PADDING
             Expanded(
               child: SingleChildScrollView(
@@ -128,28 +137,38 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   children: [
                     // Product Info Banner
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
+                        color:
+                            isDark ? AppColors.darkBorder : AppColors.creamAlt,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 24, height: 24,
+                            width: 24,
+                            height: 24,
                             decoration: BoxDecoration(
                               color: accent.withOpacity(0.2),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(Icons.info_rounded, size: 12, color: accent),
+                            child: Icon(Icons.info_rounded,
+                                size: 12, color: accent),
                           ),
                           const SizedBox(width: 8),
-                          Text('${widget.brand} by Fartech', style: GoogleFonts.outfit(
-                              fontSize: 12, color: isDark ? Colors.white70 : AppColors.inkGrey)),
+                          Text('${widget.brand} by Fartech',
+                              style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : AppColors.inkGrey)),
                           const SizedBox(width: 4),
-                          Icon(Icons.arrow_forward_ios_rounded, size: 10,
-                              color: isDark ? Colors.white54 : AppColors.inkGrey),
+                          Icon(Icons.arrow_forward_ios_rounded,
+                              size: 10,
+                              color:
+                                  isDark ? Colors.white54 : AppColors.inkGrey),
                         ],
                       ),
                     ),
@@ -176,7 +195,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 widget.brand,
                                 style: GoogleFonts.outfit(
                                   fontSize: 12,
-                                  color: isDark ? AppColors.paleText : Color(0xFF999999),
+                                  color: isDark
+                                      ? AppColors.paleText
+                                      : Color(0xFF999999),
                                   fontWeight: FontWeight.w500,
                                   letterSpacing: 0.3,
                                 ),
@@ -188,7 +209,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 style: GoogleFonts.outfit(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white : AppColors.inkBlack,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.inkBlack,
                                   height: 1.2,
                                 ),
                                 maxLines: 2,
@@ -216,13 +239,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     Row(
                       children: [
                         Row(
-                          children: List.generate(5, (index) =>
-                            Icon(
-                              Icons.star_rounded,
-                              color: AppColors.gold,
-                              size: 13,
-                            )
-                          ),
+                          children: List.generate(
+                              5,
+                              (index) => Icon(
+                                    Icons.star_rounded,
+                                    color: AppColors.gold,
+                                    size: 13,
+                                  )),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -230,7 +253,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
-                            color: isDark ? Color(0xFFAAAAAA) : Color(0xFF888888),
+                            color:
+                                isDark ? Color(0xFFAAAAAA) : Color(0xFF888888),
                           ),
                         ),
                       ],
@@ -244,27 +268,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Try-On feature coming soon'),
-                                  duration: Duration(seconds: 2),
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const TryOnScreen(),
                                 ),
                               );
                             },
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               side: BorderSide(
-                                color: isDark ? Color(0xFF444444) : AppColors.inkBlack,
+                                color: isDark
+                                    ? Color(0xFF444444)
+                                    : AppColors.inkBlack,
                                 width: 1.5,
                               ),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
                               backgroundColor: Colors.transparent,
                             ),
                             child: Text(
                               'Try On',
                               style: GoogleFonts.outfit(
                                 fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : AppColors.inkBlack,
+                                color:
+                                    isDark ? Colors.white : AppColors.inkBlack,
                                 fontSize: 13,
                                 letterSpacing: 0.2,
                               ),
@@ -294,10 +322,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isDark ? Colors.white : AppColors.inkBlack,
-                              foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                              backgroundColor:
+                                  isDark ? Colors.white : AppColors.inkBlack,
+                              foregroundColor:
+                                  isDark ? AppColors.charcoal : Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
                               elevation: 0,
                             ),
                             child: Text(
@@ -333,34 +364,45 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             child: Row(
                               children: List.generate(_colors.length, (i) {
                                 final colorData = _colors[i];
-                                final isSelected = _selectedColor == colorData['name'];
+                                final isSelected =
+                                    _selectedColor == colorData['name'];
                                 return Padding(
-                                  padding: EdgeInsets.only(right: i < _colors.length - 1 ? 12 : 0),
+                                  padding: EdgeInsets.only(
+                                      right: i < _colors.length - 1 ? 12 : 0),
                                   child: GestureDetector(
-                                    onTap: () => setState(() => _selectedColor = colorData['name']),
+                                    onTap: () => setState(() =>
+                                        _selectedColor = colorData['name']),
                                     child: AnimatedScale(
                                       scale: isSelected ? 1.08 : 1.0,
-                                      duration: const Duration(milliseconds: 200),
+                                      duration:
+                                          const Duration(milliseconds: 200),
                                       child: Container(
                                         width: 56,
                                         height: 56,
                                         decoration: BoxDecoration(
                                           border: Border.all(
-                                            color: isSelected ? accent : Colors.transparent,
+                                            color: isSelected
+                                                ? accent
+                                                : Colors.transparent,
                                             width: 2.5,
                                           ),
-                                          borderRadius: BorderRadius.circular(13),
+                                          borderRadius:
+                                              BorderRadius.circular(13),
                                           boxShadow: isSelected
                                               ? [
                                                   BoxShadow(
-                                                    color: accent.withOpacity(0.25),
+                                                    color: accent
+                                                        .withOpacity(0.25),
                                                     blurRadius: 10,
                                                     offset: const Offset(0, 3),
                                                   ),
                                                 ]
                                               : [
                                                   BoxShadow(
-                                                    color: Colors.black.withOpacity(isDark ? 0.15 : 0.06),
+                                                    color: Colors.black
+                                                        .withOpacity(isDark
+                                                            ? 0.15
+                                                            : 0.06),
                                                     blurRadius: 6,
                                                     offset: const Offset(0, 2),
                                                   ),
@@ -370,11 +412,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         child: Container(
                                           decoration: BoxDecoration(
                                             color: colorData['color'],
-                                            borderRadius: BorderRadius.circular(11),
+                                            borderRadius:
+                                                BorderRadius.circular(11),
                                             border: Border.all(
                                               color: isDark
-                                                  ? AppColors.darkBorder.withOpacity(0.3)
-                                                  : Colors.grey.withOpacity(0.1),
+                                                  ? AppColors.darkBorder
+                                                      .withOpacity(0.3)
+                                                  : Colors.grey
+                                                      .withOpacity(0.1),
                                               width: 0.5,
                                             ),
                                           ),
@@ -394,22 +439,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     // Shop Info - MINIMAL STYLE
                     if (widget.shopName != null) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkWarm : Color(0xFFF5F3F0),
+                          color:
+                              isDark ? AppColors.darkWarm : Color(0xFFF5F3F0),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.storefront_rounded, size: 14, color: accent),
+                            Icon(Icons.storefront_rounded,
+                                size: 14, color: accent),
                             const SizedBox(width: 6),
                             Text(
                               widget.shopName!,
                               style: GoogleFonts.outfit(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: isDark ? Color(0xFFDDDDDD) : AppColors.inkBlack,
+                                color: isDark
+                                    ? Color(0xFFDDDDDD)
+                                    : AppColors.inkBlack,
                               ),
                             ),
                           ],
@@ -464,10 +514,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               width: 52,
                               height: 52,
                               decoration: BoxDecoration(
-                                color: isSelected ? accent : (isDark ? AppColors.darkWarm : AppColors.creamAlt),
+                                color: isSelected
+                                    ? accent
+                                    : (isDark
+                                        ? AppColors.darkWarm
+                                        : AppColors.creamAlt),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: isSelected ? accent : Colors.transparent,
+                                  color:
+                                      isSelected ? accent : Colors.transparent,
                                   width: 2,
                                 ),
                               ),
@@ -477,7 +532,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   style: GoogleFonts.outfit(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: isSelected ? (isDark ? AppColors.charcoal : Colors.white) : (isDark ? Colors.white : AppColors.inkBlack),
+                                    color: isSelected
+                                        ? (isDark
+                                            ? AppColors.charcoal
+                                            : Colors.white)
+                                        : (isDark
+                                            ? Colors.white
+                                            : AppColors.inkBlack),
                                   ),
                                 ),
                               ),
@@ -499,11 +560,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildCharacteristicCard('Comfort', 'Soft & breathable fabric', isDark),
+                    _buildCharacteristicCard(
+                        'Comfort', 'Soft & breathable fabric', isDark),
                     const SizedBox(height: 12),
                     _buildCharacteristicCard('Textile', '100% Cotton', isDark),
                     const SizedBox(height: 12),
-                    _buildCharacteristicCard('Style', 'Modern casual fit', isDark),
+                    _buildCharacteristicCard(
+                        'Style', 'Modern casual fit', isDark),
                     const SizedBox(height: 12),
                     _buildCharacteristicCard('Fit', 'Regular fit', isDark),
                     const SizedBox(height: 32),
@@ -511,7 +574,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ),
             ),
-            
+
             // Bottom Area - Floating Action Bar (Fixed)
             Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
@@ -532,7 +595,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 children: [
                   // Floating Action Bar - REFINED (Design Plan: Dark, rounded, 5 icons)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: isDark ? Color(0xFF1F1F1F) : Color(0xFF2A2A2A),
                       borderRadius: BorderRadius.circular(20),
@@ -550,31 +614,43 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         // Tool/Settings icon
                         _buildFloatingActionIcon(Icons.tune_rounded, () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Settings'), duration: Duration(seconds: 1)),
+                            const SnackBar(
+                                content: Text('Settings'),
+                                duration: Duration(seconds: 1)),
                           );
                         }),
                         // Gear/Customize icon
                         _buildFloatingActionIcon(Icons.settings_rounded, () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Customize'), duration: Duration(seconds: 1)),
+                            const SnackBar(
+                                content: Text('Customize'),
+                                duration: Duration(seconds: 1)),
                           );
                         }),
                         // Profile/Avatar icon
-                        _buildFloatingActionIcon(Icons.account_circle_rounded, () {
+                        _buildFloatingActionIcon(Icons.account_circle_rounded,
+                            () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Profile'), duration: Duration(seconds: 1)),
+                            const SnackBar(
+                                content: Text('Profile'),
+                                duration: Duration(seconds: 1)),
                           );
                         }),
                         // Chat/Message icon
-                        _buildFloatingActionIcon(Icons.chat_bubble_outline_rounded, () {
+                        _buildFloatingActionIcon(
+                            Icons.chat_bubble_outline_rounded, () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Chat'), duration: Duration(seconds: 1)),
+                            const SnackBar(
+                                content: Text('Chat'),
+                                duration: Duration(seconds: 1)),
                           );
                         }),
                         // Search icon
                         _buildFloatingActionIcon(Icons.search_rounded, () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Search'), duration: Duration(seconds: 1)),
+                            const SnackBar(
+                                content: Text('Search'),
+                                duration: Duration(seconds: 1)),
                           );
                         }),
                       ],
