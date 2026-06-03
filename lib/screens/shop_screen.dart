@@ -42,13 +42,6 @@ class _ShopScreenState extends State<ShopScreen> {
     {'name': 'Fartech\nBrand',     'icon': Icons.flash_on_rounded, 'color': Color(0xFFE65100), 'bg': Color(0xFFFFF3E0)},
   ];
 
-  // Quick action items
-  final List<Map<String, dynamic>> _quickActions = [
-    {'label': 'Flash Sale', 'icon': Icons.local_fire_department_rounded, 'color': Colors.red},
-    {'label': 'Top Up', 'icon': Icons.account_balance_wallet_rounded, 'color': Colors.blue},
-    {'label': 'Bargain', 'icon': Icons.gavel_rounded, 'color': Colors.orange},
-    {'label': '9.9 Deal', 'icon': Icons.discount_rounded, 'color': Colors.purple},
-  ];
 
   List<Product> get _filteredProducts {
     if (_selectedCategory == 'All') return ProductRepository.allProducts;
@@ -336,61 +329,6 @@ class _ShopScreenState extends State<ShopScreen> {
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-            // SECTION 4: Quick Action Buttons
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.count(
-                  crossAxisCount: 4,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  children: _quickActions.map((action) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkWarm : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                      child: GestureDetector(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('${action['label']} tapped')),
-                          );
-                        },
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              action['icon'] as IconData,
-                              color: action['color'] as Color,
-                              size: 28,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              action['label'] as String,
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : AppColors.inkBlack,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
             // SECTION 5: Products Grid
             SliverToBoxAdapter(
