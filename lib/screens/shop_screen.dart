@@ -17,23 +17,24 @@ class ShopScreen extends StatefulWidget {
 
 class _ShopScreenState extends State<ShopScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedCategory = 'All';
   final Set<String> _favorites = {};
 
   // Categories matching reference design
-  final List<String> _categories = [
-    'All',
-    'Women',
-    'Men',
-    'Hoodies',
-    'T-Shirts',
-    'Shoes',
-    'Bags',
-    'Hats',
-    'Accessories',
-    'Sports',
-    'Sets',
+  final List<Map<String, dynamic>> _categories = [
+    {'label': 'New in',      'icon': Icons.auto_awesome_rounded},
+    {'label': 'Women',       'icon': Icons.female_rounded},
+    {'label': 'Men',         'icon': Icons.male_rounded},
+    {'label': 'T-Shirts',    'icon': Icons.checkroom_rounded},
+    {'label': 'Hoodies',     'icon': Icons.dry_cleaning_rounded},
+    {'label': 'Pants',       'icon': Icons.straighten_rounded},
+    {'label': 'Shoes',       'icon': Icons.directions_walk_rounded},
+    {'label': 'Bags',        'icon': Icons.shopping_bag_outlined},
+    {'label': 'Hats',        'icon': Icons.theater_comedy_outlined},
+    {'label': 'Accessories', 'icon': Icons.watch_outlined},
+    {'label': 'Sports',      'icon': Icons.sports_basketball_outlined},
+    {'label': 'Sets',        'icon': Icons.style_outlined},
   ];
+  String _selectedCategory = 'New in';
 
   // Shops with logo colors and icons
   final List<Map<String, dynamic>> _shops = [
@@ -48,7 +49,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
 
   List<Product> get _filteredProducts {
-    if (_selectedCategory == 'All') return ProductRepository.allProducts;
+    if (_selectedCategory == 'New in') return ProductRepository.allProducts;
     return ProductRepository.allProducts
         .where((p) => p.category == _selectedCategory || p.gender == _selectedCategory)
         .toList();
@@ -196,40 +197,81 @@ class _ShopScreenState extends State<ShopScreen> {
               ),
             ),
 
-            // SECTION 2: Category Tabs (Horizontal Scroll)
+            // SECTION 2: Category Tabs with icons
             SliverToBoxAdapter(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                 child: Row(
-                  children: _categories.map((category) {
-                    final isSelected = _selectedCategory == category;
+                  children: _categories.map((cat) {
+                    final label = cat['label'] as String;
+                    final icon  = cat['icon']  as IconData;
+                    final isSelected = _selectedCategory == label;
+
+                    // Selected: dark filled pill with white icon+text
+                    // Unselected: light pill with circular icon bg + label
                     return Padding(
-                      padding: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.only(right: 10),
                       child: GestureDetector(
-                        onTap: () => setState(() => _selectedCategory = category),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        onTap: () => setState(() => _selectedCategory = label),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOut,
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? accent
-                                : (isDark ? AppColors.darkWarm : Colors.white),
-                            borderRadius: BorderRadius.circular(20),
-                            border: !isSelected
-                                ? Border.all(
-                                    color: isDark ? Colors.white12 : Colors.grey.withOpacity(0.2),
-                                  )
-                                : null,
+                                ? (isDark ? Colors.white : const Color(0xFF1A1A1A))
+                                : (isDark ? const Color(0xFF2A2521) : const Color(0xFFF4F4F4)),
+                            borderRadius: BorderRadius.circular(50),
+                            border: isSelected
+                                ? null
+                                : Border.all(
+                                    color: isDark
+                                        ? Colors.white10
+                                        : const Color(0xFFE0E0E0),
+                                  ),
                           ),
-                          child: Text(
-                            category,
-                            style: GoogleFonts.outfit(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? (isDark ? AppColors.charcoal : Colors.white)
-                                  : (isDark ? Colors.white70 : AppColors.inkBlack),
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Icon circle
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? (isDark
+                                          ? const Color(0xFF1A1A1A)
+                                          : Colors.white)
+                                      : (isDark
+                                          ? Colors.white12
+                                          : Colors.white),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  icon,
+                                  size: 16,
+                                  color: isSelected
+                                      ? (isDark ? Colors.white : const Color(0xFF1A1A1A))
+                                      : (isDark ? Colors.white60 : const Color(0xFF555555)),
+                                ),
+                              ),
+                              const SizedBox(width: 7),
+                              // Label
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: Text(
+                                  label,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: isSelected
+                                        ? (isDark ? const Color(0xFF1A1A1A) : Colors.white)
+                                        : (isDark ? Colors.white70 : const Color(0xFF333333)),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
