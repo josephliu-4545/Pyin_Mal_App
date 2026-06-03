@@ -417,91 +417,101 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     const SizedBox(height: 18),
 
-                    // Color Variants - INLINE LAYOUT (Design Plan: Label + Swatches)
-                    Row(
+                    // Color Variants — product thumbnail style (reference design)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          'Colors',
-                          style: GoogleFonts.outfit(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : AppColors.inkBlack,
-                            letterSpacing: 0.3,
-                          ),
+                        // Hint row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isDark
+                                    ? Colors.white12
+                                    : const Color(0xFFF0F0F0),
+                              ),
+                              child: Icon(
+                                Icons.swap_horiz_rounded,
+                                size: 17,
+                                color: isDark ? Colors.white54 : const Color(0xFF888888),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Swipe and dress up differently',
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? Colors.white54
+                                    : const Color(0xFF888888),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: List.generate(_colors.length, (i) {
-                                final colorData = _colors[i];
-                                final isSelected =
-                                    _selectedColor == colorData['name'];
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                      right: i < _colors.length - 1 ? 12 : 0),
-                                  child: GestureDetector(
-                                    onTap: () => setState(() =>
-                                        _selectedColor = colorData['name']),
-                                    child: AnimatedScale(
-                                      scale: isSelected ? 1.08 : 1.0,
-                                      duration:
-                                          const Duration(milliseconds: 200),
-                                      child: Container(
-                                        width: 56,
-                                        height: 56,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? accent
-                                                : Colors.transparent,
-                                            width: 2.5,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(13),
-                                          boxShadow: isSelected
-                                              ? [
-                                                  BoxShadow(
-                                                    color: accent
-                                                        .withOpacity(0.25),
-                                                    blurRadius: 10,
-                                                    offset: const Offset(0, 3),
-                                                  ),
-                                                ]
-                                              : [
-                                                  BoxShadow(
-                                                    color: Colors.black
-                                                        .withOpacity(isDark
-                                                            ? 0.15
-                                                            : 0.06),
-                                                    blurRadius: 6,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ],
+                        const SizedBox(height: 14),
+                        // Thumbnail strip
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(_colors.length, (i) {
+                              final colorData = _colors[i];
+                              final isSelected = _selectedColor == colorData['name'];
+                              return GestureDetector(
+                                onTap: () => setState(
+                                    () => _selectedColor = colorData['name']),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeOut,
+                                  margin: EdgeInsets.only(
+                                      right: i < _colors.length - 1 ? 10 : 0),
+                                  width: isSelected ? 62 : 54,
+                                  height: isSelected ? 62 : 54,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? (isDark ? Colors.white : AppColors.inkBlack)
+                                          : Colors.transparent,
+                                      width: 2.5,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.18),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 4),
+                                            )
+                                          ]
+                                        : [],
+                                  ),
+                                  child: ClipOval(
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        // Color fill as background
+                                        Container(color: colorData['color'] as Color),
+                                        // Product image overlay (semi-transparent)
+                                        Image.asset(
+                                          widget.image,
+                                          fit: BoxFit.cover,
+                                          color: (colorData['color'] as Color)
+                                              .withOpacity(0.35),
+                                          colorBlendMode: BlendMode.srcATop,
+                                          errorBuilder: (_, __, ___) =>
+                                              const SizedBox(),
                                         ),
-                                        padding: const EdgeInsets.all(2),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: colorData['color'],
-                                            borderRadius:
-                                                BorderRadius.circular(11),
-                                            border: Border.all(
-                                              color: isDark
-                                                  ? AppColors.darkBorder
-                                                      .withOpacity(0.3)
-                                                  : Colors.grey
-                                                      .withOpacity(0.1),
-                                              width: 0.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
+                                      ],
                                     ),
                                   ),
-                                );
-                              }),
-                            ),
+                                ),
+                              );
+                            }),
                           ),
                         ),
                       ],
