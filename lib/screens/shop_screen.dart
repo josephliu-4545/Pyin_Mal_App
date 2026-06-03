@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
-import 'package:pyin_mal_app/screens/model_preview_screen.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
-import 'package:pyin_mal_app/core/constants/api_constants.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
-import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/screens/cart_screen.dart';
 
@@ -20,28 +16,33 @@ class ShopScreen extends StatefulWidget {
 }
 
 class _ShopScreenState extends State<ShopScreen> {
-  // Track favorite items locally
-  final Set<String> _favorites = {};
-  String _selectedCategory = 'All';
   final TextEditingController _searchController = TextEditingController();
+  String _selectedCategory = 'All';
+  final Set<String> _favorites = {};
 
+  // Categories matching reference design
   final List<String> _categories = [
     'All',
+    'Women',
     'Shoes',
+    'Hoodies',
     'T-Shirts',
-    'Pants',
-    'Hoodie',
-    'Sets',
-    'Burmese Wear',
+    'Sports',
+    'Accessories',
   ];
 
-  List<Product> get _filtered {
+  // Quick action items
+  final List<Map<String, dynamic>> _quickActions = [
+    {'label': 'Flash Sale', 'icon': Icons.local_fire_department_rounded, 'color': Colors.red},
+    {'label': 'Top Up', 'icon': Icons.account_balance_wallet_rounded, 'color': Colors.blue},
+    {'label': 'Bargain', 'icon': Icons.gavel_rounded, 'color': Colors.orange},
+    {'label': '9.9 Deal', 'icon': Icons.discount_rounded, 'color': Colors.purple},
+  ];
+
+  List<Product> get _filteredProducts {
     if (_selectedCategory == 'All') return ProductRepository.allProducts;
     return ProductRepository.allProducts
-        .where(
-          (p) =>
-              p.category == _selectedCategory || p.gender == _selectedCategory,
-        )
+        .where((p) => p.category == _selectedCategory || p.gender == _selectedCategory)
         .toList();
   }
 
@@ -55,941 +56,622 @@ class _ShopScreenState extends State<ShopScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = screenWidth >= 1024
-        ? 4
-        : (screenWidth >= 640 ? 3 : 2);
+    final crossAxisCount = screenWidth >= 1024 ? 4 : (screenWidth >= 640 ? 3 : 2);
     final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    final bgColor = isDark ? AppColors.charcoal : Color(0xFFFAF8F6);
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: isDark ? AppColors.charcoal : Colors.white,
-        appBar: AppBar(
-          backgroundColor: isDark ? AppColors.charcoal : Colors.white,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          actions: [
-            ListenableBuilder(
-              listenable: CartService.instance,
-              builder: (context, _) {
-                final count = CartService.instance.itemCount;
-                return Stack(
-                  alignment: Alignment.center,
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            // SECTION 1: Search Bar with Camera Icon
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   children: [
-                    IconButton(
-                      icon: Icon(Icons.shopping_cart_outlined, color: isDark ? Colors.white : AppColors.inkBlack),
-                      onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen()));
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkWarm : Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(isDark ? 0.2 : 0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Search products...',
+                            hintStyle: GoogleFonts.outfit(
+                              fontSize: 14,
+                              color: isDark ? Colors.white60 : Colors.grey,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              color: isDark ? Colors.white60 : Colors.grey,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            color: isDark ? Colors.white : AppColors.inkBlack,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Camera/Scan Icon Button
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: accent.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.camera_alt_rounded, color: accent),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Camera/Scan feature coming soon')),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Cart Icon
+                    ListenableBuilder(
+                      listenable: CartService.instance,
+                      builder: (context, _) {
+                        final count = CartService.instance.itemCount;
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkWarm : Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.08),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.shopping_cart_outlined,
+                                  color: accent,
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const CartScreen()),
+                                  );
+                                },
+                              ),
+                            ),
+                            if (count > 0)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    '$count',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
                       },
                     ),
-                    if (count > 0)
-                      Positioned(
-                        right: 8,
-                        top: 8,
+                  ],
+                ),
+              ),
+            ),
+
+            // SECTION 2: Category Tabs (Horizontal Scroll)
+            SliverToBoxAdapter(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: _categories.map((category) {
+                    final isSelected = _selectedCategory == category;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedCategory = category),
                         child: Container(
-                          padding: const EdgeInsets.all(4),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: accent,
-                            shape: BoxShape.circle,
+                            color: isSelected
+                                ? accent
+                                : (isDark ? AppColors.darkWarm : Colors.white),
+                            borderRadius: BorderRadius.circular(20),
+                            border: !isSelected
+                                ? Border.all(
+                                    color: isDark ? Colors.white12 : Colors.grey.withOpacity(0.2),
+                                  )
+                                : null,
                           ),
                           child: Text(
-                            '$count',
+                            category,
                             style: GoogleFonts.outfit(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? AppColors.charcoal : Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? (isDark ? AppColors.charcoal : Colors.white)
+                                  : (isDark ? Colors.white70 : AppColors.inkBlack),
                             ),
                           ),
                         ),
                       ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(width: 12),
-          ],
-          bottom: TabBar(
-            indicatorColor: accent,
-            labelColor: accent,
-            unselectedLabelColor: isDark
-                ? AppColors.paleText
-                : AppColors.inkGrey,
-            labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-            tabs: const [
-              Tab(text: 'Fashion'),
-              Tab(text: 'Barber Shop'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            // Fashion Tab
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header Section
-                  _buildHeaderSection(isDark),
-                  const SizedBox(height: 24),
-
-                  // Search Bar with Filter
-                  _buildSearchBar(isDark, accent),
-                  const SizedBox(height: 24),
-
-                  // Category Chips
-                  _buildCategoryChips(isDark, accent),
-                  const SizedBox(height: 24),
-
-                  // Product Grid
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      childAspectRatio: 0.68,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: _filtered.length,
-                    itemBuilder: (context, index) {
-                      final product = _filtered[index];
-                      return _buildProductCard(
-                        context,
-                        product,
-                        isDark,
-                        accent,
-                      );
-                    },
-                  ),
-                ],
+                    );
+                  }).toList(),
+                ),
               ),
             ),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-            // Barber Shop Tab (keep existing design)
-            SingleChildScrollView(
-              child: Column(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.all(16),
-                    height: 200,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
-                      image: const DecorationImage(
-                        image: CachedNetworkImageProvider('${ApiConstants.cdnBaseUrl}Hero/baber.jpg'),
-                        fit: BoxFit.cover,
-                        colorFilter: ColorFilter.mode(
-                          Colors.black54,
-                          BlendMode.darken,
-                        ),
-                      ),
+            // SECTION 3: Featured Promotional Section
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  height: 140,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [accent.withOpacity(0.3), accent.withOpacity(0.1)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: accent.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'BOOK YOUR STYLE',
-                          style: GoogleFonts.outfit(
-                            color: AppColors.gold,
-                            letterSpacing: 3,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Select a Barber Shop',
-                          style: GoogleFonts.rufina(
-                            fontSize: 32,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Professional grooming, curated for you',
-                          style: GoogleFonts.outfit(color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        _buildBarberCard(
-                          context,
-                          'Yangon Classic Barber',
-                          '4.8',
-                          '95',
-                          'Bogyoke Market, Yangon',
-                          [
-                            'Classic Haircut — 8,000 MMK',
-                            'Fade Cut — 12,000 MMK',
-                            'Beard Trim — 5,000 MMK',
-                          ],
-                          isDark,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildBarberCard(
-                          context,
-                          'Mandalay Heritage Salon',
-                          '4.9',
-                          '112',
-                          '84th Street, Mandalay',
-                          [
-                            'Pompadour — 15,000 MMK',
-                            'Textured Crop — 12,000 MMK',
-                            'Full Groom — 20,000 MMK',
-                          ],
-                          isDark,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildBarberCard(
-                          context,
-                          'Golden Scissors Studio',
-                          '4.7',
-                          '78',
-                          'Sanchaung, Yangon',
-                          [
-                            'Undercut — 10,000 MMK',
-                            'Buzz Cut — 7,000 MMK',
-                            'Skin Fade — 13,000 MMK',
-                          ],
-                          isDark,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 100),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Header Section ─────────────────────────────────────────────────────
-  Widget _buildHeaderSection(bool isDark) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Discover',
-              style: GoogleFonts.rufina(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppColors.inkBlack,
-              ),
-            ),
-            Text(
-              'Your Best Clothes',
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                color: isDark ? AppColors.paleText : AppColors.inkGrey,
-              ),
-            ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkWarm : AppColors.creamCard,
-            shape: BoxShape.circle,
-            border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('%', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.inkBlack)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeaderSectionOld(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Put together your',
-          style: GoogleFonts.rufina(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : AppColors.inkBlack,
-            height: 1.2,
-          ),
-        ),
-        Text(
-          'Perfect Look',
-          style: GoogleFonts.rufina(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : AppColors.inkBlack,
-            height: 1.2,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Discover pieces that match your style and body preview.',
-          style: GoogleFonts.outfit(
-            fontSize: 14,
-            color: isDark ? AppColors.paleText : AppColors.inkGrey,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Search Bar with Filter ─────────────────────────────────────────────
-  Widget _buildSearchBar(bool isDark, Color accent) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 52,
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TextField(
-              controller: _searchController,
-              onSubmitted: (value) {
-                if (value.trim().isNotEmpty) {
-                  DatabaseService().trackSearch(value.trim());
-                }
-              },
-              decoration: InputDecoration(
-                hintText: 'Search products...',
-                hintStyle: GoogleFonts.outfit(
-                  color: isDark ? AppColors.paleText : AppColors.inkGrey,
-                  fontSize: 14,
-                ),
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: isDark ? AppColors.paleText : AppColors.inkGrey,
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-              ),
-              style: GoogleFonts.outfit(
-                color: isDark ? Colors.white : AppColors.inkBlack,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        GestureDetector(
-          onTap: () => _showFilterBottomSheet(isDark, accent),
-          child: Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              Icons.tune_rounded,
-              color: isDark ? AppColors.charcoal : Colors.white,
-              size: 24,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Category Chips ────────────────────────────────────────────────────
-  Widget _buildCategoryChips(bool isDark, Color accent) {
-    return SizedBox(
-      height: 44,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _categories.length,
-        itemBuilder: (context, index) {
-          final category = _categories[index];
-          final isSelected = _selectedCategory == category;
-          return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedCategory = category),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? accent
-                      : (isDark ? AppColors.darkWarm : AppColors.creamAlt),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: isSelected ? accent : Colors.transparent,
-                    width: 1.5,
-                  ),
-                ),
-                child: Text(
-                  category,
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    color: isSelected
-                        ? (isDark ? AppColors.charcoal : Colors.white)
-                        : (isDark ? AppColors.paleText : AppColors.inkGrey),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ── Product Card ───────────────────────────────────────────────────────
-  Widget _buildProductCard(
-    BuildContext context,
-    Product product,
-    bool isDark,
-    Color accent,
-  ) {
-    final isFav = _favorites.contains(product.name);
-    return GestureDetector(
-      onTap: () {
-        DatabaseService().trackProductView(product.id);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProductDetailScreen(
-              productId: product.id,
-              name: product.name,
-              price: product.price,
-              image: product.image,
-              brand: product.brand,
-              category: product.category,
-              description: product.description,
-              shopName: product.shopName,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkWarm : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.charcoal.withOpacity(isDark ? 0.15 : 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Product Image
-            Expanded(
-              flex: 4,
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    child: CdnImage(
-                      product.image,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorBuilder: (c, e, s) => Container(
-                        color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
-                        child: const Center(
-                          child: Icon(Icons.image, size: 40, color: Colors.grey),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Favorite Button
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          if (isFav) {
-                            _favorites.remove(product.name);
-                          } else {
-                            _favorites.add(product.name);
-                          }
-                        });
-                      },
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1),
-                              blurRadius: 6, offset: const Offset(0, 2))],
-                        ),
-                        child: Icon(
-                          isFav ? Icons.favorite : Icons.favorite_outline,
-                          size: 18,
-                          color: accent,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Product Info
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          product.name,
+                          'Featured Collection',
                           style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                             color: isDark ? Colors.white : AppColors.inkBlack,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 8),
                         Text(
-                          'Sizes in Stock',
+                          'Discover the latest trending products',
                           style: GoogleFonts.outfit(
-                            fontSize: 11,
-                            color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                            fontSize: 13,
+                            color: isDark ? Colors.white60 : Colors.grey,
                           ),
                         ),
                       ],
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+            // SECTION 4: Quick Action Buttons
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: GridView.count(
+                  crossAxisCount: 4,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  children: _quickActions.map((action) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkWarm : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: GestureDetector(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('${action['label']} tapped')),
+                          );
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            Icon(
+                              action['icon'] as IconData,
+                              color: action['color'] as Color,
+                              size: 28,
+                            ),
+                            const SizedBox(height: 6),
                             Text(
-                              product.price,
+                              action['label'] as String,
+                              textAlign: TextAlign.center,
                               style: GoogleFonts.outfit(
-                                color: accent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : AppColors.inkBlack,
                               ),
                             ),
                           ],
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            DatabaseService().trackProductView(product.id);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ProductDetailScreen(
-                                  productId: product.id,
-                                  name: product.name,
-                                  price: product.price,
-                                  image: product.image,
-                                  brand: product.brand,
-                                  category: product.category,
-                                ),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: accent.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Shop',
-                              style: GoogleFonts.outfit(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: accent,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Filter Bottom Sheet ────────────────────────────────────────────────
-  void _showFilterBottomSheet(bool isDark, Color accent) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.charcoal : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: Column(
-          children: [
-            // Handle
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.darkBorder
-                      : AppColors.inkGrey.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Filters',
-                    style: GoogleFonts.rufina(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.inkBlack,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Icon(
-                      Icons.close_rounded,
-                      color: isDark ? Colors.white : AppColors.inkBlack,
-                      size: 28,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Style
-                    _buildFilterSection(
-                      'Style',
-                      [
-                        'Basic',
-                        'Classic',
-                        'Streetwear',
-                        'Formal',
-                        'Traditional',
-                      ],
-                      isDark,
-                      accent,
-                    ),
-                    const SizedBox(height: 24),
-                    // Event
-                    _buildFilterSection(
-                      'Event',
-                      ['Daily', 'University', 'Work', 'Party'],
-                      isDark,
-                      accent,
-                    ),
-                    const SizedBox(height: 24),
-                    // Season
-                    _buildFilterSection(
-                      'Season',
-                      ['Summer', 'Rainy', 'Winter'],
-                      isDark,
-                      accent,
-                    ),
-                    const SizedBox(height: 24),
-                    // Weather
-                    _buildFilterSection(
-                      'Weather',
-                      ['Sunny', 'Cloudy', 'Rainy'],
-                      isDark,
-                      accent,
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
-            ),
-            // Apply Button
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accent,
-                    foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    'Apply Filters',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterSection(
-    String title,
-    List<String> options,
-    bool isDark,
-    Color accent,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.outfit(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : AppColors.inkBlack,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: options.map((option) {
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.darkBorder
-                      : AppColors.inkGrey.withOpacity(0.2),
-                ),
-              ),
-              child: Text(
-                option,
-                style: GoogleFonts.outfit(
-                  fontSize: 13,
-                  color: isDark ? Colors.white : AppColors.inkBlack,
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBarberCard(
-    BuildContext context,
-    String name,
-    String rating,
-    String reviewCount,
-    String location,
-    List<String> services,
-    bool isDark,
-  ) {
-    final accent = isDark ? AppColors.gold : AppColors.burgundy;
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    color: accent.withOpacity(0.15),
-                    child: Icon(Icons.content_cut, color: accent, size: 30),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: GoogleFonts.rufina(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : AppColors.inkBlack,
-                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: AppColors.gold,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$rating ($reviewCount reviews)',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            color: Colors.grey,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            location,
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    );
+                  }).toList(),
                 ),
-              ],
+              ),
             ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Services',
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // SECTION 5: Products Grid
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'All Products',
                   style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                     color: isDark ? Colors.white : AppColors.inkBlack,
                   ),
                 ),
-                const SizedBox(height: 12),
-                ...services.map(
-                  (s) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 0.75,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final product = _filteredProducts[index];
+                    final isFavorited = _favorites.contains(product.id);
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProductDetailScreen(
+                              productId: product.id,
+                              name: product.name,
+                              price: product.price,
+                              image: product.image,
+                              brand: product.brand,
+                              category: product.category,
+                              description: product.description,
+                              shopName: product.shopName,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkWarm : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Product Image
+                            Stack(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    height: 140,
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.black12 : Colors.grey.withOpacity(0.1),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(12),
+                                        topRight: Radius.circular(12),
+                                      ),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(12),
+                                        topRight: Radius.circular(12),
+                                      ),
+                                      child: CdnImage(
+                                        product.image,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (c, e, s) => Center(
+                                          child: Icon(
+                                            Icons.image_not_supported_outlined,
+                                            color: isDark ? Colors.white30 : Colors.grey,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // Product Info
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Brand
+                                  Text(
+                                    product.brand,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 11,
+                                      color: isDark ? Colors.white60 : Colors.grey,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  // Product Name
+                                  Text(
+                                    product.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? Colors.white : AppColors.inkBlack,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  // Price & Heart
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        product.price,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: accent,
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            if (isFavorited) {
+                                              _favorites.remove(product.id);
+                                            } else {
+                                              _favorites.add(product.id);
+                                            }
+                                          });
+                                        },
+                                        child: Icon(
+                                          isFavorited ? Icons.favorite : Icons.favorite_outline,
+                                          color: isFavorited ? Colors.red : Colors.grey,
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  // Rating
+                                  Row(
+                                    children: [
+                                      Icon(Icons.star_rounded, size: 12, color: AppColors.gold),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        '4.8',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 11,
+                                          color: isDark ? Colors.white70 : Colors.grey,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  childCount: _filteredProducts.length,
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // SECTION 6: Flash Sale Section
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          s.split('—')[0].trim(),
-                          style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            color: isDark
-                                ? AppColors.paleText
-                                : AppColors.inkGrey,
-                          ),
+                        Row(
+                          children: [
+                            Icon(Icons.local_fire_department_rounded, color: Colors.red, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Flash Sale',
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : AppColors.inkBlack,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          s.split('—').length > 1 ? s.split('—')[1].trim() : '',
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: accent,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.timer_outlined, color: Colors.red, size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                '02:45:30',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accent,
-                      foregroundColor: isDark
-                          ? AppColors.charcoal
-                          : Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                    const SizedBox(height: 12),
+                    // Flash Sale Products (First 2)
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _filteredProducts.take(2).map((product) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Container(
+                              width: 120,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkWarm : Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Stack(
+                                    children: [
+                                      Container(
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(12),
+                                            topRight: Radius.circular(12),
+                                          ),
+                                          color: isDark ? Colors.black12 : Colors.grey.withOpacity(0.1),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(12),
+                                            topRight: Radius.circular(12),
+                                          ),
+                                          child: CdnImage(
+                                            product.image,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 4,
+                                        right: 4,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            '-30%',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          product.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: isDark ? Colors.white : AppColors.inkBlack,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          product.price,
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
-                    child: Text(
-                      'Book Appointment',
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+            const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          ],
+        ),
       ),
     );
   }
