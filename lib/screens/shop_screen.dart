@@ -24,11 +24,15 @@ class _ShopScreenState extends State<ShopScreen> {
   final List<String> _categories = [
     'All',
     'Women',
-    'Shoes',
+    'Men',
     'Hoodies',
     'T-Shirts',
-    'Sports',
+    'Shoes',
+    'Bags',
+    'Hats',
     'Accessories',
+    'Sports',
+    'Sets',
   ];
 
   // Shops with logo colors and icons
