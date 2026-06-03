@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:io';
+import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'dart:math' as math;
 
@@ -7,19 +8,24 @@ import 'dart:math' as math;
 class Model3DService {
   static const String hoodiemodelFileName = 'hoodie_3d.glb';
 
-  /// Generate a procedural 3D hoodie model as GLB file
+  /// Generate a procedural 3D hoodie model as GLB file or data URL
   static Future<String?> generateHoodie3DModel() async {
     try {
       print('🎨 Generating 3D hoodie model...');
 
+      // Generate GLB mesh
+      print('   Generating mesh...');
+      final glbData = _generateHoodieGLB();
+      print('   Generated GLB data: ${glbData.lengthInBytes} bytes');
+
+      // Try to use file storage (native platforms)
       try {
-        // Get app documents directory
+        print('   Attempting file storage...');
         final dir = await getApplicationDocumentsDirectory();
         print('   App docs dir: ${dir.path}');
 
         final modelsDir = Directory('${dir.path}/models');
 
-        // Create models directory if not exists
         if (!await modelsDir.exists()) {
           print('   Creating models directory...');
           await modelsDir.create(recursive: true);
@@ -27,36 +33,36 @@ class Model3DService {
 
         final modelFile = File('${modelsDir.path}/$hoodiemodelFileName');
 
-        // Check if model already exists
         if (await modelFile.exists()) {
           print('✓ 3D model already exists at: ${modelFile.path}');
           return modelFile.path;
         }
 
-        // Generate GLB file
-        print('   Generating mesh...');
-        final glbData = _generateHoodieGLB();
-        print('   Generated GLB data: ${glbData.lengthInBytes} bytes');
-
-        // Write to file
         print('   Writing to file...');
         await modelFile.writeAsBytes(glbData);
 
-        // Verify file was written
         if (await modelFile.exists()) {
           final fileSize = await modelFile.length();
           print('✅ 3D hoodie model generated successfully');
           print('   Path: ${modelFile.path}');
           print('   Size: ${(fileSize / 1024).toStringAsFixed(2)} KB');
           return modelFile.path;
-        } else {
-          print('❌ File was not created');
+        }
+      } catch (fileError) {
+        print('⚠️  File storage unavailable (likely web platform): $fileError');
+        print('   Falling back to data URL...');
+
+        // Fallback: Use data URL for web
+        try {
+          final base64Data = base64Encode(glbData);
+          final dataUrl = 'data:model/gltf-binary;base64,$base64Data';
+          print('✅ 3D hoodie model generated successfully (web/data URL)');
+          print('   Data URL size: ${(glbData.lengthInBytes / 1024).toStringAsFixed(2)} KB');
+          return dataUrl;
+        } catch (dataUrlError) {
+          print('❌ Error creating data URL: $dataUrlError');
           return null;
         }
-      } catch (writeError) {
-        print('❌ File write error: $writeError');
-        // Fallback: return empty string to trigger placeholder
-        return '';
       }
     } catch (e) {
       print('❌ Error generating 3D model: $e');

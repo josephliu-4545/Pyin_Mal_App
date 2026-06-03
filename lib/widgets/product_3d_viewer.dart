@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
 import '../services/model_3d_service.dart';
 import '../main.dart';
 
@@ -164,123 +165,100 @@ class _Product3DViewerState extends State<Product3DViewer> {
   }
 
   Widget _build3DViewer() {
-    return GestureDetector(
-      onHorizontalDragUpdate: (details) {
-        setState(() {
-          rotation += details.delta.dx * 0.01;
-        });
-      },
-      onPanUpdate: (details) {
-        // Future: Add zoom with vertical drag
-      },
-      child: Stack(
-        children: [
-          // 3D Model Viewer Background
-          Container(
-            color: widget.isDark ? AppColors.darkWarm : Colors.white,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Placeholder for 3D model
-                  // Note: Actual 3D rendering uses model_viewer package
-                  Icon(
-                    Icons.view_in_ar,
-                    size: 80,
-                    color: widget.isDark
-                        ? Colors.white30
-                        : Colors.grey.withOpacity(0.3),
+    if (modelPath == null || modelPath!.isEmpty) {
+      return _buildPlaceholder();
+    }
+
+    return Stack(
+      children: [
+        // 3D Model Viewer using ModelViewerPlus
+        Container(
+          color: widget.isDark ? AppColors.darkWarm : Colors.white,
+          child: ModelViewer(
+            src: modelPath!,
+            alt: '3D Product Model',
+            autoRotate: false,
+            cameraControls: true,
+            backgroundColor: Color.lerp(
+              widget.isDark ? AppColors.darkWarm : Colors.white,
+              Colors.transparent,
+              0.1,
+            )!,
+          ),
+        ),
+
+        // Rotation Indicator (Control Instructions)
+        Positioned(
+          bottom: 12,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.95),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '3D Model Ready',
-                    style: GoogleFonts.outfit(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: widget.isDark ? Colors.white54 : Colors.grey,
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      // Rotate left via script injection if needed
+                      print('Rotate left');
+                    },
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: Text(
+                        '<',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.inkBlack,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Drag to rotate • Pinch to zoom',
-                    style: GoogleFonts.outfit(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: widget.isDark ? Colors.white38 : Colors.grey.withOpacity(0.6),
+                  const SizedBox(width: 16),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: AppColors.inkBlack,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  GestureDetector(
+                    onTap: () {
+                      // Rotate right via script injection if needed
+                      print('Rotate right');
+                    },
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: Text(
+                        '>',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.inkBlack,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-
-          // Rotation Indicator
-          Positioned(
-            bottom: 12,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.95),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    GestureDetector(
-                      onTap: () => setState(() => rotation -= 0.3),
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: Text(
-                          '<',
-                          style: GoogleFonts.outfit(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.inkBlack,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppColors.inkBlack,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: () => setState(() => rotation += 0.3),
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: Text(
-                          '>',
-                          style: GoogleFonts.outfit(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.inkBlack,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
