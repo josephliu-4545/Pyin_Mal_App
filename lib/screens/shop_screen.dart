@@ -385,44 +385,80 @@ class _ShopScreenState extends State<ShopScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: isDark ? AppColors.darkWarm : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                              color: Colors.black.withOpacity(isDark ? 0.2 : 0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Product Image
+                            // Product Image with Wishlist
                             Stack(
                               children: [
-                                Expanded(
-                                  child: Container(
-                                    height: 140,
-                                    decoration: BoxDecoration(
-                                      color: isDark ? Colors.black12 : Colors.grey.withOpacity(0.1),
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(12),
-                                        topRight: Radius.circular(12),
+                                Container(
+                                  height: 160,
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.black12 : Colors.grey.withOpacity(0.1),
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(16),
+                                      topRight: Radius.circular(16),
+                                    ),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(16),
+                                      topRight: Radius.circular(16),
+                                    ),
+                                    child: CdnImage(
+                                      product.image,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (c, e, s) => Center(
+                                        child: Icon(
+                                          Icons.image_not_supported_outlined,
+                                          color: isDark ? Colors.white30 : Colors.grey,
+                                          size: 40,
+                                        ),
                                       ),
                                     ),
-                                    child: ClipRRect(
-                                      borderRadius: const BorderRadius.only(
-                                        topLeft: Radius.circular(12),
-                                        topRight: Radius.circular(12),
-                                      ),
-                                      child: CdnImage(
-                                        product.image,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (c, e, s) => Center(
-                                          child: Icon(
-                                            Icons.image_not_supported_outlined,
-                                            color: isDark ? Colors.white30 : Colors.grey,
+                                  ),
+                                ),
+                                // Wishlist Button (Top Right)
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        if (isFavorited) {
+                                          _favorites.remove(product.id);
+                                        } else {
+                                          _favorites.add(product.id);
+                                        }
+                                      });
+                                    },
+                                    child: Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.95),
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.15),
+                                            blurRadius: 6,
                                           ),
+                                        ],
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          isFavorited ? Icons.favorite : Icons.favorite_outline,
+                                          color: isFavorited ? Colors.red : Colors.grey,
+                                          size: 18,
                                         ),
                                       ),
                                     ),
@@ -430,81 +466,100 @@ class _ShopScreenState extends State<ShopScreen> {
                                 ),
                               ],
                             ),
-                            // Product Info
-                            Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Brand
-                                  Text(
-                                    product.brand,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 11,
-                                      color: isDark ? Colors.white60 : Colors.grey,
-                                      fontWeight: FontWeight.w500,
+                            // Product Details
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Brand Label
+                                        Text(
+                                          product.brand,
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 10,
+                                            color: isDark ? Colors.white60 : Colors.grey,
+                                            fontWeight: FontWeight.w500,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        // Product Name
+                                        Text(
+                                          product.name,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark ? Colors.white : AppColors.inkBlack,
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  // Product Name
-                                  Text(
-                                    product.name,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? Colors.white : AppColors.inkBlack,
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Rating
+                                        Row(
+                                          children: [
+                                            ...List.generate(
+                                              5,
+                                              (i) => Icon(
+                                                Icons.star_rounded,
+                                                size: 12,
+                                                color: AppColors.gold,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '4.8 (128)',
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 10,
+                                                color: isDark ? Colors.white60 : Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        // Price
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              product.price,
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w800,
+                                                color: accent,
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: accent.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                'View',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: accent,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  // Price & Heart
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        product.price,
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          color: accent,
-                                        ),
-                                      ),
-                                      GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            if (isFavorited) {
-                                              _favorites.remove(product.id);
-                                            } else {
-                                              _favorites.add(product.id);
-                                            }
-                                          });
-                                        },
-                                        child: Icon(
-                                          isFavorited ? Icons.favorite : Icons.favorite_outline,
-                                          color: isFavorited ? Colors.red : Colors.grey,
-                                          size: 18,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  // Rating
-                                  Row(
-                                    children: [
-                                      Icon(Icons.star_rounded, size: 12, color: AppColors.gold),
-                                      const SizedBox(width: 3),
-                                      Text(
-                                        '4.8',
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 11,
-                                          color: isDark ? Colors.white70 : Colors.grey,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ],
