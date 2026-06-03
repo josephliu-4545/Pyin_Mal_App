@@ -143,7 +143,7 @@ class _Product3DViewerState extends State<Product3DViewer> {
           ),
           const SizedBox(height: 20),
           Text(
-            '360° 3D View',
+            'Loading 3D Model...',
             style: GoogleFonts.outfit(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -152,11 +152,22 @@ class _Product3DViewerState extends State<Product3DViewer> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Drag to rotate • Pinch to zoom',
+            'Your 3D product viewer is being prepared',
             style: GoogleFonts.outfit(
               fontSize: 13,
               fontWeight: FontWeight.w400,
               color: widget.isDark ? Colors.white60 : Colors.grey.withOpacity(0.7),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: 30,
+            height: 30,
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation(
+                widget.isDark ? AppColors.gold : AppColors.burgundy,
+              ),
+              strokeWidth: 2,
             ),
           ),
         ],
@@ -179,6 +190,8 @@ class _Product3DViewerState extends State<Product3DViewer> {
             alt: '3D Product Model',
             autoRotate: false,
             cameraControls: true,
+            enableDamping: true,
+            rotationPerSecond: 0,
             backgroundColor: Color.lerp(
               widget.isDark ? AppColors.darkWarm : Colors.white,
               Colors.transparent,
