@@ -190,8 +190,6 @@ class _Product3DViewerState extends State<Product3DViewer> {
             alt: '3D Product Model',
             autoRotate: false,
             cameraControls: true,
-            enableDamping: true,
-            rotationPerSecond: 0,
             backgroundColor: Color.lerp(
               widget.isDark ? AppColors.darkWarm : Colors.white,
               Colors.transparent,
