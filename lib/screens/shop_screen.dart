@@ -15,10 +15,15 @@ class ShopScreen extends StatefulWidget {
   State<ShopScreen> createState() => _ShopScreenState();
 }
 
-class _ShopScreenState extends State<ShopScreen> {
+class _ShopScreenState extends State<ShopScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All';
   final Set<String> _favorites = {};
+
+  // Auto-sliding shops controller
+  late final ScrollController _shopsScrollController;
+  late final AnimationController _slideController;
 
   // Categories matching reference design
   final List<String> _categories = [
@@ -29,6 +34,17 @@ class _ShopScreenState extends State<ShopScreen> {
     'T-Shirts',
     'Sports',
     'Accessories',
+  ];
+
+  // Shops with logo colors and icons
+  final List<Map<String, dynamic>> _shops = [
+    {'name': 'Pyin Mal\nOfficial', 'icon': Icons.store_rounded, 'color': Color(0xFF6B2737), 'bg': Color(0xFFF5E6E8)},
+    {'name': 'Luna\nBoutique',     'icon': Icons.diamond_rounded, 'color': Color(0xFF7B5EA7), 'bg': Color(0xFFF0EAF8)},
+    {'name': 'NRF\nStore',         'icon': Icons.bolt_rounded,    'color': Color(0xFF1A1A2E), 'bg': Color(0xFFE8E8F0)},
+    {'name': 'ABCD\nFashion',      'icon': Icons.auto_awesome_rounded, 'color': Color(0xFFB5541B), 'bg': Color(0xFFFAEDE6)},
+    {'name': 'AJOHN\nOfficial',    'icon': Icons.workspace_premium_rounded, 'color': Color(0xFF2E7D32), 'bg': Color(0xFFE8F5E9)},
+    {'name': 'LAPSES\nShop',       'icon': Icons.style_rounded,   'color': Color(0xFF1565C0), 'bg': Color(0xFFE3F2FD)},
+    {'name': 'Fartech\nBrand',     'icon': Icons.flash_on_rounded, 'color': Color(0xFFE65100), 'bg': Color(0xFFFFF3E0)},
   ];
 
   // Quick action items
@@ -47,7 +63,29 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _shopsScrollController = ScrollController();
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    )..repeat();
+
+    _slideController.addListener(_autoScroll);
+  }
+
+  void _autoScroll() {
+    if (!_shopsScrollController.hasClients) return;
+    final max = _shopsScrollController.position.maxScrollExtent;
+    final pos = _slideController.value * max;
+    _shopsScrollController.jumpTo(pos);
+  }
+
+  @override
   void dispose() {
+    _slideController.removeListener(_autoScroll);
+    _slideController.dispose();
+    _shopsScrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -232,49 +270,102 @@ class _ShopScreenState extends State<ShopScreen> {
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-            // SECTION 3: Featured Promotional Section
+            // SECTION 3: Shops Row (auto-sliding)
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  height: 140,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [accent.withOpacity(0.3), accent.withOpacity(0.1)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: accent.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Featured Collection',
+                          'Shops',
                           style: GoogleFonts.outfit(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: isDark ? Colors.white : AppColors.inkBlack,
                           ),
                         ),
-                        const SizedBox(height: 8),
                         Text(
-                          'Discover the latest trending products',
+                          'See all',
                           style: GoogleFonts.outfit(
                             fontSize: 13,
-                            color: isDark ? Colors.white60 : Colors.grey,
+                            fontWeight: FontWeight.w500,
+                            color: accent,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
+                  SizedBox(
+                    height: 100,
+                    child: GestureDetector(
+                      // Pause auto-scroll when user drags manually
+                      onHorizontalDragStart: (_) => _slideController.stop(),
+                      onHorizontalDragEnd: (_) => _slideController.repeat(),
+                      child: ListView.separated(
+                        controller: _shopsScrollController,
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _shops.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 16),
+                        itemBuilder: (context, index) {
+                          final shop = _shops[index];
+                          final bg = isDark
+                              ? (shop['color'] as Color).withOpacity(0.2)
+                              : shop['bg'] as Color;
+                          final iconColor = shop['color'] as Color;
+                          return Column(
+                            children: [
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: bg,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: iconColor.withOpacity(0.3),
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: iconColor.withOpacity(0.15),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  shop['icon'] as IconData,
+                                  color: iconColor,
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              SizedBox(
+                                width: 64,
+                                child: Text(
+                                  shop['name'] as String,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.white70 : AppColors.inkBlack,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 20)),
