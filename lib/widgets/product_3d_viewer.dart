@@ -219,16 +219,15 @@ class _RotationHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Total canvas: arcs spread 80px each side of the 36px circle
     return SizedBox(
-      width: 160,
-      height: 44,
+      width: 170,
+      height: 52,
       child: Stack(
         alignment: Alignment.center,
         children: [
           // Curved arcs painted behind the circle
           CustomPaint(
-            size: const Size(160, 44),
+            size: const Size(170, 52),
             painter: _ArcsPainter(),
           ),
           // White circle with shadow
@@ -265,64 +264,61 @@ class _ArcsPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = Colors.white
-      ..strokeWidth = 2.2
+      ..strokeWidth = 2.4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final cx = size.width / 2;  // 80
-    final cy = size.height / 2; // 22
+    final cx = size.width  / 2; // 85
+    final cy = size.height / 2; // 26
 
-    const circleR   = 19.0; // half of center circle widget
-    const arcW      = 50.0; // horizontal reach of each arc
-    const arcH      = 13.0; // vertical height of the upward bow
-    const headLen   = 7.0;
-    const headSpread = 0.45; // radians — half-angle of arrowhead V
+    const circleR = 19.0; // half of center circle widget
+    const arcW    = 48.0; // horizontal reach from circle edge to arrow tip
+    const arcH    = 20.0; // how far the arc bows UPWARD (larger = more bow)
 
-    // ── LEFT ARC ──────────────────────────────────────────────────────────────
-    // Rect whose right edge = circle edge, left edge = arrow tip.
-    // drawArc at angle=0 starts at the RIGHTMOST point = circle edge.
-    // sweepAngle = -π  → counterclockwise 180° on screen = right→UP→left ✓
+    // In Flutter's canvas: y increases downward.
+    // drawArc Rect top = cy - arcH  (ABOVE center = visually UP)
+    //                bottom = cy + arcH  (below center)
+    //
+    // LEFT arc: startAngle=π (leftmost point = arrow tip side),
+    //           sweepAngle=+π (clockwise) → tip → TOP → circle edge
+    //           Drawn right-to-left so the arc bows UPWARD.
     final leftRect = Rect.fromLTRB(
-      cx - circleR - arcW, // left  (arrow tip side)
-      cy - arcH,           // top   (peak of upward bow)
-      cx - circleR,        // right (circle edge)
-      cy + arcH,           // bottom
+      cx - circleR - arcW,  // left  = arrow-tip side
+      cy - arcH,            // top   = upward peak
+      cx - circleR,         // right = circle-edge side
+      cy + arcH,            // bottom
     );
-    canvas.drawArc(leftRect, 0, -math.pi, false, paint);
+    // Start at leftmost (π), sweep +π clockwise → left→UP→right direction
+    // i.e., tip → peak → circle edge  (bows upward toward viewer)
+    canvas.drawArc(leftRect, math.pi, math.pi, false, paint);
 
-    // Arrowhead at the left tip — V pointing LEFT
+    // Arrowhead at LEFT tip (pointing left)
     final lt = Offset(leftRect.left, cy);
     canvas.drawPath(
       Path()
-        ..moveTo(lt.dx + headLen * math.cos(headSpread),
-                 lt.dy - headLen * math.sin(headSpread))
+        ..moveTo(lt.dx + 8, lt.dy - 5)
         ..lineTo(lt.dx, lt.dy)
-        ..lineTo(lt.dx + headLen * math.cos(headSpread),
-                 lt.dy + headLen * math.sin(headSpread)),
+        ..lineTo(lt.dx + 8, lt.dy + 5),
       paint,
     );
 
-    // ── RIGHT ARC ─────────────────────────────────────────────────────────────
-    // Rect whose left edge = circle edge, right edge = arrow tip.
-    // drawArc at angle=π starts at the LEFTMOST point = circle edge.
-    // sweepAngle = +π  → clockwise 180° on screen = left→UP→right ✓
+    // RIGHT arc: startAngle=0 (rightmost = arrow tip side),
+    //            sweepAngle=−π (counter-clockwise) → tip → TOP → circle edge
     final rightRect = Rect.fromLTRB(
-      cx + circleR,         // left  (circle edge)
-      cy - arcH,            // top   (peak of upward bow)
-      cx + circleR + arcW,  // right (arrow tip side)
+      cx + circleR,         // left  = circle-edge side
+      cy - arcH,            // top   = upward peak
+      cx + circleR + arcW,  // right = arrow-tip side
       cy + arcH,            // bottom
     );
-    canvas.drawArc(rightRect, math.pi, math.pi, false, paint);
+    canvas.drawArc(rightRect, 0, -math.pi, false, paint);
 
-    // Arrowhead at the right tip — V pointing RIGHT
+    // Arrowhead at RIGHT tip (pointing right)
     final rt = Offset(rightRect.right, cy);
     canvas.drawPath(
       Path()
-        ..moveTo(rt.dx - headLen * math.cos(headSpread),
-                 rt.dy - headLen * math.sin(headSpread))
+        ..moveTo(rt.dx - 8, rt.dy - 5)
         ..lineTo(rt.dx, rt.dy)
-        ..lineTo(rt.dx - headLen * math.cos(headSpread),
-                 rt.dy + headLen * math.sin(headSpread)),
+        ..lineTo(rt.dx - 8, rt.dy + 5),
       paint,
     );
   }
