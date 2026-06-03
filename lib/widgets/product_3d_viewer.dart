@@ -198,73 +198,32 @@ class _Product3DViewerState extends State<Product3DViewer> {
           ),
         ),
 
-        // Rotation Indicator (Control Instructions)
+        // Rotation handle — pill with ↔ icon (matches reference)
         Positioned(
-          bottom: 12,
+          bottom: 16,
           left: 0,
           right: 0,
           child: Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              width: 56,
+              height: 28,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.95),
-                borderRadius: BorderRadius.circular(20),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withOpacity(0.14),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      // Rotate left via script injection if needed
-                      print('Rotate left');
-                    },
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: Text(
-                        '<',
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.inkBlack,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.inkBlack,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  GestureDetector(
-                    onTap: () {
-                      // Rotate right via script injection if needed
-                      print('Rotate right');
-                    },
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: Text(
-                        '>',
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.inkBlack,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              child: const Center(
+                child: Icon(
+                  Icons.swap_horiz_rounded,
+                  size: 20,
+                  color: Color(0xFF333333),
+                ),
               ),
             ),
           ),
