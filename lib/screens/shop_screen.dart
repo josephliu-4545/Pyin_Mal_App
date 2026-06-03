@@ -354,214 +354,37 @@ class _ShopScreenState extends State<ShopScreen> {
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 0.75,
+                  mainAxisSpacing: 14,
+                  crossAxisSpacing: 14,
+                  childAspectRatio: 0.62,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final product = _filteredProducts[index];
                     final isFavorited = _favorites.contains(product.id);
-
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ProductDetailScreen(
-                              productId: product.id,
-                              name: product.name,
-                              price: product.price,
-                              image: product.image,
-                              brand: product.brand,
-                              category: product.category,
-                              description: product.description,
-                              shopName: product.shopName,
-                            ),
+                    return _ProductCard(
+                      product: product,
+                      isFavorited: isFavorited,
+                      isDark: isDark,
+                      accent: accent,
+                      onFavTap: () => setState(() {
+                        isFavorited
+                            ? _favorites.remove(product.id)
+                            : _favorites.add(product.id);
+                      }),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProductDetailScreen(
+                            productId: product.id,
+                            name: product.name,
+                            price: product.price,
+                            image: product.image,
+                            brand: product.brand,
+                            category: product.category,
+                            description: product.description,
+                            shopName: product.shopName,
                           ),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkWarm : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(isDark ? 0.2 : 0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Product Image with Wishlist
-                            Stack(
-                              children: [
-                                Container(
-                                  height: 160,
-                                  decoration: BoxDecoration(
-                                    color: isDark ? Colors.black12 : Colors.grey.withOpacity(0.1),
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(16),
-                                      topRight: Radius.circular(16),
-                                    ),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(16),
-                                      topRight: Radius.circular(16),
-                                    ),
-                                    child: CdnImage(
-                                      product.image,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (c, e, s) => Center(
-                                        child: Icon(
-                                          Icons.image_not_supported_outlined,
-                                          color: isDark ? Colors.white30 : Colors.grey,
-                                          size: 40,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                // Wishlist Button (Top Right)
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        if (isFavorited) {
-                                          _favorites.remove(product.id);
-                                        } else {
-                                          _favorites.add(product.id);
-                                        }
-                                      });
-                                    },
-                                    child: Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.95),
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.15),
-                                            blurRadius: 6,
-                                          ),
-                                        ],
-                                      ),
-                                      child: Center(
-                                        child: Icon(
-                                          isFavorited ? Icons.favorite : Icons.favorite_outline,
-                                          color: isFavorited ? Colors.red : Colors.grey,
-                                          size: 18,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // Product Details
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // Brand Label
-                                        Text(
-                                          product.brand,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 10,
-                                            color: isDark ? Colors.white60 : Colors.grey,
-                                            fontWeight: FontWeight.w500,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        // Product Name
-                                        Text(
-                                          product.name,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                            color: isDark ? Colors.white : AppColors.inkBlack,
-                                            height: 1.2,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // Rating
-                                        Row(
-                                          children: [
-                                            ...List.generate(
-                                              5,
-                                              (i) => Icon(
-                                                Icons.star_rounded,
-                                                size: 12,
-                                                color: AppColors.gold,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              '4.8 (128)',
-                                              style: GoogleFonts.outfit(
-                                                fontSize: 10,
-                                                color: isDark ? Colors.white60 : Colors.grey,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 6),
-                                        // Price
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              product.price,
-                                              style: GoogleFonts.outfit(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w800,
-                                                color: accent,
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: accent.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                'View',
-                                                style: GoogleFonts.outfit(
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: accent,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     );
@@ -724,6 +547,258 @@ class _ShopScreenState extends State<ShopScreen> {
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Product Card ─────────────────────────────────────────────────────────────
+class _ProductCard extends StatelessWidget {
+  final Product product;
+  final bool isFavorited;
+  final bool isDark;
+  final Color accent;
+  final VoidCallback onFavTap;
+  final VoidCallback onTap;
+
+  const _ProductCard({
+    required this.product,
+    required this.isFavorited,
+    required this.isDark,
+    required this.accent,
+    required this.onFavTap,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final surfaceColor = isDark ? const Color(0xFF1E1B18) : Colors.white;
+    final mutedColor = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Image area ─────────────────────────────────────────────────
+            Expanded(
+              flex: 7,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Photo
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    child: CdnImage(
+                      product.image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: isDark
+                            ? const Color(0xFF2A2421)
+                            : const Color(0xFFF2F2F2),
+                        child: Center(
+                          child: Icon(Icons.image_outlined,
+                              size: 36, color: mutedColor),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Subtle bottom fade so text doesn't fight the photo
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 48,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.28),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Category chip — bottom-left
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        product.category,
+                        style: GoogleFonts.outfit(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Wishlist — top-right
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: onFavTap,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.92),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.18),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            isFavorited
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            size: 16,
+                            color: isFavorited
+                                ? const Color(0xFFE53935)
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Info area ──────────────────────────────────────────────────
+            Expanded(
+              flex: 4,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Brand + name
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.brand.toUpperCase(),
+                          style: GoogleFonts.outfit(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: accent,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          product.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Stars + price row
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Stars
+                        Row(
+                          children: [
+                            ...List.generate(
+                              5,
+                              (_) => Icon(Icons.star_rounded,
+                                  size: 11, color: AppColors.gold),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '4.8',
+                              style: GoogleFonts.outfit(
+                                fontSize: 10,
+                                color: mutedColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        // Price row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                product.price,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: accent,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: accent,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.add_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
