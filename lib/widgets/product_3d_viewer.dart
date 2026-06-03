@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
@@ -198,37 +199,148 @@ class _Product3DViewerState extends State<Product3DViewer> {
           ),
         ),
 
-        // Rotation handle — pill with ↔ icon (matches reference)
+        // Rotation handle — circle + curved arcs with arrowheads
         Positioned(
           bottom: 16,
           left: 0,
           right: 0,
-          child: Center(
-            child: Container(
-              width: 56,
-              height: 28,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.14),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.swap_horiz_rounded,
-                  size: 20,
-                  color: Color(0xFF333333),
-                ),
-              ),
-            ),
+          child: const Center(
+            child: _RotationHandle(),
           ),
         ),
       ],
     );
   }
+}
+
+// ── Rotation handle: circle with ↔ icon + curved arcs + arrowheads ──────────
+class _RotationHandle extends StatelessWidget {
+  const _RotationHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    // Total canvas: arcs spread 80px each side of the 36px circle
+    return SizedBox(
+      width: 160,
+      height: 44,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Curved arcs painted behind the circle
+          CustomPaint(
+            size: const Size(160, 44),
+            painter: _ArcsPainter(),
+          ),
+          // White circle with shadow
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.18),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.swap_horiz_rounded,
+                size: 20,
+                color: Color(0xFF222222),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArcsPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 2.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final cx = size.width / 2;  // 80
+    final cy = size.height / 2; // 22
+
+    // Arc sweep: curve that bends slightly upward, from circle edge outward
+    // Each arc is a portion of an ellipse centered above the handle
+    const circleR = 18.0; // half of circle widget
+    const arcH    = 10.0; // how much the arc bows upward
+    const arcW    = 52.0; // horizontal reach of each arc
+
+    // ── Left arc (from circle edge leftward) ────────────────────────────────
+    final leftPath = Path();
+    // Start just left of circle, end at far left
+    leftPath.moveTo(cx - circleR - 2, cy);
+    leftPath.cubicTo(
+      cx - circleR - arcW * 0.35, cy - arcH,  // cp1
+      cx - circleR - arcW * 0.65, cy - arcH,  // cp2
+      cx - circleR - arcW,        cy,          // end
+    );
+    canvas.drawPath(leftPath, paint);
+
+    // Left arrowhead (points left)
+    _drawArrowhead(canvas, paint,
+      tip: Offset(cx - circleR - arcW, cy),
+      direction: -1, // left
+    );
+
+    // ── Right arc (from circle edge rightward) ───────────────────────────────
+    final rightPath = Path();
+    rightPath.moveTo(cx + circleR + 2, cy);
+    rightPath.cubicTo(
+      cx + circleR + arcW * 0.35, cy - arcH,
+      cx + circleR + arcW * 0.65, cy - arcH,
+      cx + circleR + arcW,        cy,
+    );
+    canvas.drawPath(rightPath, paint);
+
+    // Right arrowhead (points right)
+    _drawArrowhead(canvas, paint,
+      tip: Offset(cx + circleR + arcW, cy),
+      direction: 1, // right
+    );
+  }
+
+  void _drawArrowhead(
+    Canvas canvas,
+    Paint paint, {
+    required Offset tip,
+    required int direction, // -1 = left, 1 = right
+  }) {
+    const headLen = 7.0;
+    const headAngle = 0.45; // radians
+
+    // The arc arrives roughly horizontally, so arrow points along x
+    final p1 = Offset(
+      tip.dx - direction * headLen * cos(headAngle),
+      tip.dy - headLen * sin(headAngle),
+    );
+    final p2 = Offset(
+      tip.dx - direction * headLen * cos(headAngle),
+      tip.dy + headLen * sin(headAngle),
+    );
+
+    final path = Path()
+      ..moveTo(p1.dx, p1.dy)
+      ..lineTo(tip.dx, tip.dy)
+      ..lineTo(p2.dx, p2.dy);
+    canvas.drawPath(path, paint);
+  }
+
+  double cos(double r) => math.cos(r);
+  double sin(double r) => math.sin(r);
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }
