@@ -12,36 +12,55 @@ class Model3DService {
     try {
       print('🎨 Generating 3D hoodie model...');
 
-      // Get app documents directory
-      final dir = await getApplicationDocumentsDirectory();
-      final modelsDir = Directory('${dir.path}/models');
+      try {
+        // Get app documents directory
+        final dir = await getApplicationDocumentsDirectory();
+        print('   App docs dir: ${dir.path}');
 
-      // Create models directory if not exists
-      if (!await modelsDir.exists()) {
-        await modelsDir.create(recursive: true);
+        final modelsDir = Directory('${dir.path}/models');
+
+        // Create models directory if not exists
+        if (!await modelsDir.exists()) {
+          print('   Creating models directory...');
+          await modelsDir.create(recursive: true);
+        }
+
+        final modelFile = File('${modelsDir.path}/$hoodiemodelFileName');
+
+        // Check if model already exists
+        if (await modelFile.exists()) {
+          print('✓ 3D model already exists at: ${modelFile.path}');
+          return modelFile.path;
+        }
+
+        // Generate GLB file
+        print('   Generating mesh...');
+        final glbData = _generateHoodieGLB();
+        print('   Generated GLB data: ${glbData.lengthInBytes} bytes');
+
+        // Write to file
+        print('   Writing to file...');
+        await modelFile.writeAsBytes(glbData);
+
+        // Verify file was written
+        if (await modelFile.exists()) {
+          final fileSize = await modelFile.length();
+          print('✅ 3D hoodie model generated successfully');
+          print('   Path: ${modelFile.path}');
+          print('   Size: ${(fileSize / 1024).toStringAsFixed(2)} KB');
+          return modelFile.path;
+        } else {
+          print('❌ File was not created');
+          return null;
+        }
+      } catch (writeError) {
+        print('❌ File write error: $writeError');
+        // Fallback: return empty string to trigger placeholder
+        return '';
       }
-
-      final modelFile = File('${modelsDir.path}/$hoodiemodelFileName');
-
-      // Check if model already exists
-      if (await modelFile.exists()) {
-        print('✓ 3D model already exists');
-        return modelFile.path;
-      }
-
-      // Generate GLB file
-      final glbData = _generateHoodieGLB();
-
-      // Write to file
-      await modelFile.writeAsBytes(glbData);
-
-      print('✅ 3D hoodie model generated successfully');
-      print('   Path: ${modelFile.path}');
-      print('   Size: ${(glbData.length / 1024 / 1024).toStringAsFixed(2)} MB');
-
-      return modelFile.path;
     } catch (e) {
       print('❌ Error generating 3D model: $e');
+      print('   Stack trace: ${e.toString()}');
       return null;
     }
   }

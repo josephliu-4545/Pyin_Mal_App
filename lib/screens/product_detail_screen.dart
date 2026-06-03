@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
-import '../widgets/cdn_image.dart';
 import '../widgets/product_3d_viewer.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
@@ -36,7 +35,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String _selectedSize = 'M';
   bool _isFavorite = false;
   String _selectedColor = 'Black';
-  double _rotation = 0;
 
   final List<String> _sizes = ['S', 'M', 'L', 'XL'];
   final List<Map<String, dynamic>> _colors = [
@@ -174,7 +172,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Product 3D Viewer (HERO IMAGE)
+                    // 3D Product Viewer - Hero View
                     Product3DViewer(
                       height: 400,
                       isDark: isDark,

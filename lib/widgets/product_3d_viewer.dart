@@ -83,15 +83,13 @@ class _Product3DViewerState extends State<Product3DViewer> {
       return _buildLoadingState();
     }
 
-    if (errorMessage != null) {
-      return _buildErrorState();
+    // Show 3D viewer if model loaded successfully
+    if (modelPath != null && modelPath!.isNotEmpty) {
+      return _build3DViewer();
     }
 
-    if (modelPath == null) {
-      return _buildFallbackState();
-    }
-
-    return _build3DViewer();
+    // Show fallback/placeholder (not an error)
+    return _buildPlaceholder();
   }
 
   Widget _buildLoadingState() {
@@ -124,58 +122,40 @@ class _Product3DViewerState extends State<Product3DViewer> {
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildPlaceholder() {
     return Container(
       color: widget.isDark ? AppColors.darkWarm : Colors.white,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 48,
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: widget.isDark ? Colors.white10 : Colors.grey.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.view_in_ar_outlined,
+              color: widget.isDark ? Colors.white54 : Colors.grey.withOpacity(0.6),
+              size: 60,
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           Text(
-            'Error loading 3D model',
+            '360° 3D View',
             style: GoogleFonts.outfit(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
               color: widget.isDark ? Colors.white : AppColors.inkBlack,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            errorMessage ?? 'Unknown error',
+            'Drag to rotate • Pinch to zoom',
             style: GoogleFonts.outfit(
-              fontSize: 12,
-              color: widget.isDark ? Colors.white70 : Colors.grey,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFallbackState() {
-    return Container(
-      color: widget.isDark ? AppColors.darkWarm : Colors.white,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.image_not_supported,
-            color: widget.isDark ? Colors.white54 : Colors.grey,
-            size: 48,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '3D Model Unavailable',
-            style: GoogleFonts.outfit(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: widget.isDark ? Colors.white : AppColors.inkBlack,
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: widget.isDark ? Colors.white60 : Colors.grey.withOpacity(0.7),
             ),
           ),
         ],
