@@ -269,71 +269,62 @@ class _ArcsPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final cx = size.width / 2;   // 80
-    final cy = size.height / 2;  // 22
+    final cx = size.width / 2;  // 80
+    final cy = size.height / 2; // 22
 
-    const circleR = 19.0; // half of circle widget + small gap
-    const arcW    = 50.0; // horizontal reach from circle edge to arrow tip
-    const arcH    = 14.0; // how high the arc bows UPWARD above cy
+    const circleR   = 19.0; // half of center circle widget
+    const arcW      = 50.0; // horizontal reach of each arc
+    const arcH      = 13.0; // vertical height of the upward bow
+    const headLen   = 7.0;
+    const headSpread = 0.45; // radians — half-angle of arrowhead V
 
-    // Quadratic bezier: single control point pulled straight UP at midpoint
-    // → creates a clean symmetric arch bowing upward
-
-    // ── Left arc ─────────────────────────────────────────────────────────────
-    final leftStart = Offset(cx - circleR, cy);
-    final leftEnd   = Offset(cx - circleR - arcW, cy);
-    final leftCtrl  = Offset((leftStart.dx + leftEnd.dx) / 2, cy - arcH);
-
-    final leftPath = Path()
-      ..moveTo(leftStart.dx, leftStart.dy)
-      ..quadraticBezierTo(leftCtrl.dx, leftCtrl.dy, leftEnd.dx, leftEnd.dy);
-    canvas.drawPath(leftPath, paint);
-
-    // Arrowhead at the left tip — pointing left, angled to match arc arrival
-    _drawHead(canvas, paint, tip: leftEnd, towardX: leftCtrl.dx, towardY: leftCtrl.dy);
-
-    // ── Right arc ────────────────────────────────────────────────────────────
-    final rightStart = Offset(cx + circleR, cy);
-    final rightEnd   = Offset(cx + circleR + arcW, cy);
-    final rightCtrl  = Offset((rightStart.dx + rightEnd.dx) / 2, cy - arcH);
-
-    final rightPath = Path()
-      ..moveTo(rightStart.dx, rightStart.dy)
-      ..quadraticBezierTo(rightCtrl.dx, rightCtrl.dy, rightEnd.dx, rightEnd.dy);
-    canvas.drawPath(rightPath, paint);
-
-    // Arrowhead at the right tip
-    _drawHead(canvas, paint, tip: rightEnd, towardX: rightCtrl.dx, towardY: rightCtrl.dy);
-  }
-
-  /// Draws a V-shaped arrowhead at [tip], with the opening facing [toward].
-  void _drawHead(Canvas canvas, Paint paint,
-      {required Offset tip, required double towardX, required double towardY}) {
-    // Direction vector from tip back toward the arc (so we know arrival angle)
-    final dx = towardX - tip.dx;
-    final dy = towardY - tip.dy;
-    final len = math.sqrt(dx * dx + dy * dy);
-    final ux = dx / len; // unit vector
-    final uy = dy / len;
-
-    const headLen = 7.0;
-    const spread  = 0.38; // radians for half-angle of arrowhead
-
-    // Two arms of the V
-    final arm1 = Offset(
-      tip.dx + headLen * (ux * math.cos(spread) - uy * math.sin(spread)),
-      tip.dy + headLen * (ux * math.sin(spread) + uy * math.cos(spread)),
+    // ── LEFT ARC ──────────────────────────────────────────────────────────────
+    // Rect whose right edge = circle edge, left edge = arrow tip.
+    // drawArc at angle=0 starts at the RIGHTMOST point = circle edge.
+    // sweepAngle = -π  → counterclockwise 180° on screen = right→UP→left ✓
+    final leftRect = Rect.fromLTRB(
+      cx - circleR - arcW, // left  (arrow tip side)
+      cy - arcH,           // top   (peak of upward bow)
+      cx - circleR,        // right (circle edge)
+      cy + arcH,           // bottom
     );
-    final arm2 = Offset(
-      tip.dx + headLen * (ux * math.cos(spread) + uy * math.sin(spread)),
-      tip.dy + headLen * (-ux * math.sin(spread) + uy * math.cos(spread)),
+    canvas.drawArc(leftRect, 0, -math.pi, false, paint);
+
+    // Arrowhead at the left tip — V pointing LEFT
+    final lt = Offset(leftRect.left, cy);
+    canvas.drawPath(
+      Path()
+        ..moveTo(lt.dx + headLen * math.cos(headSpread),
+                 lt.dy - headLen * math.sin(headSpread))
+        ..lineTo(lt.dx, lt.dy)
+        ..lineTo(lt.dx + headLen * math.cos(headSpread),
+                 lt.dy + headLen * math.sin(headSpread)),
+      paint,
     );
 
-    final path = Path()
-      ..moveTo(arm1.dx, arm1.dy)
-      ..lineTo(tip.dx, tip.dy)
-      ..lineTo(arm2.dx, arm2.dy);
-    canvas.drawPath(path, paint);
+    // ── RIGHT ARC ─────────────────────────────────────────────────────────────
+    // Rect whose left edge = circle edge, right edge = arrow tip.
+    // drawArc at angle=π starts at the LEFTMOST point = circle edge.
+    // sweepAngle = +π  → clockwise 180° on screen = left→UP→right ✓
+    final rightRect = Rect.fromLTRB(
+      cx + circleR,         // left  (circle edge)
+      cy - arcH,            // top   (peak of upward bow)
+      cx + circleR + arcW,  // right (arrow tip side)
+      cy + arcH,            // bottom
+    );
+    canvas.drawArc(rightRect, math.pi, math.pi, false, paint);
+
+    // Arrowhead at the right tip — V pointing RIGHT
+    final rt = Offset(rightRect.right, cy);
+    canvas.drawPath(
+      Path()
+        ..moveTo(rt.dx - headLen * math.cos(headSpread),
+                 rt.dy - headLen * math.sin(headSpread))
+        ..lineTo(rt.dx, rt.dy)
+        ..lineTo(rt.dx - headLen * math.cos(headSpread),
+                 rt.dy + headLen * math.sin(headSpread)),
+      paint,
+    );
   }
 
   @override
