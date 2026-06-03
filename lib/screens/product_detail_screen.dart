@@ -36,6 +36,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _isFavorite = false;
   String _selectedColor = 'Black';
 
+  // Floating video pip state
+  bool _showVideoPip = true;
+  Offset _pipOffset = const Offset(220, 16); // top-right start
+  static const double _pipW = 100;
+  static const double _pipH = 130;
+  static const double _heroH = 400;
+
   final List<String> _sizes = ['S', 'M', 'L', 'XL'];
   final List<Map<String, dynamic>> _colors = [
     {'name': 'Black', 'color': Colors.black},
@@ -172,10 +179,77 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // 3D Product Viewer - Hero View
-                    Product3DViewer(
-                      height: 400,
-                      isDark: isDark,
+                    // 3D Product Viewer - Hero View with floating PiP
+                    SizedBox(
+                      height: _heroH,
+                      child: Stack(
+                        clipBehavior: Clip.hardEdge,
+                        children: [
+                          // The 3D viewer fills the whole hero
+                          Product3DViewer(
+                            height: _heroH,
+                            isDark: isDark,
+                          ),
+
+                          // Floating draggable video card
+                          if (_showVideoPip)
+                            Positioned(
+                              left: _pipOffset.dx,
+                              top: _pipOffset.dy,
+                              child: GestureDetector(
+                                onPanUpdate: (details) {
+                                  setState(() {
+                                    double nx = _pipOffset.dx + details.delta.dx;
+                                    double ny = _pipOffset.dy + details.delta.dy;
+                                    // Clamp inside hero bounds
+                                    nx = nx.clamp(0.0, _heroH * 0.75 - _pipW);
+                                    ny = ny.clamp(0.0, _heroH - _pipH);
+                                    _pipOffset = Offset(nx, ny);
+                                  });
+                                },
+                                child: _FloatingVideoPip(
+                                  isDark: isDark,
+                                  image: widget.image,
+                                  accent: accent,
+                                  onClose: () => setState(() => _showVideoPip = false),
+                                ),
+                              ),
+                            ),
+
+                          // Re-open button when dismissed
+                          if (!_showVideoPip)
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: GestureDetector(
+                                onTap: () => setState(() {
+                                  _showVideoPip = true;
+                                  _pipOffset = const Offset(220, 16);
+                                }),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.55),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.play_circle_outline_rounded,
+                                          color: Colors.white, size: 14),
+                                      const SizedBox(width: 4),
+                                      Text('Preview',
+                                          style: GoogleFonts.outfit(
+                                              fontSize: 11,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 20),
 
@@ -616,6 +690,176 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Floating Picture-in-Picture video card ──────────────────────────────────
+class _FloatingVideoPip extends StatefulWidget {
+  final bool isDark;
+  final String image;
+  final Color accent;
+  final VoidCallback onClose;
+
+  const _FloatingVideoPip({
+    required this.isDark,
+    required this.image,
+    required this.accent,
+    required this.onClose,
+  });
+
+  @override
+  State<_FloatingVideoPip> createState() => _FloatingVideoPipState();
+}
+
+class _FloatingVideoPipState extends State<_FloatingVideoPip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(begin: 1.0, end: 1.12).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 100,
+      height: 130,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Thumbnail — use the product's own image as stand-in
+            Image.asset(
+              widget.image,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: widget.isDark ? const Color(0xFF2A2A2A) : const Color(0xFFEEEEEE),
+                child: const Center(
+                  child: Icon(Icons.videocam_rounded, color: Colors.white54, size: 32),
+                ),
+              ),
+            ),
+
+            // Dark scrim
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.55),
+                  ],
+                  stops: const [0.45, 1.0],
+                ),
+              ),
+            ),
+
+            // Pulsing play button centre
+            Center(
+              child: AnimatedBuilder(
+                animation: _scale,
+                builder: (_, child) => Transform.scale(
+                  scale: _scale.value,
+                  child: child,
+                ),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.92),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.black87,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+
+            // Red "Product Preview" label at bottom
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                color: const Color(0xFFE53935),
+                child: Text(
+                  'Product Preview',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            ),
+
+            // Close ✕ button top-right
+            Positioned(
+              top: 4,
+              right: 4,
+              child: GestureDetector(
+                onTap: widget.onClose,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 13),
+                ),
+              ),
+            ),
+
+            // Drag handle hint — top-left dots
+            const Positioned(
+              top: 6,
+              left: 6,
+              child: Icon(Icons.drag_indicator_rounded, color: Colors.white54, size: 14),
+            ),
+          ],
+        ),
       ),
     );
   }
