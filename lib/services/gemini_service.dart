@@ -27,7 +27,7 @@ class GeminiService {
   Future<AiMessage> sendMessage(String text) async {
     // 1. Fetch user history context dynamically per request
     final userContext = await _db.getRecentHistoryContext();
-    
+
     // 1b. Build the list of products for the prompt
     final productsContext = ProductRepository.allProducts.map((p) {
       return '- ${p.name} (ID: ${p.id}, Category: ${p.category}, Price: ${p.price})';
@@ -60,20 +60,21 @@ The JSON must have this exact structure:
         responseMimeType: 'application/json',
       ),
     );
-    final tempChat = modelWithInstruction.startChat(history: _chat.history.toList());
-
+    final tempChat =
+        modelWithInstruction.startChat(history: _chat.history.toList());
 
     const maxRetries = 2;
-    
+
     for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
         final response = await tempChat.sendMessage(Content.text(text));
-        
+
         // Save the updated history back to the main session
-        _chat = modelWithInstruction.startChat(history: tempChat.history.toList());
-        
+        _chat =
+            modelWithInstruction.startChat(history: tempChat.history.toList());
+
         final responseText = response.text;
-        
+
         if (responseText == null) {
           return AiMessage(
             text: "I'm sorry, I couldn't process that. Could you try again?",
@@ -84,7 +85,8 @@ The JSON must have this exact structure:
         // Parse JSON
         final Map<String, dynamic> jsonMap = jsonDecode(responseText);
         final String message = jsonMap['message'] ?? '...';
-        final List<dynamic> productIds = jsonMap['recommended_product_ids'] ?? [];
+        final List<dynamic> productIds =
+            jsonMap['recommended_product_ids'] ?? [];
 
         // Map IDs to actual Product objects
         final List<Product> recommendedProducts = [];
@@ -102,20 +104,22 @@ The JSON must have this exact structure:
         );
       } catch (e) {
         print('🔴 Gemini Error (attempt ${attempt + 1}): $e');
-        
-        // If rate limited, wait and retry
-        if (e.toString().contains('429') && attempt < maxRetries - 1) {
+
+        // If rate limited or service unavailable, wait and retry
+        if ((e.toString().contains('429') || e.toString().contains('503')) &&
+            attempt < maxRetries - 1) {
           await Future.delayed(const Duration(seconds: 15));
           continue;
         }
-        
+
         return AiMessage(
-          text: "I'm a bit busy right now 😅 Please wait a moment and try again!",
+          text:
+              "I'm a bit busy right now 😅 Please wait a moment and try again!",
           isUser: false,
         );
       }
     }
-    
+
     return AiMessage(
       text: "I'm a bit busy right now 😅 Please wait a moment and try again!",
       isUser: false,

@@ -53,7 +53,8 @@ class _ScanScreenState extends State<ScanScreen> {
       if (product == null) {
         setState(() {
           _isScanning = false;
-          _errorMessage = 'No matching item found in our catalog. Try a clearer photo of a clothing item.';
+          _errorMessage =
+              'No matching item found in our catalog. Try a clearer photo of a clothing item.';
         });
         return;
       }
@@ -252,7 +253,8 @@ If no product is a reasonable match, set matched_product_id to null.
                           textAlign: TextAlign.center,
                           style: GoogleFonts.outfit(
                             fontSize: 13,
-                            color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                            color:
+                                isDark ? AppColors.paleText : AppColors.inkGrey,
                             height: 1.5,
                           ),
                         ),
@@ -272,12 +274,14 @@ If no product is a reasonable match, set matched_product_id to null.
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 20),
+                  const Icon(Icons.error_outline_rounded,
+                      color: Colors.redAccent, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       _errorMessage!,
-                      style: GoogleFonts.outfit(fontSize: 13, color: Colors.redAccent),
+                      style: GoogleFonts.outfit(
+                          fontSize: 13, color: Colors.redAccent),
                     ),
                   ),
                 ],
@@ -295,13 +299,15 @@ If no product is a reasonable match, set matched_product_id to null.
               icon: const Icon(Icons.camera_alt_rounded),
               label: Text(
                 'Take a Photo',
-                style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(
+                    fontSize: 16, fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: accent,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
             ),
@@ -325,7 +331,8 @@ If no product is a reasonable match, set matched_product_id to null.
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: BorderSide(color: accent.withOpacity(0.4), width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
               ),
             ),
           ),
@@ -336,7 +343,8 @@ If no product is a reasonable match, set matched_product_id to null.
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.lightbulb_outline_rounded, size: 14,
+              Icon(Icons.lightbulb_outline_rounded,
+                  size: 14,
                   color: isDark ? AppColors.paleText : AppColors.inkGrey),
               const SizedBox(width: 6),
               Text(
