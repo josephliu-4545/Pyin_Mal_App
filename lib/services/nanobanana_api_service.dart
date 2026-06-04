@@ -59,10 +59,10 @@ class NanoBananaApiService {
       debugPrint('Uploading $name to temp storage...');
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://tmpfiles.org/api/v1/upload'),
+        Uri.parse('https://corsproxy.io/?https://uguu.se/upload.php'),
       );
       request.files.add(
-        http.MultipartFile.fromBytes('file', bytes, filename: '$name.jpg'),
+        http.MultipartFile.fromBytes('files[]', bytes, filename: '$name.jpg'),
       );
 
       final response = await request.send();
@@ -70,11 +70,14 @@ class NanoBananaApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(bodyStr);
-        final String url = data['data']['url'];
-        // tmpfiles.org returns a view page URL. To get the direct image URL, we insert /dl/
-        final directUrl = url.replaceFirst('tmpfiles.org/', 'tmpfiles.org/dl/');
-        debugPrint('✅ $name uploaded: $directUrl');
-        return directUrl;
+        if (data['success'] == true && data['files'] != null && data['files'].isNotEmpty) {
+          final String directUrl = data['files'][0]['url'];
+          debugPrint('✅ $name uploaded: $directUrl');
+          return directUrl;
+        } else {
+          debugPrint('❗ Failed to upload $name: Invalid response format');
+          return null;
+        }
       } else {
         debugPrint(
           '❗ Failed to upload $name: ${response.statusCode} - $bodyStr',

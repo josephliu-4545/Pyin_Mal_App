@@ -9,7 +9,7 @@ import 'package:pyin_mal_app/services/database_service.dart';
 
 class GeminiService {
   final GenerativeModel _model;
-  late final ChatSession _chat;
+  late ChatSession _chat;
   final DatabaseService _db = DatabaseService();
 
   GeminiService()
