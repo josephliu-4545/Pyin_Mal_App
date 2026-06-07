@@ -1,7 +1,38 @@
 import 'package:pyin_mal_app/models/product.dart';
+import 'package:pyin_mal_app/services/opencart_service.dart';
 
 class ProductRepository {
-  static final List<Product> allProducts = [
+  // Cached products fetched from OpenCart.
+  // Falls back to _localProducts if OpenCart is unreachable.
+  static List<Product> _cachedProducts = [];
+  static bool _loaded = false;
+
+  static List<Product> get allProducts =>
+      _loaded && _cachedProducts.isNotEmpty ? _cachedProducts : _localProducts;
+
+  // Fetch from OpenCart and cache. Call this once at app startup or on shop open.
+  static Future<void> loadFromOpenCart() async {
+    try {
+      final products = await OpenCartService.fetchProducts();
+      if (products.isNotEmpty) {
+        _cachedProducts = products;
+        _loaded = true;
+      }
+    } catch (_) {
+      // Falls back to local data below
+    }
+  }
+
+  static Product? getProductById(String id) {
+    try {
+      return allProducts.firstWhere((p) => p.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ── Local fallback data (used when OpenCart is not yet set up) ─────────────
+  static final List<Product> _localProducts = [
     // 3D Test Product
     Product(
       id: 'hoodie_cotton_3d',
@@ -147,12 +178,4 @@ class ProductRepository {
       description: 'Luna\'s signature wrap-style set with adjustable ties. Flattering on all body types with its draped silhouette and rich fabric.',
     ),
   ];
-
-  static Product? getProductById(String id) {
-    try {
-      return allProducts.firstWhere((p) => p.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
 }

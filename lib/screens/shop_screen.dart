@@ -7,6 +7,7 @@ import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/screens/cart_screen.dart';
+import 'package:pyin_mal_app/screens/checkout_screen.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -35,6 +36,19 @@ class _ShopScreenState extends State<ShopScreen> {
     {'label': 'Sets',        'icon': Icons.style_outlined},
   ];
   String _selectedCategory = 'New in';
+  bool _loadingProducts = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    setState(() => _loadingProducts = true);
+    await ProductRepository.loadFromOpenCart();
+    if (mounted) setState(() => _loadingProducts = false);
+  }
 
   // Shops with logo colors and icons
   final List<Map<String, dynamic>> _shops = [
@@ -377,6 +391,13 @@ class _ShopScreenState extends State<ShopScreen> {
 
 
             // SECTION 5: Products Grid
+            if (_loadingProducts)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),

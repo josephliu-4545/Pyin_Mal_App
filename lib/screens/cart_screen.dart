@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
-import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
+import 'package:pyin_mal_app/screens/checkout_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class CartScreen extends StatelessWidget {
@@ -20,52 +20,12 @@ class CartScreen extends StatelessWidget {
       return;
     }
 
-    // Process checkout
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+    // Navigate to OpenCart checkout screen for shipping address + order placement.
+    // Points are recorded in Firebase after the order succeeds (inside CheckoutScreen).
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CheckoutScreen()),
     );
-
-    try {
-      final db = DatabaseService();
-      int totalPointsEarned = 0;
-
-      for (var item in cart.items) {
-        // Price represents the unit price, multiply by quantity for total item cost
-        final itemTotal = item.parsedPrice * item.quantity;
-        await db.addPurchase(item.productId, itemTotal);
-        totalPointsEarned += (itemTotal / 100).floor();
-      }
-
-      cart.clearCart();
-      if (context.mounted) {
-        Navigator.pop(context); // pop loading
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text('Payment Successful!', style: GoogleFonts.rufina(fontWeight: FontWeight.bold)),
-            content: Text('You earned $totalPointsEarned points!\n\nYour rank points have been updated.', style: GoogleFonts.outfit()),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  Navigator.pop(context); // pop cart screen
-                },
-                child: Text('Awesome', style: GoogleFonts.outfit(color: AppColors.burgundy, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context); // pop loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Checkout failed: $e')),
-        );
-      }
-    }
   }
 
   @override
