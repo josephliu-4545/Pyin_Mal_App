@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
+import 'package:pyin_mal_app/screens/category_products_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
@@ -227,7 +228,21 @@ class _ShopScreenState extends State<ShopScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(right: 10),
                       child: GestureDetector(
-                        onTap: () => setState(() => _selectedCategory = label),
+                        onTap: () {
+                          if (label == 'New in') {
+                            setState(() => _selectedCategory = label);
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CategoryProductsScreen(
+                                  category: label,
+                                  icon: icon,
+                                ),
+                              ),
+                            );
+                          }
+                        },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           curve: Curves.easeOut,
