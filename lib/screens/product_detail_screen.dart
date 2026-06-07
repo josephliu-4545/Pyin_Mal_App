@@ -316,9 +316,118 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
 
-                    // ── 2. TRY ON + SHOP NOW buttons ─────────────────────────
+                    // ── 2. COLOR STRIP (directly under product) ──────────────
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(0, 22, 0, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Hint row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDark
+                                      ? Colors.white10
+                                      : const Color(0xFFF0F0F0),
+                                ),
+                                child: Icon(Icons.swap_horiz_rounded,
+                                    size: 16,
+                                    color: isDark
+                                        ? Colors.white54
+                                        : const Color(0xFF888888)),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Swipe and dress up differently',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark
+                                      ? Colors.white54
+                                      : const Color(0xFF888888),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Circle thumbnails — original size, wide gap so only 3 fit
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Row(
+                              children: List.generate(_colors.length, (i) {
+                                final c   = _colors[i];
+                                final sel = _selectedColor == c['name'];
+                                return GestureDetector(
+                                  onTap: () => setState(
+                                      () => _selectedColor = c['name']),
+                                  child: AnimatedContainer(
+                                    duration:
+                                        const Duration(milliseconds: 220),
+                                    curve: Curves.easeOut,
+                                    margin: EdgeInsets.only(
+                                        right: i < _colors.length - 1 ? 50 : 0),
+                                    width:  sel ? 64 : 54,
+                                    height: sel ? 64 : 54,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: sel
+                                            ? (isDark
+                                                ? Colors.white
+                                                : AppColors.inkBlack)
+                                            : Colors.transparent,
+                                        width: 2.5,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(
+                                              sel ? 0.22 : 0.08),
+                                          blurRadius: sel ? 14 : 6,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipOval(
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          // Product image — clearly visible
+                                          CdnImage(
+                                            widget.image,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                Container(
+                                                    color: c['color'] as Color),
+                                          ),
+                                          // Subtle color tint
+                                          Container(
+                                            color: (c['color'] as Color)
+                                                .withOpacity(
+                                                    c['name'] == 'Black'
+                                                        ? 0.0
+                                                        : 0.22),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // ── 3. TRY ON + SHOP NOW buttons ─────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 22, 16, 0),
                       child: Row(
                         children: [
                           Expanded(
@@ -326,21 +435,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               onPressed: () => Navigator.push(context,
                                   MaterialPageRoute(
                                       builder: (_) => const TryOnScreen())),
-                              icon: const Icon(Icons.face_retouching_natural_rounded,
+                              icon: const Icon(
+                                  Icons.face_retouching_natural_rounded,
                                   size: 16),
                               label: Text('Try On',
                                   style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.w600, fontSize: 13)),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13)),
                               style: OutlinedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 13),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 13),
                                 side: BorderSide(
                                     color: isDark
                                         ? Colors.white24
                                         : const Color(0xFFCCCCCC),
                                     width: 1.5),
-                                foregroundColor:
-                                    isDark ? Colors.white : AppColors.inkBlack,
+                                foregroundColor: isDark
+                                    ? Colors.white
+                                    : AppColors.inkBlack,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
                               ),
@@ -368,102 +480,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   size: 16),
                               label: Text('Shop Now',
                                   style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.w600, fontSize: 13)),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13)),
                               style: ElevatedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 13),
-                                backgroundColor:
-                                    isDark ? Colors.white : AppColors.inkBlack,
-                                foregroundColor:
-                                    isDark ? AppColors.charcoal : Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 13),
+                                backgroundColor: isDark
+                                    ? Colors.white
+                                    : AppColors.inkBlack,
+                                foregroundColor: isDark
+                                    ? AppColors.charcoal
+                                    : Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // ── 3. COLOR STRIP ────────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text('Color',
-                                  style: GoogleFonts.outfit(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark
-                                          ? Colors.white
-                                          : AppColors.inkBlack)),
-                              const SizedBox(width: 8),
-                              Text('— Swipe to explore',
-                                  style: GoogleFonts.outfit(
-                                      fontSize: 11,
-                                      color: isDark
-                                          ? Colors.white38
-                                          : const Color(0xFFAAAAAA))),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: List.generate(_colors.length, (i) {
-                                final c    = _colors[i];
-                                final sel  = _selectedColor == c['name'];
-                                return GestureDetector(
-                                  onTap: () =>
-                                      setState(() => _selectedColor = c['name']),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    margin: EdgeInsets.only(
-                                        right: i < _colors.length - 1 ? 12 : 0),
-                                    width:  sel ? 60 : 52,
-                                    height: sel ? 60 : 52,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: sel
-                                            ? accent
-                                            : Colors.transparent,
-                                        width: 2.5,
-                                      ),
-                                      boxShadow: sel
-                                          ? [
-                                              BoxShadow(
-                                                color: accent.withOpacity(0.3),
-                                                blurRadius: 10,
-                                                offset: const Offset(0, 3),
-                                              )
-                                            ]
-                                          : [],
-                                    ),
-                                    child: ClipOval(
-                                      child: Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          Container(color: c['color'] as Color),
-                                          Image.asset(
-                                            widget.image,
-                                            fit: BoxFit.cover,
-                                            color: (c['color'] as Color)
-                                                .withOpacity(0.3),
-                                            colorBlendMode: BlendMode.srcATop,
-                                            errorBuilder: (_, __, ___) =>
-                                                const SizedBox(),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }),
                             ),
                           ),
                         ],
