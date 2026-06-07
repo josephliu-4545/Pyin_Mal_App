@@ -108,59 +108,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
 
-                    // ── 1. IMAGE + SIZE SELECTOR + ROTATION ─────────────────
+                    // ── 1. IMAGE (with overlaid size selector + rotation) ───
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-
-                          // Vertical size selector (left column)
-                          Column(
-                            children: _sizes.map((size) {
-                              final sel = _selectedSize == size;
-                              return GestureDetector(
-                                onTap: () => setState(() => _selectedSize = size),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 180),
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  width: 38,
-                                  height: 38,
-                                  decoration: BoxDecoration(
-                                    color: sel ? accent : cardBg,
-                                    borderRadius: BorderRadius.circular(10),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(isDark ? 0.25 : 0.07),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      size,
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: sel
-                                            ? Colors.white
-                                            : (isDark ? Colors.white70 : AppColors.inkBlack),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                          const SizedBox(width: 12),
-
-                          // Image / 3D viewer + PiP overlay
-                          Expanded(
-                            child: SizedBox(
+                      child: SizedBox(
                               height: _heroH,
                               child: Stack(
-                                clipBehavior: Clip.hardEdge,
+                                clipBehavior: Clip.none,
                                 children: [
                                   // IMAGE VIEW (default)
                                   AnimatedOpacity(
@@ -308,12 +262,65 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         ),
                                       ),
                                     ),
+
+                                  // SIZE SELECTOR — overlaid on the right edge
+                                  Positioned(
+                                    right: 12,
+                                    top: 0,
+                                    bottom: 0,
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: _sizes.map((size) {
+                                          final sel = _selectedSize == size;
+                                          return GestureDetector(
+                                            onTap: () => setState(
+                                                () => _selectedSize = size),
+                                            child: AnimatedContainer(
+                                              duration: const Duration(
+                                                  milliseconds: 180),
+                                              margin: const EdgeInsets.only(
+                                                  bottom: 8),
+                                              width: 34,
+                                              height: 34,
+                                              decoration: BoxDecoration(
+                                                color: sel
+                                                    ? accent
+                                                    : Colors.white.withOpacity(
+                                                        isDark ? 0.16 : 0.9),
+                                                borderRadius:
+                                                    BorderRadius.circular(9),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.15),
+                                                    blurRadius: 5,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  size,
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: sel
+                                                        ? Colors.white
+                                                        : const Color(
+                                                            0xFF333333),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
-                      ),
                     ),
 
                     // ── 2. COLOR STRIP (directly under product) ──────────────
