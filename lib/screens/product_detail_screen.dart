@@ -40,6 +40,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   // Hero view toggle — image (Photo) is default
   bool _show3DView = false;
 
+  // Reviews: collapsed by default (show 2), expandable
+  bool _showAllReviews = false;
+
   // Floating video pip state
   bool _showVideoPip = true;
   Offset _pipOffset = const Offset(220, 16);
@@ -722,11 +725,50 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          ..._reviews.map((r) => _ReviewCard(
-                                review: r,
-                                isDark: isDark,
-                                cardBg: cardBg,
-                              )),
+                          ...(_showAllReviews
+                                  ? _reviews
+                                  : _reviews.take(2))
+                              .map((r) => _ReviewCard(
+                                    review: r,
+                                    isDark: isDark,
+                                    cardBg: cardBg,
+                                  )),
+                          // See all / Show less toggle (only if >2 reviews)
+                          if (_reviews.length > 2)
+                            GestureDetector(
+                              onTap: () => setState(
+                                  () => _showAllReviews = !_showAllReviews),
+                              child: Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.only(top: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                alignment: Alignment.center,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      _showAllReviews
+                                          ? 'Show less'
+                                          : 'See all ${_reviews.length} reviews',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: accent,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      _showAllReviews
+                                          ? Icons.keyboard_arrow_up_rounded
+                                          : Icons.keyboard_arrow_down_rounded,
+                                      size: 18,
+                                      color: accent,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
