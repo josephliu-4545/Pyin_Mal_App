@@ -23,7 +23,7 @@ class OpenCartService {
   static const String _baseUrl = 'http://10.0.2.2/opencart';
 
   // Your OpenCart API key (from admin → Extensions → APIs)
-  static const String _apiKey = 'YOUR_OPENCART_API_KEY_HERE';
+  static const String _apiKey = '2oF2plC7VDcPqALSJYDeyH0UCB0YrCXxgnIZHeVx6CKTBpFqsXG8M6VXjgVW3DhNzJ1RMqRC8aRVAu1l2MvvZA3cioLGU0OJaWqlXnHDMAGpeU0RLC7ucUjze2EUbzyPjkcohKxtWZRllTG8O1NloM0Nlh7i1bqdVqmlautvDtd128ed3N7bKzRDfJFYhLzxNXLrqG8fThfn6NXdBdENlbuSxtITj1ddm4TOBFcsxoGCu7N6g8orq4a0lyqaoDvf';
 
   // Session token — obtained once via login and reused
   static String? _apiToken;
