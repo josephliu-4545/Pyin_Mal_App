@@ -212,34 +212,87 @@ class _Product3DViewerState extends State<Product3DViewer> {
   }
 }
 
-// ── Rotation handle: clean white circle with ↔ icon ─────────────────────────
+// ── Rotation handle: white circle with ↔ icon + thin bent side lines ─────────
 class _RotationHandle extends StatelessWidget {
   const _RotationHandle();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.20),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    return SizedBox(
+      width: 180,
+      height: 54,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Thin platform lines that bend up into the circle on each side
+          CustomPaint(
+            size: const Size(180, 54),
+            painter: _SideLinesPainter(),
+          ),
+          // White circle with ↔ icon
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.20),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.swap_horiz_rounded,
+                size: 24,
+                color: Color(0xFF222222),
+              ),
+            ),
           ),
         ],
       ),
-      child: const Center(
-        child: Icon(
-          Icons.swap_horiz_rounded,
-          size: 24,
-          color: Color(0xFF222222),
-        ),
-      ),
     );
   }
+}
+
+class _SideLinesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.9)
+      ..strokeWidth = 1.6
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    const circleR = 25.0; // circle radius + small gap
+    const reach = 58.0;   // how far each line extends outward
+    const bend = 12.0;    // how much the line bends UP near the circle
+
+    // LEFT line: from far-left (flat) curving UP toward the circle edge.
+    final leftPath = Path()
+      ..moveTo(cx - circleR - reach, cy + 4)
+      ..quadraticBezierTo(
+        cx - circleR - reach * 0.35, cy + 4, // control near the flat far end
+        cx - circleR, cy - bend,             // end: bends up at circle edge
+      );
+    canvas.drawPath(leftPath, paint);
+
+    // RIGHT line: mirror.
+    final rightPath = Path()
+      ..moveTo(cx + circleR + reach, cy + 4)
+      ..quadraticBezierTo(
+        cx + circleR + reach * 0.35, cy + 4,
+        cx + circleR, cy - bend,
+      );
+    canvas.drawPath(rightPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
