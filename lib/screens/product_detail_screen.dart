@@ -5,6 +5,7 @@ import '../widgets/product_3d_viewer.dart';
 import '../widgets/cdn_image.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
+import 'package:pyin_mal_app/screens/shop_products_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -832,18 +833,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   ],
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 8),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: accent, width: 1.5),
-                                  borderRadius: BorderRadius.circular(20),
+                              GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ShopProductsScreen(
+                                        shopName: widget.shopName!),
+                                  ),
                                 ),
-                                child: Text('Visit',
-                                    style: GoogleFonts.outfit(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: accent)),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    border:
+                                        Border.all(color: accent, width: 1.5),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text('Visit',
+                                      style: GoogleFonts.outfit(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: accent)),
+                                ),
                               ),
                             ],
                           ),
