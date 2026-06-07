@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
@@ -219,14 +220,14 @@ class _RotationHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 180,
-      height: 54,
+      width: 240,
+      height: 70,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Thin platform lines that bend up into the circle on each side
+          // Turntable plate rim — wide shallow ellipse arc
           CustomPaint(
-            size: const Size(180, 54),
+            size: const Size(240, 70),
             painter: _SideLinesPainter(),
           ),
           // White circle with ↔ icon
@@ -262,34 +263,26 @@ class _SideLinesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.9)
+      ..color = Colors.white.withOpacity(0.85)
       ..strokeWidth = 1.6
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final cx = size.width / 2;
     final cy = size.height / 2;
-    const circleR = 25.0; // circle radius + small gap
-    const reach = 58.0;   // how far each line extends outward
-    const bend = 12.0;    // how much the line bends UP near the circle
 
-    // LEFT line: from far-left (flat) curving UP toward the circle edge.
-    final leftPath = Path()
-      ..moveTo(cx - circleR - reach, cy + 4)
-      ..quadraticBezierTo(
-        cx - circleR - reach * 0.35, cy + 4, // control near the flat far end
-        cx - circleR, cy - bend,             // end: bends up at circle edge
-      );
-    canvas.drawPath(leftPath, paint);
+    // Wide shallow ellipse = the turntable plate. We draw only the FRONT
+    // (bottom) rim: a gentle valley, lowest in the middle where the rotate
+    // button sits, rising toward both sides.
+    final rect = Rect.fromLTWH(
+      6,                 // left inset
+      cy - 30,           // top of the ellipse (sides sit here, higher up)
+      size.width - 12,   // wide
+      44,                // ellipse height → bottom passes just below circle
+    );
 
-    // RIGHT line: mirror.
-    final rightPath = Path()
-      ..moveTo(cx + circleR + reach, cy + 4)
-      ..quadraticBezierTo(
-        cx + circleR + reach * 0.35, cy + 4,
-        cx + circleR, cy - bend,
-      );
-    canvas.drawPath(rightPath, paint);
+    // Bottom arc: from left (π) sweeping -π counter-clockwise through the
+    // bottom point (π/2) to the right (0). Gives a shallow ∪ rim.
+    canvas.drawArc(rect, math.pi, -math.pi, false, paint);
   }
 
   @override
