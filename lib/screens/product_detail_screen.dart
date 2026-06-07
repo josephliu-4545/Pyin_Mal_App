@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/product_3d_viewer.dart';
+import '../widgets/cdn_image.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
 
@@ -35,6 +36,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String _selectedSize = 'M';
   bool _isFavorite = false;
   String _selectedColor = 'Black';
+
+  // Hero view toggle — image (Photo) is default
+  bool _show3DView = false;
 
   // Floating video pip state
   bool _showVideoPip = true;
@@ -151,16 +155,98 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                           const SizedBox(width: 12),
 
-                          // 3D viewer + PiP overlay
+                          // Image / 3D viewer + PiP overlay
                           Expanded(
                             child: SizedBox(
                               height: _heroH,
                               child: Stack(
                                 clipBehavior: Clip.hardEdge,
                                 children: [
-                                  Product3DViewer(
-                                    height: _heroH,
-                                    isDark: isDark,
+                                  // IMAGE VIEW (default)
+                                  AnimatedOpacity(
+                                    opacity: _show3DView ? 0.0 : 1.0,
+                                    duration: const Duration(milliseconds: 260),
+                                    curve: Curves.easeInOut,
+                                    child: IgnorePointer(
+                                      ignoring: _show3DView,
+                                      child: Container(
+                                        width: double.infinity,
+                                        height: _heroH,
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? AppColors.darkWarm
+                                              : const Color(0xFFF0EEF0),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          child: CdnImage(
+                                            widget.image,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => Center(
+                                              child: Icon(Icons.image_outlined,
+                                                  size: 60,
+                                                  color: isDark
+                                                      ? Colors.white24
+                                                      : Colors.grey
+                                                          .withOpacity(0.4)),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                  // 3D VIEW
+                                  AnimatedOpacity(
+                                    opacity: _show3DView ? 1.0 : 0.0,
+                                    duration: const Duration(milliseconds: 260),
+                                    curve: Curves.easeInOut,
+                                    child: IgnorePointer(
+                                      ignoring: !_show3DView,
+                                      child: Product3DViewer(
+                                        height: _heroH,
+                                        isDark: isDark,
+                                      ),
+                                    ),
+                                  ),
+
+                                  // VIEW TOGGLE PILL (top-center)
+                                  Positioned(
+                                    top: 14,
+                                    left: 0,
+                                    right: 0,
+                                    child: Center(
+                                      child: Container(
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.45),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            _viewTab(
+                                              label: 'Photo',
+                                              icon: Icons.image_rounded,
+                                              active: !_show3DView,
+                                              onTap: () => setState(
+                                                  () => _show3DView = false),
+                                            ),
+                                            _viewTab(
+                                              label: '360°',
+                                              icon: Icons.view_in_ar_rounded,
+                                              active: _show3DView,
+                                              onTap: () => setState(
+                                                  () => _show3DView = true),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                   ),
 
                                   // Draggable video PiP
@@ -709,6 +795,45 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     const SizedBox(height: 40),
                   ],
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // View toggle tab (Photo / 360°)
+  Widget _viewTab({
+    required String label,
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        margin: const EdgeInsets.all(4),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: active ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon,
+                size: 14,
+                color: active ? const Color(0xFF1A1A1A) : Colors.white70),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: active ? const Color(0xFF1A1A1A) : Colors.white70,
               ),
             ),
           ],
