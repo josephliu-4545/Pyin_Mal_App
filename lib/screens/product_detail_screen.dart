@@ -688,18 +688,37 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Reviews',
+                              Text('Reviews (${_reviews.length})',
                                   style: GoogleFonts.outfit(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
                                       color: isDark
                                           ? Colors.white
                                           : AppColors.inkBlack)),
-                              Text('See all',
-                                  style: GoogleFonts.outfit(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: accent)),
+                              GestureDetector(
+                                onTap: _openReviewSheet,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: accent.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.rate_review_outlined,
+                                          size: 14, color: accent),
+                                      const SizedBox(width: 5),
+                                      Text('Write a review',
+                                          style: GoogleFonts.outfit(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: accent)),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 12),
@@ -836,6 +855,197 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // Open the "write a review" bottom sheet
+  void _openReviewSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    final cardBg = isDark ? AppColors.darkWarm : Colors.white;
+    int rating = 5;
+    final nameCtrl = TextEditingController();
+    final commentCtrl = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheet) {
+            return Padding(
+              // Lift above the keyboard
+              padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(sheetCtx).viewInsets.bottom),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Grab handle
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 18),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white24 : Colors.black12,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Text('Write a review',
+                        style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : AppColors.inkBlack)),
+                    const SizedBox(height: 4),
+                    Text('Share your experience with this product',
+                        style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            color: isDark
+                                ? Colors.white54
+                                : const Color(0xFF888888))),
+                    const SizedBox(height: 18),
+
+                    // Star rating selector
+                    Row(
+                      children: List.generate(5, (i) {
+                        final filled = i < rating;
+                        return GestureDetector(
+                          onTap: () => setSheet(() => rating = i + 1),
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: Icon(
+                              filled
+                                  ? Icons.star_rounded
+                                  : Icons.star_outline_rounded,
+                              size: 34,
+                              color: filled
+                                  ? AppColors.gold
+                                  : (isDark
+                                      ? Colors.white30
+                                      : const Color(0xFFCCCCCC)),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Name field
+                    _sheetField(
+                      controller: nameCtrl,
+                      hint: 'Your name',
+                      isDark: isDark,
+                      accent: accent,
+                    ),
+                    const SizedBox(height: 12),
+                    // Comment field
+                    _sheetField(
+                      controller: commentCtrl,
+                      hint: 'Write your comment...',
+                      isDark: isDark,
+                      accent: accent,
+                      maxLines: 4,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Submit
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final name = nameCtrl.text.trim().isEmpty
+                              ? 'Anonymous'
+                              : nameCtrl.text.trim();
+                          final comment = commentCtrl.text.trim();
+                          if (comment.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Please write a comment'),
+                                  duration: Duration(seconds: 2)),
+                            );
+                            return;
+                          }
+                          setState(() {
+                            _reviews.insert(0, {
+                              'name': name,
+                              'rating': rating,
+                              'comment': comment,
+                              'date': 'Just now',
+                            });
+                          });
+                          Navigator.pop(sheetCtx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Thanks for your review!'),
+                                duration: Duration(seconds: 2)),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              isDark ? Colors.white : AppColors.inkBlack,
+                          foregroundColor:
+                              isDark ? AppColors.charcoal : Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text('Submit review',
+                            style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w600, fontSize: 14)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _sheetField({
+    required TextEditingController controller,
+    required String hint,
+    required bool isDark,
+    required Color accent,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      style: GoogleFonts.outfit(
+          fontSize: 13,
+          color: isDark ? Colors.white : AppColors.inkBlack),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.outfit(
+            fontSize: 13,
+            color: isDark ? Colors.white38 : const Color(0xFFAAAAAA)),
+        filled: true,
+        fillColor: isDark ? Colors.white10 : const Color(0xFFF4F4F4),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: accent, width: 1.5),
         ),
       ),
     );
