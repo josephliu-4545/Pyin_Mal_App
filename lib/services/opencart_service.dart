@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:pyin_mal_app/models/product.dart';
 
@@ -20,10 +21,10 @@ class OpenCartService {
   // Change this to your OpenCart installation URL.
   // Android emulator → use 10.0.2.2 instead of localhost
   // Real device on same WiFi → use your PC's local IP (e.g. 192.168.1.5)
-  static const String _baseUrl = 'https://tachatnhate.xo.je/opencart';
+  static String get _baseUrl =>
+      dotenv.env['OPENCART_BASE_URL'] ?? 'https://tachatnhate.xo.je/opencart';
 
-  // Your OpenCart API key (from admin → Extensions → APIs)
-  static const String _apiKey = 'MumtJaX4QBfC6i0FJyUNWX7THjAfsvt8nsCwAdECFMuNWtfjszxNBImuuezlfMRqU14UbpoXZaucLboIrvy0WW0joGHv6eQPSJNNSaDc1uBAk7YuzQl888N67aBTJBaXP2UTdthjyNz460tnFgoYqlhs7hKOoayFZ2edBPvW4mVGfa1b4AW3DyuWaoSVhRUdBHOWM4zCJyUb1UwVUNsCzUhZWehuSGNuIpYbBXCi3NaifXrl66dgwjkhxlbKqdee';
+  static String get _apiKey => dotenv.env['OPENCART_API_KEY'] ?? '';
 
   // Session token — obtained once via login and reused
   static String? _apiToken;
