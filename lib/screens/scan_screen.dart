@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart'; // for compute()
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:image/image.dart' as imgLib;
 import 'package:pyin_mal_app/core/constants/api_constants.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/main.dart';
@@ -12,6 +14,61 @@ import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 
+// ── Top-level isolate function (must be outside class) ────────────────────────
+Uint8List? _convertYuvIsolate(Map<String, dynamic> data) {
+  try {
+    final int width = data['width'] as int;
+    final int height = data['height'] as int;
+    final int formatIndex = data['format'] as int;
+
+    imgLib.Image converted;
+
+    if (formatIndex == ImageFormatGroup.bgra8888.index) {
+      final Uint8List bytes = data['plane0'] as Uint8List;
+      converted = imgLib.Image.fromBytes(
+        width: width,
+        height: height,
+        bytes: bytes.buffer,
+        order: imgLib.ChannelOrder.bgra,
+      );
+    } else {
+      // YUV420
+      final Uint8List yBytes = data['plane0'] as Uint8List;
+      final Uint8List uBytes = data['plane1'] as Uint8List;
+      final Uint8List vBytes = data['plane2'] as Uint8List;
+      final int yRowStride = data['yRowStride'] as int;
+      final int uvRowStride = data['uvRowStride'] as int;
+      final int uvPixelStride = data['uvPixelStride'] as int;
+
+      converted = imgLib.Image(width: width, height: height);
+
+      for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+          final int yIdx = y * yRowStride + x;
+          final int uvIdx =
+              (y ~/ 2) * uvRowStride + (x ~/ 2) * uvPixelStride;
+
+          final int yv = yBytes[yIdx];
+          final int uv = uBytes[uvIdx] - 128;
+          final int vv = vBytes[uvIdx] - 128;
+
+          final int r = (yv + 1.402 * vv).round().clamp(0, 255);
+          final int g =
+              (yv - 0.344136 * uv - 0.714136 * vv).round().clamp(0, 255);
+          final int b = (yv + 1.772 * uv).round().clamp(0, 255);
+
+          converted.setPixelRgb(x, y, r, g, b);
+        }
+      }
+    }
+
+    return Uint8List.fromList(imgLib.encodeJpg(converted, quality: 65));
+  } catch (_) {
+    return null;
+  }
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
 
@@ -24,8 +81,11 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   bool _cameraReady = false;
   bool _isAnalyzing = false;
   bool _resultShown = false;
-  Timer? _scanTimer;
+  bool _isInitializing = false;
+  Timer? _autoScanTimer;
   String? _cameraError;
+
+  CameraImage? _latestFrame;
 
   @override
   void initState() {
@@ -37,82 +97,127 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _scanTimer?.cancel();
-    _controller?.dispose();
+    _autoScanTimer?.cancel();
+    _disposeCamera();
     super.dispose();
+  }
+
+  void _disposeCamera() {
+    try {
+      _controller?.stopImageStream();
+    } catch (_) {}
+    _controller?.dispose();
+    _controller = null;
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (_controller == null || !_controller!.value.isInitialized) return;
-    if (state == AppLifecycleState.inactive) {
-      _scanTimer?.cancel();
-      _controller?.dispose();
-    } else if (state == AppLifecycleState.resumed) {
+    // Only react to paused — NOT inactive (inactive fires on every overlay/notification)
+    if (state == AppLifecycleState.paused) {
+      _autoScanTimer?.cancel();
+      _disposeCamera();
+      if (mounted) setState(() => _cameraReady = false);
+    } else if (state == AppLifecycleState.resumed && !_cameraReady && !_isInitializing) {
       _initCamera();
     }
   }
 
   Future<void> _initCamera() async {
+    if (_isInitializing) return;
+    _isInitializing = true;
+
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
-        setState(() => _cameraError = 'No camera found on this device.');
+        if (mounted) setState(() => _cameraError = 'No camera found.');
         return;
       }
+
       final back = cameras.firstWhere(
         (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
+
       final controller = CameraController(
         back,
-        ResolutionPreset.medium,
+        ResolutionPreset.low, // low = ~352×288, fast conversion
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
+        imageFormatGroup: ImageFormatGroup.yuv420,
       );
+
       await controller.initialize();
+      await controller.setFlashMode(FlashMode.off);
+
+      // Start image stream — grab frames without takePicture()
+      await controller.startImageStream((CameraImage img) {
+        // Just store the latest frame; never block here
+        _latestFrame = img;
+      });
+
       if (!mounted) return;
       setState(() {
         _controller = controller;
         _cameraReady = true;
       });
+
       _startAutoScan();
     } catch (e) {
-      setState(() => _cameraError = 'Could not start camera: $e');
+      if (mounted) setState(() => _cameraError = 'Could not start camera.');
+    } finally {
+      _isInitializing = false;
     }
   }
 
   void _startAutoScan() {
-    _scanTimer?.cancel();
-    // Scan every 3 seconds automatically
-    _scanTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!_isAnalyzing && !_resultShown) {
-        _captureAndAnalyze();
-      }
+    _autoScanTimer?.cancel();
+    _autoScanTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!_isAnalyzing && !_resultShown) _analyzeCurrentFrame();
     });
   }
 
-  Future<void> _captureAndAnalyze() async {
-    if (_controller == null || !_controller!.value.isInitialized) return;
+  Future<void> _analyzeCurrentFrame() async {
     if (_isAnalyzing || _resultShown) return;
+    final frame = _latestFrame;
+    if (frame == null) return;
 
     setState(() => _isAnalyzing = true);
 
     try {
-      final file = await _controller!.takePicture();
-      final bytes = await file.readAsBytes();
-      final product = await _identifyProduct(bytes);
+      // Build the data map to pass to the isolate (copy bytes off the camera object)
+      final Map<String, dynamic> frameData = {
+        'width': frame.width,
+        'height': frame.height,
+        'format': frame.format.group.index,
+        'plane0': Uint8List.fromList(frame.planes[0].bytes),
+        'yRowStride': frame.planes[0].bytesPerRow,
+      };
+      if (frame.planes.length >= 3) {
+        frameData['plane1'] = Uint8List.fromList(frame.planes[1].bytes);
+        frameData['plane2'] = Uint8List.fromList(frame.planes[2].bytes);
+        frameData['uvRowStride'] = frame.planes[1].bytesPerRow;
+        frameData['uvPixelStride'] = frame.planes[1].bytesPerPixel ?? 1;
+      }
+
+      // Run heavy YUV conversion in background isolate — never blocks UI
+      final bytes = await compute(_convertYuvIsolate, frameData);
+
+      if (bytes == null) {
+        if (mounted) setState(() => _isAnalyzing = false);
+        return;
+      }
+
+      final product = await _identifyProduct(bytes)
+          .timeout(const Duration(seconds: 15), onTimeout: () => null);
 
       if (!mounted) return;
-
       setState(() => _isAnalyzing = false);
 
       if (product != null) {
         setState(() => _resultShown = true);
-        _scanTimer?.cancel();
+        _autoScanTimer?.cancel();
         _showResultSheet(product);
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) setState(() => _isAnalyzing = false);
     }
   }
@@ -144,16 +249,12 @@ If no product matches, set matched_product_id to null.
     );
 
     final response = await model.generateContent([
-      Content.multi([
-        TextPart(prompt),
-        DataPart('image/jpeg', imageBytes),
-      ]),
+      Content.multi([TextPart(prompt), DataPart('image/jpeg', imageBytes)]),
     ]);
 
     final raw = response.text;
     if (raw == null || raw.isEmpty) return null;
 
-    // Strip markdown code fences if Gemini wraps in ```json ... ```
     final cleaned = raw
         .replaceAll(RegExp(r'```json\s*'), '')
         .replaceAll(RegExp(r'```\s*'), '')
@@ -180,7 +281,7 @@ If no product matches, set matched_product_id to null.
         accent: accent,
         isDark: isDark,
         onViewProduct: () {
-          Navigator.pop(context); // close sheet
+          Navigator.pop(context);
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -198,7 +299,7 @@ If no product matches, set matched_product_id to null.
           );
         },
         onScanAgain: () {
-          Navigator.pop(context); // close sheet
+          Navigator.pop(context);
           setState(() => _resultShown = false);
           _startAutoScan();
         },
@@ -216,36 +317,33 @@ If no product matches, set matched_product_id to null.
       body: SafeArea(
         child: Stack(
           children: [
-            // ── Camera preview ──────────────────────────────────────────────
+            // ── Camera preview ────────────────────────────────────────────
             if (_cameraReady && _controller != null)
-              Positioned.fill(
-                child: CameraPreview(_controller!),
-              )
+              Positioned.fill(child: CameraPreview(_controller!))
             else if (_cameraError != null)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32),
-                  child: Text(
-                    _cameraError!,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
-                  ),
+                  child: Text(_cameraError!,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
+                          color: Colors.white70, fontSize: 14)),
                 ),
               )
             else
-              const Center(child: CircularProgressIndicator(color: Colors.white)),
+              const Center(
+                  child: CircularProgressIndicator(color: Colors.white)),
 
-            // ── Scanning frame overlay ──────────────────────────────────────
+            // ── Scan frame overlay ────────────────────────────────────────
             if (_cameraReady)
               Positioned.fill(
-                child: _ScanFrameOverlay(isAnalyzing: _isAnalyzing, accent: accent),
+                child: _ScanFrameOverlay(
+                    isAnalyzing: _isAnalyzing, accent: accent),
               ),
 
-            // ── Top bar ─────────────────────────────────────────────────────
+            // ── Top bar ───────────────────────────────────────────────────
             Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
+              top: 0, left: 0, right: 0,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Row(
@@ -253,56 +351,102 @@ If no product matches, set matched_product_id to null.
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        width: 42,
-                        height: 42,
+                        width: 42, height: 42,
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.45),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                        child: const Icon(Icons.arrow_back_ios_rounded,
+                            color: Colors.white, size: 20),
                       ),
                     ),
                     const SizedBox(width: 14),
-                    Text(
-                      'Smart Scan',
-                      style: GoogleFonts.rufina(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    Text('Smart Scan',
+                        style: GoogleFonts.rufina(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
                   ],
                 ),
               ),
             ),
 
-            // ── Status label ─────────────────────────────────────────────────
+            // ── Bottom controls ───────────────────────────────────────────
             if (_cameraReady)
               Positioned(
-                bottom: 48,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: _isAnalyzing
-                        ? _StatusChip(
-                            key: const ValueKey('analyzing'),
-                            label: 'Analyzing...',
-                            icon: Icons.auto_awesome_rounded,
-                            color: accent,
-                          )
-                        : _StatusChip(
-                            key: const ValueKey('scanning'),
-                            label: 'Point at a clothing item',
-                            icon: Icons.document_scanner_rounded,
-                            color: Colors.white.withOpacity(0.85),
-                            textColor: Colors.black87,
+                bottom: 0, left: 0, right: 0,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.75),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: _isAnalyzing
+                            ? _StatusChip(
+                                key: const ValueKey('analyzing'),
+                                label: 'Analyzing...',
+                                icon: Icons.auto_awesome_rounded,
+                                color: accent,
+                                textColor: Colors.white,
+                              )
+                            : _StatusChip(
+                                key: const ValueKey('idle'),
+                                label: 'Auto-scanning every 5s',
+                                icon: Icons.radar_rounded,
+                                color: Colors.white.withOpacity(0.15),
+                                textColor: Colors.white,
+                              ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Manual shutter button
+                      GestureDetector(
+                        onTap: _isAnalyzing ? null : _analyzeCurrentFrame,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 72, height: 72,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isAnalyzing
+                                ? Colors.white.withOpacity(0.3)
+                                : Colors.white,
+                            border: Border.all(
+                                color: accent.withOpacity(0.6), width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: accent.withOpacity(0.4),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                              ),
+                            ],
                           ),
+                          child: _isAnalyzing
+                              ? Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: CircularProgressIndicator(
+                                      color: accent, strokeWidth: 2.5),
+                                )
+                              : Icon(Icons.document_scanner_rounded,
+                                  color: accent, size: 30),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text('Tap to scan now',
+                          style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              color: Colors.white.withOpacity(0.7))),
+                    ],
                   ),
                 ),
               ),
@@ -313,7 +457,7 @@ If no product matches, set matched_product_id to null.
   }
 }
 
-// ── Scan frame corners overlay ────────────────────────────────────────────────
+// ── Scan frame corners ────────────────────────────────────────────────────────
 class _ScanFrameOverlay extends StatefulWidget {
   final bool isAnalyzing;
   final Color accent;
@@ -331,9 +475,8 @@ class _ScanFrameOverlayState extends State<_ScanFrameOverlay>
   void initState() {
     super.initState();
     _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
+        vsync: this, duration: const Duration(milliseconds: 800))
+      ..repeat(reverse: true);
   }
 
   @override
@@ -346,43 +489,32 @@ class _ScanFrameOverlayState extends State<_ScanFrameOverlay>
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final frameSize = size.width * 0.72;
+    final centerY = size.height * 0.42;
 
     return Stack(
       children: [
-        // Dark vignette around the frame
-        ColorFiltered(
-          colorFilter: const ColorFilter.mode(
-            Colors.transparent,
-            BlendMode.dst,
-          ),
-          child: CustomPaint(
-            size: Size(size.width, size.height),
-            painter: _VignettePainter(
-              frameSize: frameSize,
-              center: Offset(size.width / 2, size.height * 0.42),
-            ),
+        CustomPaint(
+          size: Size(size.width, size.height),
+          painter: _VignettePainter(
+            frameSize: frameSize,
+            center: Offset(size.width / 2, centerY),
           ),
         ),
-
-        // Corner brackets
-        Center(
-          child: Transform.translate(
-            offset: Offset(0, -(size.height * 0.08)),
-            child: AnimatedBuilder(
-              animation: _pulse,
-              builder: (_, __) {
-                final color = widget.isAnalyzing
-                    ? Color.lerp(widget.accent, Colors.white, _pulse.value)!
-                    : Colors.white;
-                return SizedBox(
-                  width: frameSize,
-                  height: frameSize,
-                  child: CustomPaint(
-                    painter: _CornerPainter(color: color),
-                  ),
-                );
-              },
-            ),
+        Positioned(
+          left: (size.width - frameSize) / 2,
+          top: centerY - frameSize / 2,
+          child: AnimatedBuilder(
+            animation: _pulse,
+            builder: (_, __) {
+              final color = widget.isAnalyzing
+                  ? Color.lerp(widget.accent, Colors.white, _pulse.value)!
+                  : Colors.white;
+              return SizedBox(
+                width: frameSize,
+                height: frameSize,
+                child: CustomPaint(painter: _CornerPainter(color: color)),
+              );
+            },
           ),
         ),
       ],
@@ -397,24 +529,19 @@ class _VignettePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final half = frameSize / 2;
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final hole = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: center, width: frameSize, height: frameSize),
-      const Radius.circular(12),
-    );
     final path = Path()
-      ..addRect(rect)
-      ..addRRect(hole)
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addRRect(RRect.fromRectAndRadius(
+        Rect.fromCenter(center: center, width: frameSize, height: frameSize),
+        const Radius.circular(12),
+      ))
       ..fillType = PathFillType.evenOdd;
-    canvas.drawPath(
-      path,
-      Paint()..color = Colors.black.withOpacity(0.52),
-    );
+    canvas.drawPath(path, Paint()..color = Colors.black.withOpacity(0.5));
   }
 
   @override
-  bool shouldRepaint(_VignettePainter old) => false;
+  bool shouldRepaint(_VignettePainter old) =>
+      old.frameSize != frameSize || old.center != center;
 }
 
 class _CornerPainter extends CustomPainter {
@@ -436,7 +563,8 @@ class _CornerPainter extends CustomPainter {
       path.moveTo(x + dx * len, y);
       path.lineTo(x + dx * r, y);
       path.arcToPoint(Offset(x, y + dy * r),
-          radius: const Radius.circular(r), clockwise: dx * dy < 0 ? false : true);
+          radius: const Radius.circular(r),
+          clockwise: dx * dy < 0 ? false : true);
       path.lineTo(x, y + dy * len);
       canvas.drawPath(path, paint);
     }
@@ -463,37 +591,27 @@ class _StatusChip extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.color,
-    this.textColor = Colors.white,
+    required this.textColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.92),
+        color: color,
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: textColor),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: GoogleFonts.outfit(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: textColor,
-            ),
-          ),
+          Icon(icon, size: 14, color: textColor),
+          const SizedBox(width: 7),
+          Text(label,
+              style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: textColor)),
         ],
       ),
     );
@@ -525,10 +643,9 @@ class _ResultSheet extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 30,
-            offset: const Offset(0, -4),
-          ),
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 30,
+              offset: const Offset(0, -4)),
         ],
       ),
       child: Padding(
@@ -537,11 +654,9 @@ class _ResultSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Handle
             Center(
               child: Container(
-                width: 40,
-                height: 4,
+                width: 40, height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
                   color: isDark ? Colors.white24 : Colors.black12,
@@ -549,97 +664,78 @@ class _ResultSheet extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Match label
             Row(
               children: [
                 Icon(Icons.check_circle_rounded, color: accent, size: 18),
                 const SizedBox(width: 8),
-                Text(
-                  'Match Found!',
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: accent,
-                  ),
-                ),
+                Text('Match Found!',
+                    style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: accent)),
               ],
             ),
             const SizedBox(height: 16),
-
-            // Product card row
             Row(
               children: [
-                // Image
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: SizedBox(
-                    width: 90,
-                    height: 90,
-                    child: CdnImage(
-                      product.image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
-                        child: const Icon(Icons.image, color: Colors.grey),
-                      ),
-                    ),
+                    width: 90, height: 90,
+                    child: CdnImage(product.image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.creamAlt,
+                              child: const Icon(Icons.image,
+                                  color: Colors.grey),
+                            )),
                   ),
                 ),
                 const SizedBox(width: 16),
-
-                // Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (product.shopName != null)
-                        Row(
-                          children: [
-                            Icon(Icons.storefront_rounded, size: 13, color: accent),
-                            const SizedBox(width: 5),
-                            Text(
-                              product.shopName!,
+                        Row(children: [
+                          Icon(Icons.storefront_rounded,
+                              size: 13, color: accent),
+                          const SizedBox(width: 5),
+                          Text(product.shopName!,
                               style: GoogleFonts.outfit(
-                                fontSize: 12,
-                                color: accent,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
+                                  fontSize: 12,
+                                  color: accent,
+                                  fontWeight: FontWeight.w600)),
+                        ]),
                       const SizedBox(height: 4),
-                      Text(
-                        product.name,
-                        style: GoogleFonts.rufina(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : AppColors.inkBlack,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      Text(product.name,
+                          style: GoogleFonts.rufina(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.inkBlack),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 4),
-                      Text(
-                        product.price,
-                        style: GoogleFonts.outfit(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: accent,
-                        ),
-                      ),
+                      Text(product.price,
+                          style: GoogleFonts.outfit(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: accent)),
                       if (product.description != null) ...[
                         const SizedBox(height: 4),
-                        Text(
-                          product.description!,
-                          style: GoogleFonts.outfit(
-                            fontSize: 11,
-                            color: isDark ? AppColors.paleText : AppColors.inkGrey,
-                            height: 1.4,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        Text(product.description!,
+                            style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: isDark
+                                    ? AppColors.paleText
+                                    : AppColors.inkGrey,
+                                height: 1.4),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis),
                       ],
                     ],
                   ),
@@ -647,8 +743,6 @@ class _ResultSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-
-            // Buttons
             Row(
               children: [
                 Expanded(
@@ -660,13 +754,12 @@ class _ResultSheet extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: Text(
-                      'Scan Again',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : AppColors.inkBlack,
-                      ),
-                    ),
+                    child: Text('Scan Again',
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.inkBlack)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -681,10 +774,9 @@ class _ResultSheet extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: Text(
-                      'View Item',
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-                    ),
+                    child: Text('View Item',
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
