@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,7 +16,7 @@ import 'package:pyin_mal_app/screens/profile_screen.dart';
 import 'package:pyin_mal_app/screens/scan_screen.dart';
 import 'package:pyin_mal_app/screens/donate_screen.dart';
 
-// â”€â”€ Main Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main Shell ────────────────────────────────────────────────────────────────
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
   @override
@@ -64,7 +64,7 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-// â”€â”€ Glassmorphic Bottom Nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Glassmorphic Bottom Nav ───────────────────────────────────────────────────
 class _GlassNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -151,7 +151,7 @@ class _GlassNav extends StatelessWidget {
   }
 }
 
-// â”€â”€ Home Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Home Tab ──────────────────────────────────────────────────────────────────
 class _HomeTab extends StatefulWidget {
   final Function(int)? onTabRequested;
   const _HomeTab({this.onTabRequested});
@@ -293,35 +293,35 @@ class _HomeTabState extends State<_HomeTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // â”€â”€ Greeting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Greeting ──────────────────────────────────────────────
                 _buildGreetingSection(isDark),
                 const SizedBox(height: 20),
 
-                // â”€â”€ Points & Lucky Draw â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Points & Lucky Draw ────────────────────────────────────
                 _buildPointsLuckyDrawBanner(isDark),
                 const SizedBox(height: 24),
 
-                // â”€â”€ Weather Suggestion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Weather Suggestion ─────────────────────────────────────
                 _buildWeatherSuggestionCard(isDark),
                 const SizedBox(height: 24),
 
-                // â”€â”€ Today's Outfit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Today's Outfit ─────────────────────────────────────────
                 _buildOutfitSuggestionsCard(isDark, isMobile),
                 const SizedBox(height: 28),
 
-                // â”€â”€ AI Styling Tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── AI Styling Tools ───────────────────────────────────────
                 _buildSectionLabel('AI styling tools', isDark),
                 const SizedBox(height: 16),
                 _buildAIToolsSection(isDark),
                 const SizedBox(height: 28),
 
-                // â”€â”€ Discover & Explore â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Discover & Explore ─────────────────────────────────────
                 _buildSectionLabel('Discover & explore', isDark),
                 const SizedBox(height: 16),
                 _buildDiscoverSection(isDark),
                 const SizedBox(height: 28),
 
-                // â”€â”€ Wardrobe & Recycling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Wardrobe & Recycling ───────────────────────────────────
                 _buildSectionLabel('Your wardrobe', isDark),
                 const SizedBox(height: 16),
                 _buildWardrobeRecommendations(isDark, isMobile),
@@ -329,25 +329,25 @@ class _HomeTabState extends State<_HomeTab> {
                 _buildRecyclingRewardsCard(isDark),
                 const SizedBox(height: 28),
 
-                // â”€â”€ Community â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Community ─────────────────────────────────────────────
                 _buildSectionLabel('Community', isDark),
                 const SizedBox(height: 16),
                 _buildCommunitySection(isDark),
                 const SizedBox(height: 28),
 
-                // â”€â”€ Give Back â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Give Back ─────────────────────────────────────────────
                 _buildSectionLabel('Give back', isDark),
                 const SizedBox(height: 16),
                 _buildGiveBackSection(isDark),
                 const SizedBox(height: 28),
 
-                // â”€â”€ Delivery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Delivery ──────────────────────────────────────────────
                 _buildSectionLabel('Your orders', isDark),
                 const SizedBox(height: 16),
                 _buildDeliverySection(isDark),
                 const SizedBox(height: 28),
 
-                // â”€â”€ Language â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Language ──────────────────────────────────────────────
                 _buildLanguageCard(isDark),
               ],
             ),
@@ -357,7 +357,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Greeting Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Greeting Section ──────────────────────────────────────────────────────
   Widget _buildGreetingSection(bool isDark) {
     final now = DateTime.now();
     final hour = now.hour;
@@ -408,7 +408,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Section Label â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Section Label ─────────────────────────────────────────────────────────
   Widget _buildSectionLabel(String title, bool isDark) {
     return Text(
       title,
@@ -420,7 +420,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Points & Lucky Draw Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Points & Lucky Draw Banner ────────────────────────────────────────────
   Widget _buildPointsLuckyDrawBanner(bool isDark) {
     return GestureDetector(
       onTap: () => _showLuckyDrawDialog(context, isDark),
@@ -447,7 +447,7 @@ class _HomeTabState extends State<_HomeTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '0 pts  Â·  Bronze Rank',
+                    '0 pts  ·  Bronze Rank',
                     style: GoogleFonts.outfit(
                       fontSize: 12,
                       color: Colors.white.withOpacity(0.85),
@@ -551,14 +551,14 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Weather-Based Suggestion Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Weather-Based Suggestion Card ─────────────────────────────────────────
   Widget _buildWeatherSuggestionCard(bool isDark) {
     final hour = DateTime.now().hour;
     final isHot = hour >= 10 && hour <= 17;
     final weatherLabel = isHot ? 'Warm & Sunny' : 'Cool & Breezy';
     final suggestion = isHot
-        ? 'Light fabrics â€” linen shirts, breathable tees'
-        : 'Layer up â€” a jacket or cardigan works great';
+        ? 'Light fabrics — linen shirts, breathable tees'
+        : 'Layer up — a jacket or cardigan works great';
     final weatherIcon = isHot ? Icons.wb_sunny_rounded : Icons.air_rounded;
 
     return Container(
@@ -589,7 +589,7 @@ class _HomeTabState extends State<_HomeTab> {
                 Row(
                   children: [
                     Text(
-                      'Weather Pick  Â·  ',
+                      'Weather Pick  ·  ',
                       style: GoogleFonts.outfit(
                         fontSize: 12,
                         color: isDark ? AppColors.paleText : AppColors.inkGrey,
@@ -622,7 +622,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Outfit Suggestions Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Outfit Suggestions Card ────────────────────────────────────────────────
   Widget _buildOutfitSuggestionsCard(bool isDark, bool isMobile) {
     return Container(
       width: double.infinity,
@@ -731,7 +731,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Wardrobe Recommendations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Wardrobe Recommendations ────────────────────────────────────────────────
   Widget _buildWardrobeRecommendations(bool isDark, bool isMobile) {
     final wardrobeCards = [
       _WardrobeSlide(
@@ -809,7 +809,7 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
 
-  // â”€â”€ Menu Bottom Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Menu Bottom Sheet ───────────────────────────────────────────────────────
   void _showMenuBottomSheet(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -859,7 +859,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Search Bottom Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Search Bottom Sheet ─────────────────────────────────────────────────────
   void _showSearchBottomSheet(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -924,7 +924,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ AI Styling Tools Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── AI Styling Tools Section ──────────────────────────────────────────────
   Widget _buildAIToolsSection(bool isDark) {
     final row1 = [
       _AICard(label: 'Model\nTry-On',      sub: 'Virtual avatar',    icon: Icons.view_in_ar_rounded,              color: const Color(0xFFC9A96E), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelPreviewScreen()))),
@@ -949,7 +949,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Discover & Explore Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Discover & Explore Section ────────────────────────────────────────────
   Widget _buildDiscoverSection(bool isDark) {
     final items = [
       _AICard(label: 'Color\nAnalysis',     sub: 'Your palette',          icon: Icons.palette_rounded,                 color: const Color(0xFFE07A5F), onTap: () => _comingSoon('Color Analysis')),
@@ -961,7 +961,7 @@ class _HomeTabState extends State<_HomeTab> {
     return _buildHorizontalCardRow(items, isDark);
   }
 
-  // â”€â”€ Shared Auto-Scroll Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Shared Auto-Scroll Row ────────────────────────────────────────────────
   Widget _buildHorizontalCardRow(List<_AICard> cards, bool isDark, {bool reverse = false}) {
     final widgets = cards.map((c) => _buildSlideCard(c, isDark)).toList();
     return _AutoScrollRow(children: widgets, height: 160, reverse: reverse);
@@ -1056,7 +1056,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Recycling Rewards Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Recycling Rewards Card ────────────────────────────────────────────────
   Widget _buildRecyclingRewardsCard(bool isDark) {
     const gold    = Color(0xFFC9A96E);
     final cardBg  = isDark ? AppColors.darkWarm   : AppColors.creamCard;
@@ -1104,8 +1104,8 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Community Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // â”€â”€ Community Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Community Section ─────────────────────────────────────────────────────
+  // ── Community Section ─────────────────────────────────────────────────────
   Widget _buildCommunitySection(bool isDark) {
     const gold = Color(0xFFC9A96E);
     final reviews = [
@@ -1122,7 +1122,7 @@ class _HomeTabState extends State<_HomeTab> {
 
     return Column(
       children: [
-        // â”€â”€ Reviews card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Reviews card ───────────────────────────────────────────────────
         GestureDetector(
           onTap: () => _showReviewSheet(context, isDark),
           child: Container(
@@ -1231,7 +1231,7 @@ class _HomeTabState extends State<_HomeTab> {
           ),
         ),
         const SizedBox(height: 12),
-        // â”€â”€ Style Videos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Style Videos ──────────────────────────────────────────────────
         GestureDetector(
           onTap: () => _showDraggableVideo(context, isDark),
           child: Container(
@@ -1268,7 +1268,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Give Back Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Give Back Section ─────────────────────────────────────────────────────
   Widget _buildGiveBackSection(bool isDark) {
     const gold    = Color(0xFFC9A96E);
     final cardBg  = isDark ? AppColors.darkWarm   : AppColors.creamCard;
@@ -1278,7 +1278,7 @@ class _HomeTabState extends State<_HomeTab> {
 
     return Column(
       children: [
-        // â”€â”€ Donate card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Donate card ────────────────────────────────────────────────────
         GestureDetector(
           onTap: () => Navigator.push(
             context,
@@ -1349,7 +1349,7 @@ class _HomeTabState extends State<_HomeTab> {
           ),
         ),
         const SizedBox(height: 12),
-        // â”€â”€ Pickup + Eco row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Pickup + Eco row ───────────────────────────────────────────────
         Row(children: [
           Expanded(
             child: GestureDetector(
@@ -1421,7 +1421,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Delivery Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Delivery Section ──────────────────────────────────────────────────────
   Widget _buildDeliverySection(bool isDark) {
     const gold    = Color(0xFFC9A96E);
     final cardBg  = isDark ? AppColors.darkWarm   : AppColors.creamCard;
@@ -1431,7 +1431,7 @@ class _HomeTabState extends State<_HomeTab> {
 
     return Column(
       children: [
-        // â”€â”€ Live tracking card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Live tracking card ─────────────────────────────────────────────
         GestureDetector(
           onTap: () => _comingSoon('Live Delivery Tracking'),
           child: Container(
@@ -1507,7 +1507,7 @@ class _HomeTabState extends State<_HomeTab> {
           ),
         ),
         const SizedBox(height: 12),
-        // â”€â”€ AI prediction card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── AI prediction card ─────────────────────────────────────────────
         GestureDetector(
           onTap: () => _comingSoon('AI Delivery Prediction'),
           child: Container(
@@ -1586,7 +1586,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Language Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Language Card ─────────────────────────────────────────────────────────
   Widget _buildLanguageCard(bool isDark) {
     return GestureDetector(
       onTap: () => _showLanguageSheet(context, isDark),
@@ -1612,10 +1612,10 @@ class _HomeTabState extends State<_HomeTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Language / á€˜á€¬á€žá€¬á€…á€€á€¬á€¸',
+                  Text('Language / ဘာသာစကား',
                       style: GoogleFonts.rufina(fontSize: 15, fontWeight: FontWeight.bold,
                           color: isDark ? Colors.white : AppColors.inkBlack)),
-                  Text('English Â· á€™á€¼á€”á€ºá€™á€¬ Â· Multi-language support',
+                  Text('English · မြန်မာ · Multi-language support',
                       style: GoogleFonts.outfit(fontSize: 13,
                           color: isDark ? AppColors.paleText : AppColors.inkGrey)),
                 ],
@@ -1628,11 +1628,11 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Helper: Coming Soon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Helper: Coming Soon ───────────────────────────────────────────────────
   void _comingSoon(String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$feature â€” coming soon!'),
+        content: Text('$feature — coming soon!'),
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1640,7 +1640,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Voice Assistant Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Voice Assistant Sheet ─────────────────────────────────────────────────
   void _showVoiceAssistantSheet(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -1685,7 +1685,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Draggable Video Popup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Draggable Video Popup ─────────────────────────────────────────────────
   void _showDraggableVideo(BuildContext context, bool isDark) {
     showDialog(
       context: context,
@@ -1694,7 +1694,7 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // â”€â”€ Review Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Review Sheet ──────────────────────────────────────────────────────────
   void _showReviewSheet(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -1764,7 +1764,7 @@ class _HomeTabState extends State<_HomeTab> {
                   Text(name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13,
                       color: isDark ? Colors.white : AppColors.inkBlack)),
                   const SizedBox(width: 8),
-                  Text('â˜…' * stars, style: const TextStyle(color: Color(0xFFC9A96E), fontSize: 12)),
+                  Text('★' * stars, style: const TextStyle(color: Color(0xFFC9A96E), fontSize: 12)),
                 ]),
                 const SizedBox(height: 3),
                 Text(text, style: GoogleFonts.outfit(fontSize: 13,
@@ -1777,15 +1777,14 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-
-  // â”€â”€ Language Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Language Sheet ────────────────────────────────────────────────────────
   void _showLanguageSheet(BuildContext context, bool isDark) {
     final languages = [
-      (code: 'ðŸ‡¬ðŸ‡§', name: 'English', native: 'English'),
-      (code: 'ðŸ‡²ðŸ‡²', name: 'Burmese', native: 'á€™á€¼á€”á€ºá€™á€¬á€˜á€¬á€žá€¬'),
-      (code: 'ðŸ‡¨ðŸ‡³', name: 'Chinese', native: 'ä¸­æ–‡'),
-      (code: 'ðŸ‡¯ðŸ‡µ', name: 'Japanese', native: 'æ—¥æœ¬èªž'),
-      (code: 'ðŸ‡¹ðŸ‡­', name: 'Thai', native: 'à¸ à¸²à¸©à¸²à¹„à¸—à¸¢'),
+      (code: '🇬🇧', name: 'English', native: 'English'),
+      (code: '🇲🇲', name: 'Burmese', native: 'မြန်မာဘာသာ'),
+      (code: '🇨🇳', name: 'Chinese', native: '中文'),
+      (code: '🇯🇵', name: 'Japanese', native: '日本語'),
+      (code: '🇹🇭', name: 'Thai', native: 'ภาษาไทย'),
     ];
     showModalBottomSheet(
       context: context,
@@ -1905,7 +1904,7 @@ class _HomeTabState extends State<_HomeTab> {
   }
 }
 
-// â”€â”€ Draggable Video Widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Draggable Video Widget ────────────────────────────────────────────────────
 class _DraggableVideoWidget extends StatefulWidget {
   final bool isDark;
   const _DraggableVideoWidget({required this.isDark});
@@ -1975,7 +1974,7 @@ class _DraggableVideoWidgetState extends State<_DraggableVideoWidget> {
                               fontWeight: FontWeight.bold,
                               color: widget.isDark ? Colors.white : AppColors.inkBlack)),
                           const SizedBox(height: 3),
-                          Text('Drag me anywhere Â· Coming soon',
+                          Text('Drag me anywhere · Coming soon',
                               style: GoogleFonts.outfit(fontSize: 11,
                                   color: widget.isDark ? AppColors.paleText : AppColors.inkGrey)),
                         ],
@@ -1992,7 +1991,7 @@ class _DraggableVideoWidgetState extends State<_DraggableVideoWidget> {
   }
 }
 
-// â”€â”€ Auto-Scrolling Row Widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Auto-Scrolling Row Widget ─────────────────────────────────────────────────
 class _AutoScrollRow extends StatefulWidget {
   final List<Widget> children;
   final bool reverse;
@@ -2084,7 +2083,7 @@ class _AutoScrollRowState extends State<_AutoScrollRow> with SingleTickerProvide
   }
 }
 
-// â”€â”€ Data models for slide cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Data models for slide cards ───────────────────────────────────────────────
 class _AICard {
   final String label;
   final String sub;
