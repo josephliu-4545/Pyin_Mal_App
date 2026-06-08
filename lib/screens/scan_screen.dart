@@ -1,14 +1,16 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:pyin_mal_app/core/constants/api_constants.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
+import 'package:pyin_mal_app/widgets/cdn_image.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -17,76 +19,107 @@ class ScanScreen extends StatefulWidget {
   State<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _ScanScreenState extends State<ScanScreen> {
-  bool _isScanning = false;
-  String? _errorMessage;
-  Uint8List? _previewBytes;
+class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
+  CameraController? _controller;
+  bool _cameraReady = false;
+  bool _isAnalyzing = false;
+  bool _resultShown = false;
+  Timer? _scanTimer;
+  String? _cameraError;
 
-  Future<void> _scan(ImageSource source) async {
-    setState(() {
-      _isScanning = true;
-      _errorMessage = null;
-      _previewBytes = null;
-    });
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initCamera();
+  }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _scanTimer?.cancel();
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    if (state == AppLifecycleState.inactive) {
+      _scanTimer?.cancel();
+      _controller?.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      _initCamera();
+    }
+  }
+
+  Future<void> _initCamera() async {
     try {
-      final picker = ImagePicker();
-      final picked = await picker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-
-      if (picked == null) {
-        setState(() => _isScanning = false);
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        setState(() => _cameraError = 'No camera found on this device.');
         return;
       }
+      final back = cameras.firstWhere(
+        (c) => c.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
+      final controller = CameraController(
+        back,
+        ResolutionPreset.medium,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+      await controller.initialize();
+      if (!mounted) return;
+      setState(() {
+        _controller = controller;
+        _cameraReady = true;
+      });
+      _startAutoScan();
+    } catch (e) {
+      setState(() => _cameraError = 'Could not start camera: $e');
+    }
+  }
 
-      final imageBytes = await picked.readAsBytes();
-      setState(() => _previewBytes = imageBytes);
+  void _startAutoScan() {
+    _scanTimer?.cancel();
+    // Scan every 3 seconds automatically
+    _scanTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!_isAnalyzing && !_resultShown) {
+        _captureAndAnalyze();
+      }
+    });
+  }
 
-      final product = await _identifyProduct(imageBytes);
+  Future<void> _captureAndAnalyze() async {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    if (_isAnalyzing || _resultShown) return;
+
+    setState(() => _isAnalyzing = true);
+
+    try {
+      final file = await _controller!.takePicture();
+      final bytes = await file.readAsBytes();
+      final product = await _identifyProduct(bytes);
 
       if (!mounted) return;
 
-      if (product == null) {
-        setState(() {
-          _isScanning = false;
-          _errorMessage =
-              'No matching item found in our catalog. Try a clearer photo of a clothing item.';
-        });
-        return;
+      setState(() => _isAnalyzing = false);
+
+      if (product != null) {
+        setState(() => _resultShown = true);
+        _scanTimer?.cancel();
+        _showResultSheet(product);
       }
-
-      setState(() => _isScanning = false);
-
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ProductDetailScreen(
-            productId: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.image,
-            brand: product.brand,
-            category: product.category,
-            description: product.description,
-            shopName: product.shopName,
-          ),
-        ),
-      );
     } catch (e) {
-      setState(() {
-        _isScanning = false;
-        _errorMessage = 'Something went wrong. Please try again.';
-      });
+      if (mounted) setState(() => _isAnalyzing = false);
     }
   }
 
   Future<Product?> _identifyProduct(Uint8List imageBytes) async {
     final productsContext = ProductRepository.allProducts.map((p) {
-      return '- ID: "${p.id}" | Name: "${p.name}" | Category: ${p.category} | Brand: ${p.brand} | Gender: ${p.gender}';
+      return '- ID: "${p.id}" | Name: "${p.name}" | Category: ${p.category} | Brand: ${p.brand}';
     }).join('\n');
 
     final prompt = '''
@@ -98,10 +131,10 @@ $productsContext
 Instructions:
 1. Identify the type of clothing, color, and style in the image.
 2. Find the closest matching product from the list above.
-3. Return ONLY valid JSON in this exact format (no markdown, no extra text):
-{"matched_product_id": "<product id or null if no match>", "confidence": "<high|medium|low>"}
+3. Return ONLY valid JSON, no markdown, no code blocks:
+{"matched_product_id": "<product id or null>", "confidence": "<high|medium|low>"}
 
-If no product is a reasonable match, set matched_product_id to null.
+If no product matches, set matched_product_id to null.
 ''';
 
     final model = GenerativeModel(
@@ -117,14 +150,60 @@ If no product is a reasonable match, set matched_product_id to null.
       ]),
     ]);
 
-    final text = response.text;
-    if (text == null) return null;
+    final raw = response.text;
+    if (raw == null || raw.isEmpty) return null;
 
-    final json = jsonDecode(text) as Map<String, dynamic>;
+    // Strip markdown code fences if Gemini wraps in ```json ... ```
+    final cleaned = raw
+        .replaceAll(RegExp(r'```json\s*'), '')
+        .replaceAll(RegExp(r'```\s*'), '')
+        .trim();
+
+    final json = jsonDecode(cleaned) as Map<String, dynamic>;
     final id = json['matched_product_id'];
-    if (id == null || id == 'null') return null;
-
+    if (id == null || id.toString() == 'null' || id.toString().isEmpty) {
+      return null;
+    }
     return ProductRepository.getProductById(id.toString());
+  }
+
+  void _showResultSheet(Product product) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _ResultSheet(
+        product: product,
+        accent: accent,
+        isDark: isDark,
+        onViewProduct: () {
+          Navigator.pop(context); // close sheet
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProductDetailScreen(
+                productId: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.image,
+                brand: product.brand,
+                category: product.category,
+                description: product.description,
+                shopName: product.shopName,
+              ),
+            ),
+          );
+        },
+        onScanAgain: () {
+          Navigator.pop(context); // close sheet
+          setState(() => _resultShown = false);
+          _startAutoScan();
+        },
+      ),
+    );
   }
 
   @override
@@ -133,278 +212,486 @@ If no product is a reasonable match, set matched_product_id to null.
     final accent = isDark ? AppColors.gold : AppColors.burgundy;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.charcoal : const Color(0xFFF5EFE6),
+      backgroundColor: Colors.black,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // Top bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkWarm : Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_ios_rounded,
-                        color: isDark ? Colors.white : AppColors.inkBlack,
-                        size: 20,
+            // ── Camera preview ──────────────────────────────────────────────
+            if (_cameraReady && _controller != null)
+              Positioned.fill(
+                child: CameraPreview(_controller!),
+              )
+            else if (_cameraError != null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    _cameraError!,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
+                  ),
+                ),
+              )
+            else
+              const Center(child: CircularProgressIndicator(color: Colors.white)),
+
+            // ── Scanning frame overlay ──────────────────────────────────────
+            if (_cameraReady)
+              Positioned.fill(
+                child: _ScanFrameOverlay(isAnalyzing: _isAnalyzing, accent: accent),
+              ),
+
+            // ── Top bar ─────────────────────────────────────────────────────
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.45),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Smart Scan',
-                    style: GoogleFonts.rufina(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.inkBlack,
+                    const SizedBox(width: 14),
+                    Text(
+                      'Smart Scan',
+                      style: GoogleFonts.rufina(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
-            Expanded(
-              child: _isScanning
-                  ? _buildScanningState(isDark, accent)
-                  : _buildIdleState(isDark, accent),
-            ),
+            // ── Status label ─────────────────────────────────────────────────
+            if (_cameraReady)
+              Positioned(
+                bottom: 48,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _isAnalyzing
+                        ? _StatusChip(
+                            key: const ValueKey('analyzing'),
+                            label: 'Analyzing...',
+                            icon: Icons.auto_awesome_rounded,
+                            color: accent,
+                          )
+                        : _StatusChip(
+                            key: const ValueKey('scanning'),
+                            label: 'Point at a clothing item',
+                            icon: Icons.document_scanner_rounded,
+                            color: Colors.white.withOpacity(0.85),
+                            textColor: Colors.black87,
+                          ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildIdleState(bool isDark, Color accent) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
+// ── Scan frame corners overlay ────────────────────────────────────────────────
+class _ScanFrameOverlay extends StatefulWidget {
+  final bool isAnalyzing;
+  final Color accent;
+  const _ScanFrameOverlay({required this.isAnalyzing, required this.accent});
+
+  @override
+  State<_ScanFrameOverlay> createState() => _ScanFrameOverlayState();
+}
+
+class _ScanFrameOverlayState extends State<_ScanFrameOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final frameSize = size.width * 0.72;
+
+    return Stack(
+      children: [
+        // Dark vignette around the frame
+        ColorFiltered(
+          colorFilter: const ColorFilter.mode(
+            Colors.transparent,
+            BlendMode.dst,
+          ),
+          child: CustomPaint(
+            size: Size(size.width, size.height),
+            painter: _VignettePainter(
+              frameSize: frameSize,
+              center: Offset(size.width / 2, size.height * 0.42),
+            ),
+          ),
+        ),
+
+        // Corner brackets
+        Center(
+          child: Transform.translate(
+            offset: Offset(0, -(size.height * 0.08)),
+            child: AnimatedBuilder(
+              animation: _pulse,
+              builder: (_, __) {
+                final color = widget.isAnalyzing
+                    ? Color.lerp(widget.accent, Colors.white, _pulse.value)!
+                    : Colors.white;
+                return SizedBox(
+                  width: frameSize,
+                  height: frameSize,
+                  child: CustomPaint(
+                    painter: _CornerPainter(color: color),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _VignettePainter extends CustomPainter {
+  final double frameSize;
+  final Offset center;
+  _VignettePainter({required this.frameSize, required this.center});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final half = frameSize / 2;
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final hole = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: center, width: frameSize, height: frameSize),
+      const Radius.circular(12),
+    );
+    final path = Path()
+      ..addRect(rect)
+      ..addRRect(hole)
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(
+      path,
+      Paint()..color = Colors.black.withOpacity(0.52),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_VignettePainter old) => false;
+}
+
+class _CornerPainter extends CustomPainter {
+  final Color color;
+  _CornerPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    const len = 28.0;
+    const r = 10.0;
+
+    void corner(double x, double y, double dx, double dy) {
+      final path = Path();
+      path.moveTo(x + dx * len, y);
+      path.lineTo(x + dx * r, y);
+      path.arcToPoint(Offset(x, y + dy * r),
+          radius: const Radius.circular(r), clockwise: dx * dy < 0 ? false : true);
+      path.lineTo(x, y + dy * len);
+      canvas.drawPath(path, paint);
+    }
+
+    corner(0, 0, 1, 1);
+    corner(size.width, 0, -1, 1);
+    corner(0, size.height, 1, -1);
+    corner(size.width, size.height, -1, -1);
+  }
+
+  @override
+  bool shouldRepaint(_CornerPainter old) => old.color != color;
+}
+
+// ── Status chip ───────────────────────────────────────────────────────────────
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final Color textColor;
+
+  const _StatusChip({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.color,
+    this.textColor = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.92),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 16),
-
-          // Preview image or placeholder
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _previewBytes != null
-                ? ClipRRect(
-                    key: const ValueKey('preview'),
-                    borderRadius: BorderRadius.circular(24),
-                    child: Image.memory(
-                      _previewBytes!,
-                      height: 280,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : Container(
-                    key: const ValueKey('placeholder'),
-                    height: 280,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkWarm : Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: accent.withOpacity(0.25),
-                        width: 2,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: accent.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.document_scanner_rounded,
-                            size: 40,
-                            color: accent,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Point at a clothing item',
-                          style: GoogleFonts.rufina(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : AppColors.inkBlack,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'AI will identify it and find\nthe best match in our catalog',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            color:
-                                isDark ? AppColors.paleText : AppColors.inkGrey,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-
-          if (_errorMessage != null) ...[
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.redAccent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline_rounded,
-                      color: Colors.redAccent, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _errorMessage!,
-                      style: GoogleFonts.outfit(
-                          fontSize: 13, color: Colors.redAccent),
-                    ),
-                  ),
-                ],
-              ),
+          Icon(icon, size: 16, color: textColor),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: textColor,
             ),
-          ],
-
-          const SizedBox(height: 32),
-
-          // Camera button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => _scan(ImageSource.camera),
-              icon: const Icon(Icons.camera_alt_rounded),
-              label: Text(
-                'Take a Photo',
-                style: GoogleFonts.outfit(
-                    fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Gallery button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _scan(ImageSource.gallery),
-              icon: Icon(Icons.photo_library_rounded, color: accent),
-              label: Text(
-                'Choose from Gallery',
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.inkBlack,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: BorderSide(color: accent.withOpacity(0.4), width: 1.5),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Hint
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.lightbulb_outline_rounded,
-                  size: 14,
-                  color: isDark ? AppColors.paleText : AppColors.inkGrey),
-              const SizedBox(width: 6),
-              Text(
-                'Works best with clear, well-lit photos',
-                style: GoogleFonts.outfit(
-                  fontSize: 12,
-                  color: isDark ? AppColors.paleText : AppColors.inkGrey,
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildScanningState(bool isDark, Color accent) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (_previewBytes != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Image.memory(
-                _previewBytes!,
-                height: 220,
-                width: double.infinity,
-                fit: BoxFit.cover,
+// ── Result bottom sheet ───────────────────────────────────────────────────────
+class _ResultSheet extends StatelessWidget {
+  final Product product;
+  final Color accent;
+  final bool isDark;
+  final VoidCallback onViewProduct;
+  final VoidCallback onScanAgain;
+
+  const _ResultSheet({
+    required this.product,
+    required this.accent,
+    required this.isDark,
+    required this.onViewProduct,
+    required this.onScanAgain,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkWarm : Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 30,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-        const SizedBox(height: 40),
-        SizedBox(
-          width: 56,
-          height: 56,
-          child: CircularProgressIndicator(
-            color: accent,
-            strokeWidth: 3,
-          ),
+
+            // Match label
+            Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: accent, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Match Found!',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: accent,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Product card row
+            Row(
+              children: [
+                // Image
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    width: 90,
+                    height: 90,
+                    child: CdnImage(
+                      product.image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
+                        child: const Icon(Icons.image, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (product.shopName != null)
+                        Row(
+                          children: [
+                            Icon(Icons.storefront_rounded, size: 13, color: accent),
+                            const SizedBox(width: 5),
+                            Text(
+                              product.shopName!,
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                color: accent,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      const SizedBox(height: 4),
+                      Text(
+                        product.name,
+                        style: GoogleFonts.rufina(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppColors.inkBlack,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        product.price,
+                        style: GoogleFonts.outfit(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: accent,
+                        ),
+                      ),
+                      if (product.description != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          product.description!,
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                            height: 1.4,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onScanAgain,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(color: accent.withOpacity(0.4)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(
+                      'Scan Again',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : AppColors.inkBlack,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onViewProduct,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(
+                      'View Item',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: 24),
-        Text(
-          'Analyzing item...',
-          style: GoogleFonts.rufina(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : AppColors.inkBlack,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'AI is identifying your clothing item',
-          style: GoogleFonts.outfit(
-            fontSize: 13,
-            color: isDark ? AppColors.paleText : AppColors.inkGrey,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
