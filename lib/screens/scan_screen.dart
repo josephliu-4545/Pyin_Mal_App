@@ -2,10 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image/image.dart' as imgLib;
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:pyin_mal_app/core/constants/api_constants.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
@@ -14,47 +12,16 @@ import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 
-// ── Isolate-safe YUV→JPEG conversion ─────────────────────────────────────────
-Uint8List? _convertYuvIsolate(Map<String, dynamic> data) {
-  try {
-    final int width  = data['width']  as int;
-    final int height = data['height'] as int;
-    final int fmt    = data['format'] as int;
-    imgLib.Image img;
-
-    if (fmt == ImageFormatGroup.bgra8888.index) {
-      final Uint8List bytes = data['plane0'] as Uint8List;
-      img = imgLib.Image.fromBytes(
-        width: width, height: height,
-        bytes: bytes.buffer, order: imgLib.ChannelOrder.bgra,
-      );
-    } else {
-      // YUV420
-      final Uint8List yBytes = data['plane0'] as Uint8List;
-      final Uint8List uBytes = data['plane1'] as Uint8List;
-      final Uint8List vBytes = data['plane2'] as Uint8List;
-      final int yStride  = data['yRowStride']   as int;
-      final int uvStride = data['uvRowStride']  as int;
-      final int uvPixel  = data['uvPixelStride'] as int;
-      img = imgLib.Image(width: width, height: height);
-      for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-          final int yv = yBytes[y * yStride + x];
-          final int uv = uBytes[(y ~/ 2) * uvStride + (x ~/ 2) * uvPixel] - 128;
-          final int vv = vBytes[(y ~/ 2) * uvStride + (x ~/ 2) * uvPixel] - 128;
-          img.setPixelRgb(x, y,
-            (yv + 1.402 * vv).round().clamp(0, 255),
-            (yv - 0.344136 * uv - 0.714136 * vv).round().clamp(0, 255),
-            (yv + 1.772 * uv).round().clamp(0, 255),
-          );
-        }
-      }
-    }
-    return Uint8List.fromList(imgLib.encodeJpg(img, quality: 65));
-  } catch (_) { return null; }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
+// Strategy: CameraX preview + takePicture() for frame capture.
+//
+// Xiaomi Redmi Note 9S camera driver crashes after ~6 frames of any
+// continuous image stream (YUV_420_888 or JPEG), even with CameraX.
+// The camera HAL supports single-frame JPEG capture (takePicture) fine.
+// CameraX handles autofocus for takePicture automatically, so the old
+// STATE_WAITING_FOCUS hang is also gone.
+// ─────────────────────────────────────────────────────────────────────────────
+
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
   @override
@@ -69,10 +36,6 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   bool  _isInitializing = false;
   Timer? _autoScanTimer;
   String? _cameraError;
-
-  // Pre-copied frame data for compute() isolate, throttled to ~2fps
-  Map<String, dynamic>? _latestFrameData;
-  int _frameCount = 0;
 
   @override
   void initState() {
@@ -90,7 +53,6 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   }
 
   void _disposeCamera() {
-    try { _controller?.stopImageStream(); } catch (_) {}
     _controller?.dispose();
     _controller = null;
   }
@@ -100,9 +62,10 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.paused) {
       _autoScanTimer?.cancel();
       _isAnalyzing = false;
-      _latestFrameData = null;
-      _disposeCamera();
-      if (mounted) setState(() { _cameraReady = false; });
+      if (_cameraReady) {
+        _disposeCamera();
+        if (mounted) setState(() { _cameraReady = false; });
+      }
     } else if (state == AppLifecycleState.resumed &&
         !_cameraReady && !_isInitializing) {
       _initCamera();
@@ -113,8 +76,6 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     if (_isInitializing) return;
     _isInitializing = true;
     _isAnalyzing = false;
-    _latestFrameData = null;
-    _frameCount = 0;
 
     try {
       final cameras = await availableCameras();
@@ -127,43 +88,16 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
         orElse: () => cameras.first,
       );
 
+      // No imageFormatGroup needed — we use takePicture(), not startImageStream
       final ctrl = CameraController(
         back,
         ResolutionPreset.medium,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.yuv420,
       );
 
       await ctrl.initialize();
-
-      // Give Xiaomi's camera extension time to settle after init
-      await Future.delayed(const Duration(milliseconds: 500));
       if (!mounted) { ctrl.dispose(); return; }
 
-      // Throttle: copy frame data every ~15 frames (~2fps) to limit GC pressure
-      await ctrl.startImageStream((img) {
-        _frameCount++;
-        if (_frameCount % 15 != 0) return;
-        if (_isAnalyzing) return;
-        _frameCount = 0;
-        try {
-          final data = <String, dynamic>{
-            'width': img.width, 'height': img.height,
-            'format': img.format.group.index,
-            'plane0': Uint8List.fromList(img.planes[0].bytes),
-            'yRowStride': img.planes[0].bytesPerRow,
-          };
-          if (img.planes.length >= 3) {
-            data['plane1']        = Uint8List.fromList(img.planes[1].bytes);
-            data['plane2']        = Uint8List.fromList(img.planes[2].bytes);
-            data['uvRowStride']   = img.planes[1].bytesPerRow;
-            data['uvPixelStride'] = img.planes[1].bytesPerPixel ?? 1;
-          }
-          _latestFrameData = data;
-        } catch (_) {}
-      });
-
-      if (!mounted) { ctrl.dispose(); return; }
       setState(() { _controller = ctrl; _cameraReady = true; });
       _startAutoScan();
 
@@ -176,26 +110,31 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
 
   void _startAutoScan() {
     _autoScanTimer?.cancel();
-    _autoScanTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _autoScanTimer = Timer.periodic(const Duration(seconds: 6), (_) {
       if (!_isAnalyzing && !_resultShown) _analyzeCurrentFrame();
     });
   }
 
   Future<void> _analyzeCurrentFrame() async {
     if (_isAnalyzing || _resultShown) return;
-    final frameData = _latestFrameData;
-    if (frameData == null) return;
+    final ctrl = _controller;
+    if (ctrl == null || !ctrl.value.isInitialized) return;
 
     setState(() => _isAnalyzing = true);
 
     Uint8List? bytes;
     List<Product> results = [];
     try {
-      bytes = await compute(_convertYuvIsolate, frameData);
-      if (bytes == null || bytes.isEmpty) return;
+      // takePicture() — CameraX handles AF automatically, no STATE_WAITING_FOCUS
+      final XFile file = await ctrl.takePicture()
+          .timeout(const Duration(seconds: 10));
+      bytes = await file.readAsBytes();
+
+      if (bytes.isEmpty) return;
 
       results = await _identifyProducts(bytes)
           .timeout(const Duration(seconds: 25), onTimeout: () => []);
+
     } catch (_) {
       // finally handles cleanup
     } finally {
@@ -204,7 +143,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     }
 
     if (!mounted) return;
-    if (bytes != null && results.isNotEmpty) {
+    if (bytes != null && bytes.isNotEmpty && results.isNotEmpty) {
       setState(() => _resultShown = true);
       _autoScanTimer?.cancel();
       _showResultsSheet(bytes, results);
@@ -368,7 +307,7 @@ Only include IDs that are genuinely similar. Return an empty list if nothing mat
                             icon: Icons.auto_awesome_rounded,
                             color: accent, textColor: Colors.white)
                         : _StatusChip(key: const ValueKey('i'),
-                            label: 'Auto-scanning every 5s',
+                            label: 'Auto-scanning every 6s',
                             icon: Icons.radar_rounded,
                             color: Colors.white.withOpacity(0.15),
                             textColor: Colors.white),
@@ -549,19 +488,16 @@ class _ResultsSheet extends StatelessWidget {
                   color: isDark ? Colors.white24 : Colors.black12,
                   borderRadius: BorderRadius.circular(2))),
 
-          // Header row: scanned thumbnail + title + scan again
+          // Header row
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             child: Row(children: [
-
-              // Scanned image thumbnail
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.memory(scannedBytes,
                     width: 56, height: 56, fit: BoxFit.cover),
               ),
               const SizedBox(width: 14),
-
               Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -574,13 +510,10 @@ class _ResultsSheet extends StatelessWidget {
                           color: isDark ? AppColors.paleText : AppColors.inkGrey)),
                 ],
               )),
-
-              // Scan again button
               GestureDetector(
                 onTap: onScanAgain,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: accent.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -589,8 +522,7 @@ class _ResultsSheet extends StatelessWidget {
                     Icon(Icons.refresh_rounded, size: 14, color: accent),
                     const SizedBox(width: 5),
                     Text('Rescan', style: GoogleFonts.outfit(
-                        fontSize: 12, fontWeight: FontWeight.w600,
-                        color: accent)),
+                        fontSize: 12, fontWeight: FontWeight.w600, color: accent)),
                   ]),
                 ),
               ),
@@ -599,22 +531,17 @@ class _ResultsSheet extends StatelessWidget {
 
           const Divider(height: 1),
 
-          // Results grid
           Expanded(
             child: GridView.builder(
               controller: scrollCtrl,
               padding: const EdgeInsets.all(16),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.72,
+                crossAxisCount: 2, crossAxisSpacing: 12,
+                mainAxisSpacing: 12, childAspectRatio: 0.72,
               ),
               itemCount: products.length,
               itemBuilder: (_, i) => _ProductCard(
-                product: products[i],
-                accent: accent,
-                isDark: isDark,
+                product: products[i], accent: accent, isDark: isDark,
                 onTap: () => onSelectProduct(products[i]),
               ),
             ),
@@ -625,13 +552,12 @@ class _ResultsSheet extends StatelessWidget {
   }
 }
 
-// ── Product card in results grid ──────────────────────────────────────────────
+// ── Product card ──────────────────────────────────────────────────────────────
 class _ProductCard extends StatelessWidget {
   final Product product;
   final Color accent;
   final bool isDark;
   final VoidCallback onTap;
-
   const _ProductCard({required this.product, required this.accent,
       required this.isDark, required this.onTap});
 
@@ -648,28 +574,17 @@ class _ProductCard extends StatelessWidget {
               blurRadius: 12, offset: const Offset(0, 3))],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-
-          // Product image
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(18)),
-              child: CdnImage(product.image, fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (_, __, ___) => Container(
-                      color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
-                      child: const Icon(Icons.image,
-                          color: Colors.grey, size: 40))),
-            ),
-          ),
-
-          // Info
+          Expanded(child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+            child: CdnImage(product.image, fit: BoxFit.cover,
+                width: double.infinity,
+                errorBuilder: (_, __, ___) => Container(
+                    color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
+                    child: const Icon(Icons.image, color: Colors.grey, size: 40))),
+          )),
           Padding(
             padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, children: [
-
-              // Shop name
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               if (product.shopName != null)
                 Row(children: [
                   Icon(Icons.storefront_rounded, size: 10, color: accent),
@@ -680,16 +595,12 @@ class _ProductCard extends StatelessWidget {
                       maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ]),
               const SizedBox(height: 2),
-
-              // Name
               Text(product.name,
                   style: GoogleFonts.outfit(fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.white : AppColors.inkBlack),
                   maxLines: 2, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 4),
-
-              // Price
               Text(product.price, style: GoogleFonts.outfit(
                   fontSize: 13, fontWeight: FontWeight.bold, color: accent)),
             ]),
