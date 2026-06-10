@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/onboarding_screen.dart';
+import 'package:pyin_mal_app/screens/profile_setup_screen.dart';
 import 'package:pyin_mal_app/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -46,8 +47,9 @@ class _LoginScreenState extends State<LoginScreen> {
           _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : 'Fashionista',
         );
         if (profile != null && mounted) {
-          // Send them to onboarding after sign up to get preferences and image
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const OnboardingScreen()));
+          // After sign up: collect body info + style preferences first,
+          // which then continues to the avatar onboarding.
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ProfileSetupScreen()));
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration failed. Password must be at least 6 characters.')));
         }

@@ -301,10 +301,6 @@ class _HomeTabState extends State<_HomeTab> {
                 _buildPointsLuckyDrawBanner(isDark),
                 const SizedBox(height: 24),
 
-                // ── Weather Suggestion ─────────────────────────────────────
-                _buildWeatherSuggestionCard(isDark),
-                const SizedBox(height: 24),
-
                 // ── Today's Outfit ─────────────────────────────────────────
                 _buildOutfitSuggestionsCard(isDark, isMobile),
                 const SizedBox(height: 28),
@@ -329,22 +325,10 @@ class _HomeTabState extends State<_HomeTab> {
                 _buildRecyclingRewardsCard(isDark),
                 const SizedBox(height: 28),
 
-                // ── Community ─────────────────────────────────────────────
-                _buildSectionLabel('Community', isDark),
-                const SizedBox(height: 16),
-                _buildCommunitySection(isDark),
-                const SizedBox(height: 28),
-
                 // ── Give Back ─────────────────────────────────────────────
                 _buildSectionLabel('Give back', isDark),
                 const SizedBox(height: 16),
                 _buildGiveBackSection(isDark),
-                const SizedBox(height: 28),
-
-                // ── Delivery ──────────────────────────────────────────────
-                _buildSectionLabel('Your orders', isDark),
-                const SizedBox(height: 16),
-                _buildDeliverySection(isDark),
                 const SizedBox(height: 28),
 
                 // ── Language ──────────────────────────────────────────────
@@ -547,77 +531,6 @@ class _HomeTabState extends State<_HomeTab> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // ── Weather-Based Suggestion Card ─────────────────────────────────────────
-  Widget _buildWeatherSuggestionCard(bool isDark) {
-    final hour = DateTime.now().hour;
-    final isHot = hour >= 10 && hour <= 17;
-    final weatherLabel = isHot ? 'Warm & Sunny' : 'Cool & Breezy';
-    final suggestion = isHot
-        ? 'Light fabrics — linen shirts, breathable tees'
-        : 'Layer up — a jacket or cardigan works great';
-    final weatherIcon = isHot ? Icons.wb_sunny_rounded : Icons.air_rounded;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: (isDark ? AppColors.gold : AppColors.burgundy).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(weatherIcon, color: isDark ? AppColors.gold : AppColors.burgundy, size: 26),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'Weather Pick  ·  ',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        color: isDark ? AppColors.paleText : AppColors.inkGrey,
-                      ),
-                    ),
-                    Text(
-                      weatherLabel,
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.gold : AppColors.burgundy,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  suggestion,
-                  style: GoogleFonts.outfit(
-                    fontSize: 14,
-                    color: isDark ? Colors.white : AppColors.inkBlack,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -930,7 +843,6 @@ class _HomeTabState extends State<_HomeTab> {
       _AICard(label: 'Model\nTry-On',      sub: 'Virtual avatar',    icon: Icons.view_in_ar_rounded,              color: const Color(0xFFC9A96E), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelPreviewScreen()))),
       _AICard(label: 'Virtual\nTry-On',    sub: 'AI on yourself',    icon: Icons.checkroom_rounded,               color: const Color(0xFF7C6AF7), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TryOnScreen()))),
       _AICard(label: 'AR Try-On\n& 3D',   sub: 'Augmented reality', icon: Icons.view_in_ar_rounded,              color: const Color(0xFF3D9BE9), onTap: () => _comingSoon('AR Try-On & 3D Models')),
-      _AICard(label: 'Fitting\nRoom',      sub: 'Virtual dressing',  icon: Icons.door_sliding_rounded,            color: const Color(0xFFE07A5F), onTap: () => _comingSoon('Virtual Fitting Room')),
       _AICard(label: 'Haircut\nRec',       sub: 'AI hairstyle',      icon: Icons.face_retouching_natural_rounded, color: const Color(0xFF52B788), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()))),
     ];
     final row2 = [
@@ -953,9 +865,7 @@ class _HomeTabState extends State<_HomeTab> {
   Widget _buildDiscoverSection(bool isDark) {
     final items = [
       _AICard(label: 'Color\nAnalysis',     sub: 'Your palette',          icon: Icons.palette_rounded,                 color: const Color(0xFFE07A5F), onTap: () => _comingSoon('Color Analysis')),
-      _AICard(label: 'Regional\nFashion',   sub: 'Trending near you',     icon: Icons.public_rounded,                  color: const Color(0xFF3D9BE9), onTap: () => _comingSoon('Regional Fashion')),
       _AICard(label: 'Size\nRecommender',   sub: 'Perfect fit',           icon: Icons.straighten_rounded,              color: const Color(0xFF7C6AF7), onTap: () => _comingSoon('Size Recommender')),
-      _AICard(label: 'Outfit\nSharing',     sub: 'Community looks',       icon: Icons.people_alt_rounded,              color: const Color(0xFFE07A5F), onTap: () => _comingSoon('Outfit Sharing')),
       _AICard(label: 'Smart\nScan',         sub: 'Avoid duplicates',      icon: Icons.document_scanner_rounded,        color: const Color(0xFF52B788), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanScreen()))),
     ];
     return _buildHorizontalCardRow(items, isDark);
@@ -1104,169 +1014,6 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  // ── Community Section ─────────────────────────────────────────────────────
-  // ── Community Section ─────────────────────────────────────────────────────
-  Widget _buildCommunitySection(bool isDark) {
-    const gold = Color(0xFFC9A96E);
-    final reviews = [
-      (name: 'Thida K.',  stars: 5, text: '"Amazing quality, fits perfectly!"',   avatar: 'T'),
-      (name: 'Aung M.',   stars: 4, text: '"Great style, slightly long delivery"', avatar: 'A'),
-      (name: 'Su Su',     stars: 5, text: '"Love the fabric, super comfortable"',  avatar: 'S'),
-      (name: 'Kyaw Z.',   stars: 4, text: '"Nice colour, would buy again"',        avatar: 'K'),
-    ];
-
-    final cardBg   = isDark ? AppColors.darkWarm    : AppColors.creamCard;
-    final border   = isDark ? AppColors.darkBorder  : AppColors.creamAlt;
-    final titleClr = isDark ? Colors.white           : AppColors.inkBlack;
-    final subClr   = isDark ? AppColors.paleText     : AppColors.inkGrey;
-
-    return Column(
-      children: [
-        // ── Reviews card ───────────────────────────────────────────────────
-        GestureDetector(
-          onTap: () => _showReviewSheet(context, isDark),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Container(
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(
-                      color: gold.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: const Icon(Icons.star_rounded, color: gold, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Community Reviews', style: GoogleFonts.rufina(
-                          fontSize: 16, fontWeight: FontWeight.bold, color: titleClr)),
-                      Text('Real feedback from the community',
-                          style: GoogleFonts.outfit(fontSize: 12, color: subClr)),
-                    ],
-                  )),
-                  GestureDetector(
-                    onTap: () => _showReviewSheet(context, isDark),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: gold.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: gold.withOpacity(0.3)),
-                      ),
-                      child: Text('See all', style: GoogleFonts.outfit(
-                          fontSize: 11, fontWeight: FontWeight.bold, color: gold)),
-                    ),
-                  ),
-                ]),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 96,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: reviews.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
-                    itemBuilder: (_, i) {
-                      final r = reviews[i];
-                      return Container(
-                        width: 195,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.charcoal : Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: border),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(children: [
-                              CircleAvatar(radius: 12,
-                                backgroundColor: gold.withOpacity(0.15),
-                                child: Text(r.avatar, style: GoogleFonts.rufina(
-                                    fontSize: 11, color: gold, fontWeight: FontWeight.bold))),
-                              const SizedBox(width: 7),
-                              Text(r.name, style: GoogleFonts.outfit(
-                                  fontSize: 12, fontWeight: FontWeight.w600, color: titleClr)),
-                              const Spacer(),
-                              Row(children: List.generate(r.stars, (_) =>
-                                Icon(Icons.star_rounded, size: 10, color: gold))),
-                            ]),
-                            const SizedBox(height: 8),
-                            Text(r.text, style: GoogleFonts.outfit(
-                                fontSize: 11, color: subClr, height: 1.4),
-                                maxLines: 2, overflow: TextOverflow.ellipsis),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showReviewSheet(context, isDark),
-                    icon: Icon(Icons.edit_rounded, size: 14, color: gold),
-                    label: Text('Write a Review', style: GoogleFonts.outfit(
-                        fontSize: 13, fontWeight: FontWeight.bold, color: gold)),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      side: BorderSide(color: gold.withOpacity(0.4)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        // ── Style Videos ──────────────────────────────────────────────────
-        GestureDetector(
-          onTap: () => _showDraggableVideo(context, isDark),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: border),
-            ),
-            child: Row(children: [
-              Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(
-                  color: gold.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: const Icon(Icons.play_circle_rounded, color: gold, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Style Videos', style: GoogleFonts.rufina(
-                      fontSize: 15, fontWeight: FontWeight.bold, color: titleClr)),
-                  Text('Drag-around fashion lookbooks',
-                      style: GoogleFonts.outfit(fontSize: 12, color: subClr)),
-                ],
-              )),
-              Icon(Icons.arrow_forward_ios_rounded, size: 13, color: gold),
-            ]),
-          ),
-        ),
-      ],
-    );
-  }
 
   // ── Give Back Section ─────────────────────────────────────────────────────
   Widget _buildGiveBackSection(bool isDark) {
@@ -1418,171 +1165,6 @@ class _HomeTabState extends State<_HomeTab> {
           ),
         ]),
       ],
-    );
-  }
-
-  // ── Delivery Section ──────────────────────────────────────────────────────
-  Widget _buildDeliverySection(bool isDark) {
-    const gold    = Color(0xFFC9A96E);
-    final cardBg  = isDark ? AppColors.darkWarm   : AppColors.creamCard;
-    final border  = isDark ? AppColors.darkBorder : AppColors.creamAlt;
-    final titleClr = isDark ? Colors.white         : AppColors.inkBlack;
-    final subClr  = isDark ? AppColors.paleText    : AppColors.inkGrey;
-
-    return Column(
-      children: [
-        // ── Live tracking card ─────────────────────────────────────────────
-        GestureDetector(
-          onTap: () => _comingSoon('Live Delivery Tracking'),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Container(width: 44, height: 44,
-                    decoration: BoxDecoration(
-                      color: gold.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: const Icon(Icons.location_on_rounded, color: gold, size: 22)),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Live Delivery Tracking', style: GoogleFonts.rufina(
-                          fontSize: 16, fontWeight: FontWeight.bold, color: titleClr)),
-                      Text('Track your orders in real-time',
-                          style: GoogleFonts.outfit(fontSize: 12, color: subClr)),
-                    ],
-                  )),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: gold.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: gold.withOpacity(0.3)),
-                    ),
-                    child: Text('LIVE', style: GoogleFonts.outfit(
-                        fontSize: 9, fontWeight: FontWeight.bold, color: gold, letterSpacing: 1)),
-                  ),
-                ]),
-                const SizedBox(height: 16),
-                // Order tracker
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.charcoal : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: border),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                        Text('Order #PM2048', style: GoogleFonts.outfit(
-                            fontSize: 12, fontWeight: FontWeight.bold, color: titleClr)),
-                        Text('Est. 2:30 PM', style: GoogleFonts.outfit(
-                            fontSize: 12, color: gold, fontWeight: FontWeight.w600)),
-                      ]),
-                      const SizedBox(height: 14),
-                      Row(children: [
-                        _buildTrackStep('Placed',    true,  isDark),
-                        _buildTrackLine(true),
-                        _buildTrackStep('Packed',    true,  isDark),
-                        _buildTrackLine(true),
-                        _buildTrackStep('On way',    true,  isDark),
-                        _buildTrackLine(false),
-                        _buildTrackStep('Delivered', false, isDark),
-                      ]),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        // ── AI prediction card ─────────────────────────────────────────────
-        GestureDetector(
-          onTap: () => _comingSoon('AI Delivery Prediction'),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: border),
-            ),
-            child: Row(children: [
-              Container(width: 44, height: 44,
-                decoration: BoxDecoration(
-                  color: gold.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: const Icon(Icons.auto_awesome_rounded, color: gold, size: 22)),
-              const SizedBox(width: 14),
-              Expanded(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('AI Delivery Prediction', style: GoogleFonts.rufina(
-                      fontSize: 15, fontWeight: FontWeight.bold, color: titleClr)),
-                  Text('Smarter ETA powered by AI',
-                      style: GoogleFonts.outfit(fontSize: 12, color: subClr)),
-                ],
-              )),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: gold.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: gold.withOpacity(0.3)),
-                ),
-                child: Text('Soon', style: GoogleFonts.outfit(
-                    fontSize: 10, fontWeight: FontWeight.bold, color: gold)),
-              ),
-            ]),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTrackStep(String label, bool done, bool isDark) {
-    return Column(
-      children: [
-        Container(
-          width: 22, height: 22,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: done ? const Color(0xFFC9A96E) : (isDark ? AppColors.darkBorder : AppColors.creamAlt),
-            border: Border.all(
-              color: done ? const Color(0xFFC9A96E) : (isDark ? AppColors.darkBorder : AppColors.creamAlt),
-              width: 2,
-            ),
-          ),
-          child: done ? const Icon(Icons.check_rounded, size: 12, color: Colors.white) : null,
-        ),
-        const SizedBox(height: 5),
-        Text(label, style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.w600,
-            color: done ? const Color(0xFFC9A96E) : (isDark ? AppColors.paleText : AppColors.inkGrey))),
-      ],
-    );
-  }
-
-  Widget _buildTrackLine(bool done) {
-    return Expanded(
-      child: Container(
-        height: 2,
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: done ? const Color(0xFFC9A96E) : (AppColors.inkGrey.withOpacity(0.2)),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
     );
   }
 
@@ -1992,11 +1574,11 @@ class _DraggableVideoWidgetState extends State<_DraggableVideoWidget> {
 }
 
 // ── Auto-Scrolling Row Widget ─────────────────────────────────────────────────
-class _AutoScrollRow extends StatefulWidget {
+class _AutoScrollRow extends StatelessWidget {
   final List<Widget> children;
   final bool reverse;
   final double height;
-  final double pixelsPerSecond;
+  final double pixelsPerSecond; // kept for call-site compatibility; unused
 
   const _AutoScrollRow({
     required this.children,
@@ -2006,78 +1588,16 @@ class _AutoScrollRow extends StatefulWidget {
   });
 
   @override
-  State<_AutoScrollRow> createState() => _AutoScrollRowState();
-}
-
-class _AutoScrollRowState extends State<_AutoScrollRow> with SingleTickerProviderStateMixin {
-  late final ScrollController _ctrl;
-  Ticker? _ticker;
-  Duration _last = Duration.zero;
-  bool _ready = false;
-  bool _userTouching = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = ScrollController();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _init());
-  }
-
-  void _init() {
-    if (!mounted || !_ctrl.hasClients) return;
-    final max = _ctrl.position.maxScrollExtent;
-    _ctrl.jumpTo(max / 3);
-    _ready = true;
-    _ticker = createTicker(_onTick)..start();
-  }
-
-  void _onTick(Duration elapsed) {
-    if (!_ready || !mounted || !_ctrl.hasClients || _userTouching) {
-      _last = elapsed; // keep time in sync so no position jump on resume
-      return;
-    }
-    final dt = _last == Duration.zero ? 0.0 : (elapsed - _last).inMicroseconds / 1e6;
-    _last = elapsed;
-    final max = _ctrl.position.maxScrollExtent;
-    if (max <= 0) return;
-
-    double next;
-    if (widget.reverse) {
-      next = _ctrl.offset - widget.pixelsPerSecond * dt;
-      if (next <= 0) next = max / 3 * 2;
-    } else {
-      next = _ctrl.offset + widget.pixelsPerSecond * dt;
-      if (next >= max) next = max / 3;
-    }
-    _ctrl.jumpTo(next.clamp(0, max));
-  }
-
-  @override
-  void dispose() {
-    _ticker?.dispose();
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final looped = [...widget.children, ...widget.children, ...widget.children];
-    return Listener(
-      onPointerDown: (_) => _userTouching = true,
-      onPointerUp: (_) => _userTouching = false,
-      onPointerCancel: (_) => _userTouching = false,
-      child: SizedBox(
-        height: widget.height,
-        child: ListView.separated(
-          controller: _ctrl,
-          scrollDirection: Axis.horizontal,
-          // Allow user to fling/drag freely
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.zero,
-          itemCount: looped.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 12),
-          itemBuilder: (_, i) => looped[i],
-        ),
+    return SizedBox(
+      height: height,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: EdgeInsets.zero,
+        itemCount: children.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) => children[i],
       ),
     );
   }

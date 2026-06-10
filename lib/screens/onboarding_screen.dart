@@ -1,5 +1,7 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/cdn_image.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
@@ -20,6 +22,59 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String _selectedSize = 'M';
   final Set<String> _selectedClothing = {};
   bool _isSaving = false;
+
+  // Uploaded photo (bytes for cross-platform preview, incl. web)
+  Uint8List? _photoBytes;
+  String? _photoName;
+
+  Future<void> _pickPhoto() async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _photoBytes = bytes;
+        _photoName = picked.name;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not pick image: $e')),
+      );
+    }
+  }
+
+  Widget _photoChip(
+      IconData icon, String label, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.55),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(label,
+                style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -390,56 +445,137 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 48),
-          // Upload box
-          Container(
-            width: double.infinity,
-            height: 200,
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: isDark ? AppColors.darkBorder : AppColors.inkGrey.withOpacity(0.3),
-                width: 2,
+          // Upload box (tap to pick / shows preview)
+          GestureDetector(
+            onTap: _pickPhoto,
+            child: Container(
+              width: double.infinity,
+              height: 200,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: _photoBytes != null
+                      ? accent
+                      : (isDark
+                          ? AppColors.darkBorder
+                          : AppColors.inkGrey.withOpacity(0.3)),
+                  width: 2,
+                ),
               ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.cloud_upload_outlined,
-                  color: isDark ? AppColors.paleText : AppColors.inkGrey,
-                  size: 48,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Add a file',
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppColors.inkBlack,
-                  ),
-                ),
-              ],
+              child: _photoBytes != null
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(22),
+                          child: Image.memory(_photoBytes!, fit: BoxFit.cover),
+                        ),
+                        // Change/remove controls
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Row(
+                            children: [
+                              _photoChip(Icons.swap_horiz_rounded, 'Change',
+                                  accent, _pickPhoto),
+                              const SizedBox(width: 8),
+                              _photoChip(Icons.close_rounded, 'Remove',
+                                  Colors.redAccent, () {
+                                setState(() {
+                                  _photoBytes = null;
+                                  _photoName = null;
+                                });
+                              }),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.cloud_upload_outlined,
+                          color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Add a file',
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : AppColors.inkBlack,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tap to choose from gallery',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            color:
+                                isDark ? AppColors.paleText : AppColors.inkGrey,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
+          if (_photoName != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _photoName!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                color: isDark ? AppColors.paleText : AppColors.inkGrey,
+              ),
+            ),
+          ],
           const SizedBox(height: 48),
           SizedBox(
             width: double.infinity,
             height: 56,
-            child: OutlinedButton(
-              onPressed: () => _pageController.nextPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: accent),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: Text(
-                'Skip for now',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: accent),
-              ),
-            ),
+            child: _photoBytes != null
+                ? ElevatedButton(
+                    onPressed: () => _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor:
+                          isDark ? AppColors.charcoal : Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: Text(
+                      'Continue',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  )
+                : OutlinedButton(
+                    onPressed: () => _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: accent),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: Text(
+                      'Skip for now',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: accent),
+                    ),
+                  ),
           ),
         ],
       ),

@@ -38,6 +38,20 @@ class DatabaseService {
     });
   }
 
+  /// Save the body info + style preferences collected during profile setup.
+  /// Uses set(merge) so it works whether or not the user doc already exists.
+  Future<void> saveProfileSetup(Map<String, dynamic> data) async {
+    if (_uid == null) return;
+    await _db.collection('users').doc(_uid).set(
+      {
+        ...data,
+        'profileCompleted': true,
+        'profileUpdatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
   // ── Tracking ───────────────────────────────────────────────────────────────
 
   Future<void> trackProductView(String productId) async {
