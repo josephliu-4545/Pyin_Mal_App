@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:pyin_mal_app/main.dart';
 import '../services/nanobanana_api_service.dart';
 
 class TryOnScreen extends StatefulWidget {
@@ -116,249 +116,291 @@ class _TryOnScreenState extends State<TryOnScreen> {
     });
   }
 
+  // Theme helpers
+  bool get _isDark =>
+      Theme.of(context).brightness == Brightness.dark;
+  Color get _accent => _isDark ? AppColors.gold : AppColors.burgundy;
+  Color get _bg => _isDark ? AppColors.charcoal : const Color(0xFFF5F2EE);
+  Color get _surface => _isDark ? AppColors.darkWarm : Colors.white;
+  Color get _ink => _isDark ? Colors.white : AppColors.inkBlack;
+  Color get _muted => _isDark ? AppColors.paleText : AppColors.inkGrey;
+
+  int get _itemsAdded {
+    int n = 0;
+    if (_shirtPhotoBytes != null) n++;
+    if (_pantsPhotoBytes != null) n++;
+    if (_shoesPhotoBytes != null) n++;
+    return n;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Virtual Try-On',
-          style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      backgroundColor: _bg,
+      body: SafeArea(
+        child: _resultImageUrl != null ? _buildResult() : _buildBody(),
       ),
-      body: _buildBody(),
     );
   }
 
-  Widget _buildBody() {
-    // If result exists, show the result
-    if (_resultImageUrl != null) {
-      return Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Your AI Fit',
-                style: GoogleFonts.rufina(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Image.network(
-                  _resultImageUrl!,
-                  height: 400,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: _reset,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
+  // ── Top bar ────────────────────────────────────────────────────────────────
+  Widget _topBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: _surface,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(_isDark ? 0.2 : 0.07),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                ),
-                child: Text(
-                  'Try Another Outfit',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                ],
               ),
-            ],
+              child: Icon(Icons.arrow_back_ios_rounded, size: 18, color: _ink),
+            ),
           ),
-        ),
-      );
-    }
+          const SizedBox(width: 12),
+          Text('Virtual Try-On',
+              style: GoogleFonts.outfit(
+                  fontSize: 16, fontWeight: FontWeight.w600, color: _ink)),
+          const Spacer(),
+          // AI badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _accent.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome_rounded, size: 13, color: _accent),
+                const SizedBox(width: 4),
+                Text('AI',
+                    style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: _accent)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    // Otherwise show the upload UI
-    return Stack(
+  // ── Build (upload) flow ──────────────────────────────────────────────────
+  Widget _buildBody() {
+    final canGenerate = _userPhotoBytes != null && _itemsAdded > 0;
+
+    return Column(
       children: [
-        SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Mix & Match',
-                style: GoogleFonts.rufina(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Upload your photo and build your outfit to see the magic.',
-                style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
+        _topBar(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Hero heading
+                Text('Mix & Match',
+                    style: GoogleFonts.rufina(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: _ink)),
+                const SizedBox(height: 6),
+                Text('Upload your photo, add a few pieces, and let AI style the fit.',
+                    style: GoogleFonts.outfit(
+                        fontSize: 13, height: 1.4, color: _muted)),
+                const SizedBox(height: 24),
 
-              // Upload Grid
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildUploadBox(
-                      title: 'Person',
-                      icon: Icons.person_add_alt_1_rounded,
-                      imageBytes: _userPhotoBytes,
-                      onTap: () => _pickImage((f, b) {
-                        _userPhoto = f;
-                        _userPhotoBytes = b;
-                      }),
-                      isAccent: true,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildUploadBox(
-                      title: 'Shirt / Top',
-                      icon: Icons.checkroom_rounded,
-                      imageBytes: _shirtPhotoBytes,
-                      onTap: () => _pickImage((f, b) {
-                        _shirtPhoto = f;
-                        _shirtPhotoBytes = b;
-                      }),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildUploadBox(
-                      title: 'Pants / Bottom',
-                      icon: Icons.dry_cleaning_rounded,
-                      imageBytes: _pantsPhotoBytes,
-                      onTap: () => _pickImage((f, b) {
-                        _pantsPhoto = f;
-                        _pantsPhotoBytes = b;
-                      }),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildUploadBox(
-                      title: 'Sneakers',
-                      icon: Icons.snowshoeing_rounded,
-                      imageBytes: _shoesPhotoBytes,
-                      onTap: () => _pickImage((f, b) {
-                        _shoesPhoto = f;
-                        _shoesPhotoBytes = b;
-                      }),
-                    ),
-                  ),
-                ],
-              ),
+                // ── Step 1: Your model (hero card) ───────────────────────
+                _stepLabel('1', 'Your photo', 'Required'),
+                const SizedBox(height: 12),
+                _personCard(),
+                const SizedBox(height: 24),
 
-              const SizedBox(height: 48),
-
-              // Process Button
-              ElevatedButton(
-                onPressed: _isLoading ? null : _processTryOn,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3064E3), // NanoBanana blue
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey.shade800,
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  elevation: 0,
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Text(
-                        'Generate Try-On',
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
+                // ── Step 2: Your pieces ──────────────────────────────────
+                _stepLabel('2', 'Your pieces', '$_itemsAdded selected'),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _garmentCard(
+                        title: 'Top',
+                        icon: Icons.checkroom_rounded,
+                        imageBytes: _shirtPhotoBytes,
+                        onTap: () => _pickImage((f, b) {
+                          _shirtPhoto = f;
+                          _shirtPhotoBytes = b;
+                        }),
+                        onRemove: () => setState(() {
+                          _shirtPhoto = null;
+                          _shirtPhotoBytes = null;
+                        }),
                       ),
-              ),
-              const SizedBox(height: 32),
-            ],
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _garmentCard(
+                        title: 'Bottom',
+                        icon: Icons.dry_cleaning_rounded,
+                        imageBytes: _pantsPhotoBytes,
+                        onTap: () => _pickImage((f, b) {
+                          _pantsPhoto = f;
+                          _pantsPhotoBytes = b;
+                        }),
+                        onRemove: () => setState(() {
+                          _pantsPhoto = null;
+                          _pantsPhotoBytes = null;
+                        }),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _garmentCard(
+                        title: 'Shoes',
+                        icon: Icons.ice_skating_rounded,
+                        imageBytes: _shoesPhotoBytes,
+                        onTap: () => _pickImage((f, b) {
+                          _shoesPhoto = f;
+                          _shoesPhotoBytes = b;
+                        }),
+                        onRemove: () => setState(() {
+                          _shoesPhoto = null;
+                          _shoesPhotoBytes = null;
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+
+                // ── Generate button ──────────────────────────────────────
+                _generateButton(canGenerate),
+                const SizedBox(height: 10),
+                Center(
+                  child: Text(
+                    canGenerate
+                        ? 'Ready to generate your AI fit'
+                        : 'Add your photo and at least one piece',
+                    style: GoogleFonts.outfit(fontSize: 12, color: _muted),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildUploadBox({
-    required String title,
-    required IconData icon,
-    required Uint8List? imageBytes,
-    required VoidCallback onTap,
-    bool isAccent = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 160,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: imageBytes != null
-                ? Colors.green.shade400
-                : (isAccent
-                      ? Colors.blue.withOpacity(0.5)
-                      : Colors.white.withOpacity(0.2)),
-            width: 2,
+  Widget _stepLabel(String num, String title, String trailing) {
+    return Row(
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(color: _accent, shape: BoxShape.circle),
+          child: Center(
+            child: Text(num,
+                style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: _isDark ? AppColors.charcoal : Colors.white)),
           ),
         ),
-        child: imageBytes != null
+        const SizedBox(width: 10),
+        Text(title,
+            style: GoogleFonts.outfit(
+                fontSize: 15, fontWeight: FontWeight.w700, color: _ink)),
+        const Spacer(),
+        Text(trailing,
+            style: GoogleFonts.outfit(
+                fontSize: 12, fontWeight: FontWeight.w500, color: _muted)),
+      ],
+    );
+  }
+
+  // ── Person hero card ──────────────────────────────────────────────────────
+  Widget _personCard() {
+    final has = _userPhotoBytes != null;
+    return GestureDetector(
+      onTap: () => _pickImage((f, b) {
+        _userPhoto = f;
+        _userPhotoBytes = b;
+      }),
+      child: Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: has ? _accent : _accent.withOpacity(0.35),
+            width: has ? 2.5 : 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(_isDark ? 0.25 : 0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: has
             ? ClipRRect(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(20),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.memory(imageBytes, fit: BoxFit.cover),
+                    Image.memory(_userPhotoBytes!, fit: BoxFit.cover),
                     Positioned(
-                      top: 8,
-                      right: 8,
+                      top: 10,
+                      right: 10,
+                      child: _circleChip(Icons.swap_horiz_rounded, () {
+                        _pickImage((f, b) {
+                          _userPhoto = f;
+                          _userPhotoBytes = b;
+                        });
+                      }),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.black54,
-                          shape: BoxShape.circle,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.6),
+                              Colors.transparent
+                            ],
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.edit,
-                          color: Colors.white,
-                          size: 16,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded,
+                                color: Colors.white, size: 16),
+                            const SizedBox(width: 6),
+                            Text('Photo added',
+                                style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white)),
+                          ],
                         ),
                       ),
                     ),
@@ -368,24 +410,228 @@ class _TryOnScreenState extends State<TryOnScreen> {
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    icon,
-                    color: isAccent ? Colors.blue.shade200 : Colors.white70,
-                    size: 36,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    style: GoogleFonts.outfit(
-                      color: isAccent ? Colors.blue.shade100 : Colors.white70,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: _accent.withOpacity(0.12),
+                      shape: BoxShape.circle,
                     ),
-                    textAlign: TextAlign.center,
+                    child: Icon(Icons.add_a_photo_rounded,
+                        color: _accent, size: 28),
                   ),
+                  const SizedBox(height: 14),
+                  Text('Upload your photo',
+                      style: GoogleFonts.outfit(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: _ink)),
+                  const SizedBox(height: 4),
+                  Text('A clear, full-body shot works best',
+                      style: GoogleFonts.outfit(fontSize: 12, color: _muted)),
                 ],
               ),
       ),
+    );
+  }
+
+  // ── Garment card ──────────────────────────────────────────────────────────
+  Widget _garmentCard({
+    required String title,
+    required IconData icon,
+    required Uint8List? imageBytes,
+    required VoidCallback onTap,
+    required VoidCallback onRemove,
+  }) {
+    final has = imageBytes != null;
+    return GestureDetector(
+      onTap: onTap,
+      child: AspectRatio(
+        aspectRatio: 0.82,
+        child: Container(
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: has ? _accent : (_isDark ? AppColors.darkBorder : AppColors.creamAlt),
+              width: has ? 2 : 1,
+            ),
+          ),
+          child: has
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.memory(imageBytes, fit: BoxFit.cover),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: onRemove,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.55),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close_rounded,
+                                color: Colors.white, size: 14),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          color: Colors.black.withOpacity(0.45),
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(title,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: _muted, size: 28),
+                    const SizedBox(height: 8),
+                    Text(title,
+                        style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: _ink)),
+                    const SizedBox(height: 2),
+                    Icon(Icons.add_rounded, size: 14, color: _accent),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _circleChip(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.55),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 16),
+      ),
+    );
+  }
+
+  Widget _generateButton(bool enabled) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: (enabled && !_isLoading) ? _processTryOn : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _accent,
+          disabledBackgroundColor:
+              _isDark ? AppColors.darkBorder : Colors.grey.shade300,
+          foregroundColor: _isDark ? AppColors.charcoal : Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.auto_awesome_rounded, size: 18),
+                  const SizedBox(width: 8),
+                  Text('Generate Try-On',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w700, fontSize: 16)),
+                ],
+              ),
+      ),
+    );
+  }
+
+  // ── Result view ────────────────────────────────────────────────────────────
+  Widget _buildResult() {
+    return Column(
+      children: [
+        _topBar(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+                Text('Your AI Fit',
+                    style: GoogleFonts.rufina(
+                        color: _ink,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                Text('Generated just for you',
+                    style: GoogleFonts.outfit(fontSize: 13, color: _muted)),
+                const SizedBox(height: 22),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.network(
+                    _resultImageUrl!,
+                    height: 440,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (c, child, progress) => progress == null
+                        ? child
+                        : Container(
+                            height: 440,
+                            color: _surface,
+                            child: Center(
+                              child: CircularProgressIndicator(color: _accent),
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton.icon(
+                    onPressed: _reset,
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: Text('Try Another Outfit',
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w700, fontSize: 15)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _accent,
+                      foregroundColor:
+                          _isDark ? AppColors.charcoal : Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,6 +27,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // Uploaded photo (bytes for cross-platform preview, incl. web)
   Uint8List? _photoBytes;
   String? _photoName;
+
+  // Avatar generation progress
+  double _genProgress = 0.0;
+  bool _genStarted = false;
+  Timer? _genTimer;
+
+  void _startAvatarGeneration() {
+    if (_genStarted) return;
+    _genStarted = true;
+    _genTimer?.cancel();
+    _genTimer = Timer.periodic(const Duration(milliseconds: 90), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        // Ease the increments so it slows slightly near the end.
+        final remaining = 1.0 - _genProgress;
+        _genProgress += (remaining * 0.06).clamp(0.012, 0.05);
+        if (_genProgress >= 1.0) {
+          _genProgress = 1.0;
+          timer.cancel();
+          // Brief pause at 100%, then advance to customize page.
+          Future.delayed(const Duration(milliseconds: 600), () {
+            if (mounted && _currentPage == 3) {
+              _pageController.nextPage(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+              );
+            }
+          });
+        }
+      });
+    });
+  }
 
   Future<void> _pickPhoto() async {
     try {
@@ -78,6 +114,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   void dispose() {
+    _genTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -117,6 +154,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 controller: _pageController,
                 onPageChanged: (index) {
                   setState(() => _currentPage = index);
+                  if (index == 3) _startAvatarGeneration();
                 },
                 children: [
                   _buildWelcomePage(isDark, accent),
@@ -608,7 +646,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 64),
-          // Progress indicator
+          // Progress indicator (animated)
           Container(
             width: 200,
             height: 200,
@@ -619,19 +657,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                CircularProgressIndicator(
-                  value: 0.25,
-                  strokeWidth: 8,
-                  backgroundColor: isDark ? AppColors.darkBorder : AppColors.inkGrey.withOpacity(0.3),
-                  valueColor: AlwaysStoppedAnimation<Color>(accent),
-                ),
-                Text(
-                  '25%',
-                  style: GoogleFonts.rufina(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppColors.inkBlack,
+                SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: _genProgress),
+                    duration: const Duration(milliseconds: 250),
+                    builder: (_, value, __) => CircularProgressIndicator(
+                      value: value,
+                      strokeWidth: 8,
+                      backgroundColor: isDark
+                          ? AppColors.darkBorder
+                          : AppColors.inkGrey.withOpacity(0.3),
+                      valueColor: AlwaysStoppedAnimation<Color>(accent),
+                    ),
                   ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${(_genProgress * 100).round()}%',
+                      style: GoogleFonts.rufina(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : AppColors.inkBlack,
+                      ),
+                    ),
+                    Text(
+                      _genProgress >= 1.0 ? 'Ready!' : 'Generating...',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -640,20 +700,44 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           SizedBox(
             width: double.infinity,
             height: 56,
-            child: OutlinedButton(
-              onPressed: () => _pageController.nextPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: accent),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: Text(
-                'Skip for now',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: accent),
-              ),
-            ),
+            child: _genProgress >= 1.0
+                ? ElevatedButton(
+                    onPressed: () => _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor:
+                          isDark ? AppColors.charcoal : Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: Text(
+                      'Continue',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  )
+                : OutlinedButton(
+                    onPressed: () => _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: accent),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: Text(
+                      'Skip for now',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: accent),
+                    ),
+                  ),
           ),
         ],
       ),
