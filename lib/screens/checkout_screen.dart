@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/services/opencart_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
@@ -70,8 +71,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Order Placed!'),
-          content: Text('Your order #$orderId has been placed successfully.'),
+          title: Text('checkout.success_title'.tr()),
+          content: Text('checkout.success_desc'.tr(args: [orderId.toString()])),
           actions: [
             TextButton(
               onPressed: () {
@@ -79,14 +80,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Navigator.of(context).pop(); // back to cart
                 Navigator.of(context).pop(); // back to shop
               },
-              child: const Text('OK'),
+              child: Text('checkout.ok'.tr()),
             ),
           ],
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to place order. Please try again.')),
+        SnackBar(content: Text('checkout.error'.tr())),
       );
     }
   }
@@ -97,7 +98,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Checkout', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+        title: Text('checkout.title'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -106,22 +107,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Shipping Details',
+              Text('checkout.shipping_details'.tr(),
                   style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700)),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: _field(_firstNameCtrl, 'First Name')),
+                  Expanded(child: _field(_firstNameCtrl, 'checkout.first_name'.tr())),
                   const SizedBox(width: 12),
-                  Expanded(child: _field(_lastNameCtrl, 'Last Name')),
+                  Expanded(child: _field(_lastNameCtrl, 'checkout.last_name'.tr())),
                 ],
               ),
               const SizedBox(height: 12),
-              _field(_addressCtrl, 'Address'),
+              _field(_addressCtrl, 'checkout.address'.tr()),
               const SizedBox(height: 12),
-              _field(_cityCtrl, 'City'),
+              _field(_cityCtrl, 'checkout.city'.tr()),
               const SizedBox(height: 24),
-              Text('Order Summary',
+              Text('checkout.order_summary'.tr(),
                   style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700)),
               const SizedBox(height: 12),
               ...cart.items.map((item) => Padding(
@@ -141,7 +142,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Total', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16)),
+                  Text('checkout.total'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16)),
                   Text(
                     '${cart.totalPrice.toStringAsFixed(0)} MMK',
                     style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16),
@@ -149,7 +150,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              Text('Payment: Cash on Delivery',
+              Text('checkout.payment_method'.tr(),
                   style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
               const SizedBox(height: 32),
               SizedBox(
@@ -166,7 +167,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : Text('Place Order',
+                      : Text('checkout.place_order'.tr(),
                           style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16)),
                 ),
               ),
@@ -185,7 +186,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
-      validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+      validator: (v) => (v == null || v.trim().isEmpty) ? 'checkout.required'.tr() : null,
     );
   }
 }

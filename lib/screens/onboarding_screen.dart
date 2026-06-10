@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/cdn_image.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -45,7 +46,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not pick image: $e')),
+        SnackBar(content: Text('onboarding.err_pick_image'.tr(args: [e.toString()]))),
       );
     }
   }
@@ -162,7 +163,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 48),
           Text(
-            'Welcome',
+            'onboarding.welcome'.tr(),
             style: GoogleFonts.rufina(
               fontSize: 18,
               fontStyle: FontStyle.italic,
@@ -171,7 +172,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'to Pyin Mal',
+            'onboarding.to_pyin_mal'.tr(),
             style: GoogleFonts.rufina(
               fontSize: 36,
               fontWeight: FontWeight.bold,
@@ -180,7 +181,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Answer a few quick questions to help us understand your style better.',
+            'onboarding.welcome_desc'.tr(),
             style: GoogleFonts.outfit(
               fontSize: 14,
               color: isDark ? AppColors.paleText : AppColors.inkGrey,
@@ -203,7 +204,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               child: Text(
-                'Start the Quiz',
+                'onboarding.start_quiz'.tr(),
                 style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ),
@@ -231,7 +232,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Step 1/3',
+                  'onboarding.step_1_3'.tr(),
                   style: GoogleFonts.outfit(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -241,7 +242,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Tell us about',
+                'onboarding.tell_us_about'.tr(),
                 style: GoogleFonts.rufina(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -249,7 +250,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
               Text(
-                'Your style and preferences',
+                'onboarding.style_prefs'.tr(),
                 style: GoogleFonts.rufina(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -260,7 +261,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               
               // Style chips
               Text(
-                'Style',
+                'onboarding.style'.tr(),
                 style: GoogleFonts.outfit(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -286,7 +287,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                       ),
                       child: Text(
-                        style,
+                        'onboarding.styles.$style'.tr(),
                         style: GoogleFonts.outfit(
                           fontSize: 13,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -301,7 +302,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               
               // Size selector
               Text(
-                'Size',
+                'onboarding.size'.tr(),
                 style: GoogleFonts.outfit(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -346,7 +347,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               
               // Clothing preferences
               Text(
-                'Clothing Preferences',
+                'onboarding.clothing_prefs'.tr(),
                 style: GoogleFonts.outfit(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -380,7 +381,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                       ),
                       child: Text(
-                        item,
+                        'onboarding.clothes.$item'.tr(),
                         style: GoogleFonts.outfit(
                           fontSize: 13,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -406,7 +407,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: Text(
-                    'Continue',
+                    'onboarding.continue_btn'.tr(),
                     style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
@@ -427,7 +428,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Upload a photo',
+            'onboarding.upload_photo'.tr(),
             style: GoogleFonts.rufina(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -436,7 +437,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Upload your photo to help us analyze your body type and color profile.',
+            'onboarding.upload_desc'.tr(),
             style: GoogleFonts.outfit(
               fontSize: 14,
               color: isDark ? AppColors.paleText : AppColors.inkGrey,
@@ -477,10 +478,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           right: 10,
                           child: Row(
                             children: [
-                              _photoChip(Icons.swap_horiz_rounded, 'Change',
+                              _photoChip(Icons.swap_horiz_rounded, 'onboarding.change'.tr(),
                                   accent, _pickPhoto),
                               const SizedBox(width: 8),
-                              _photoChip(Icons.close_rounded, 'Remove',
+                              _photoChip(Icons.close_rounded, 'onboarding.remove'.tr(),
                                   Colors.redAccent, () {
                                 setState(() {
                                   _photoBytes = null;
@@ -502,7 +503,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Add a file',
+                          'onboarding.add_file'.tr(),
                           style: GoogleFonts.outfit(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -511,7 +512,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Tap to choose from gallery',
+                          'onboarding.tap_gallery'.tr(),
                           style: GoogleFonts.outfit(
                             fontSize: 12,
                             color:
@@ -553,7 +554,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           borderRadius: BorderRadius.circular(16)),
                     ),
                     child: Text(
-                      'Continue',
+                      'onboarding.continue_btn'.tr(),
                       style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold, fontSize: 16),
                     ),
@@ -569,7 +570,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           borderRadius: BorderRadius.circular(16)),
                     ),
                     child: Text(
-                      'Skip for now',
+                      'onboarding.skip'.tr(),
                       style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -590,7 +591,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Generate virtual avatar',
+            'onboarding.generate_avatar'.tr(),
             style: GoogleFonts.rufina(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -599,7 +600,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Please wait while we process your photo and create your personalized digital avatar.',
+            'onboarding.generate_desc'.tr(),
             style: GoogleFonts.outfit(
               fontSize: 14,
               color: isDark ? AppColors.paleText : AppColors.inkGrey,
@@ -650,7 +651,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               child: Text(
-                'Skip for now',
+                'onboarding.skip'.tr(),
                 style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: accent),
               ),
             ),
@@ -676,7 +677,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   const SizedBox(width: 80),
                   Text(
-                    'Customize Avatar',
+                    'onboarding.customize_avatar'.tr(),
                     style: GoogleFonts.rufina(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -705,7 +706,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: _isSaving
                         ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: accent, strokeWidth: 2))
                         : Text(
-                            'Done',
+                            'onboarding.done'.tr(),
                             style: GoogleFonts.outfit(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -765,7 +766,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  tab,
+                                  'onboarding.tabs.$tab'.tr(),
                                   style: GoogleFonts.outfit(
                                     fontSize: 13,
                                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

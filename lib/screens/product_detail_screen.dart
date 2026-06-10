@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/product_3d_viewer.dart';
 import '../widgets/cdn_image.dart';
@@ -188,14 +189,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             _viewTab(
-                                              label: 'Photo',
+                                              label: 'product.photo'.tr(),
                                               icon: Icons.image_rounded,
                                               active: !_show3DView,
                                               onTap: () => setState(
                                                   () => _show3DView = false),
                                             ),
                                             _viewTab(
-                                              label: '360°',
+                                              label: 'product.360'.tr(),
                                               icon: Icons.view_in_ar_rounded,
                                               active: _show3DView,
                                               onTap: () => setState(
@@ -256,7 +257,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                   color: Colors.white,
                                                   size: 14),
                                               const SizedBox(width: 4),
-                                              Text('Preview',
+                                              Text('product.preview'.tr(),
                                                   style: GoogleFonts.outfit(
                                                       fontSize: 11,
                                                       color: Colors.white,
@@ -354,7 +355,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Swipe and dress up differently',
+                                'product.swipe_hint'.tr(),
                                 style: GoogleFonts.outfit(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -449,7 +450,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               icon: const Icon(
                                   Icons.face_retouching_natural_rounded,
                                   size: 16),
-                              label: Text('Try On',
+                              label: Text('product.try_on'.tr(),
                                   style: GoogleFonts.outfit(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 13)),
@@ -489,7 +490,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               },
                               icon: const Icon(Icons.arrow_forward_rounded,
                                   size: 16),
-                              label: Text('Shop Now',
+                              label: Text('product.shop_now'.tr(),
                                   style: GoogleFonts.outfit(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 13)),
@@ -692,7 +693,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Reviews (${_reviews.length})',
+                              Text('product.reviews_title'.tr(args: [_reviews.length.toString()]),
                                   style: GoogleFonts.outfit(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
@@ -714,7 +715,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       Icon(Icons.rate_review_outlined,
                                           size: 14, color: accent),
                                       const SizedBox(width: 5),
-                                      Text('Write a review',
+                                      Text('product.write_review'.tr(),
                                           style: GoogleFonts.outfit(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
@@ -750,8 +751,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   children: [
                                     Text(
                                       _showAllReviews
-                                          ? 'Show less'
-                                          : 'See all ${_reviews.length} reviews',
+                                          ? 'product.show_less'.tr()
+                                          : 'product.see_all_reviews'.tr(args: [_reviews.length.toString()]),
                                       style: GoogleFonts.outfit(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
@@ -822,7 +823,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
-                                      'Official store · 4.9 ★ · 10k+ sales',
+                                      'product.shop_stats'.tr(),
                                       style: GoogleFonts.outfit(
                                         fontSize: 12,
                                         color: isDark
@@ -849,7 +850,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         Border.all(color: accent, width: 1.5),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  child: Text('Visit',
+                                  child: Text('product.visit'.tr(),
                                       style: GoogleFonts.outfit(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
@@ -867,7 +868,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Characteristics',
+                          Text('product.characteristics'.tr(),
                               style: GoogleFonts.outfit(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -890,11 +891,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                             child: Column(
                               children: [
-                                _CharRow('Comfort',  'Soft & breathable', isDark, isFirst: true),
-                                _CharRow('Textile',  '100% Cotton',       isDark),
-                                _CharRow('Style',    'Modern casual fit', isDark),
-                                _CharRow('Fit',      'Regular fit',       isDark),
-                                _CharRow('Material', 'Premium quality',   isDark, isLast: true),
+                                _CharRow('product.chars.comfort'.tr(),  'product.chars.comfort_val'.tr(), isDark, isFirst: true),
+                                _CharRow('product.chars.textile'.tr(),  'product.chars.textile_val'.tr(),       isDark),
+                                _CharRow('product.chars.style'.tr(),    'product.chars.style_val'.tr(), isDark),
+                                _CharRow('product.chars.fit'.tr(),      'product.chars.fit_val'.tr(),       isDark),
+                                _CharRow('product.chars.material'.tr(), 'product.chars.material_val'.tr(),   isDark, isLast: true),
                               ],
                             ),
                           ),
@@ -956,13 +957,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                       ),
                     ),
-                    Text('Write a review',
+                    Text('product.write_review'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: isDark ? Colors.white : AppColors.inkBlack)),
                     const SizedBox(height: 4),
-                    Text('Share your experience with this product',
+                    Text('product.review_desc'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 12,
                             color: isDark
@@ -998,7 +999,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     // Name field
                     _sheetField(
                       controller: nameCtrl,
-                      hint: 'Your name',
+                      hint: 'product.review_name_hint'.tr(),
                       isDark: isDark,
                       accent: accent,
                     ),
@@ -1006,7 +1007,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     // Comment field
                     _sheetField(
                       controller: commentCtrl,
-                      hint: 'Write your comment...',
+                      hint: 'product.review_comment_hint'.tr(),
                       isDark: isDark,
                       accent: accent,
                       maxLines: 4,
@@ -1019,14 +1020,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           final name = nameCtrl.text.trim().isEmpty
-                              ? 'Anonymous'
+                              ? 'product.anonymous'.tr()
                               : nameCtrl.text.trim();
                           final comment = commentCtrl.text.trim();
                           if (comment.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Please write a comment'),
-                                  duration: Duration(seconds: 2)),
+                              SnackBar(
+                                  content: Text('product.review_empty'.tr()),
+                                  duration: const Duration(seconds: 2)),
                             );
                             return;
                           }
@@ -1035,14 +1036,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               'name': name,
                               'rating': rating,
                               'comment': comment,
-                              'date': 'Just now',
+                              'date': 'product.just_now'.tr(),
                             });
                           });
                           Navigator.pop(sheetCtx);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Thanks for your review!'),
-                                duration: Duration(seconds: 2)),
+                            SnackBar(
+                                content: Text('product.review_thanks'.tr()),
+                                duration: const Duration(seconds: 2)),
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -1055,7 +1056,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: Text('Submit review',
+                        child: Text('product.submit_review'.tr(),
                             style: GoogleFonts.outfit(
                                 fontWeight: FontWeight.w600, fontSize: 14)),
                       ),
@@ -1416,7 +1417,7 @@ class _FloatingVideoPipState extends State<_FloatingVideoPip>
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 color: const Color(0xFFE53935),
-                child: Text('Product Preview',
+                child: Text('product.pip_preview'.tr(),
                     textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
                         fontSize: 9,

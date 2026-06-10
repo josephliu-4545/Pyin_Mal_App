@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../services/nanobanana_api_service.dart';
 
 class TryOnScreen extends StatefulWidget {
@@ -46,15 +47,15 @@ class _TryOnScreenState extends State<TryOnScreen> {
   Future<void> _processTryOn() async {
     if (_userPhoto == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please upload a photo of the person!')),
+        SnackBar(content: Text('try_on.err_person'.tr())),
       );
       return;
     }
 
     if (_shirtPhoto == null && _pantsPhoto == null && _shoesPhoto == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload at least one clothing item!'),
+        SnackBar(
+          content: Text('try_on.err_clothing'.tr()),
         ),
       );
       return;
@@ -82,10 +83,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
 
         if (resultUrl == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Failed to generate try-on image. Please check API settings.',
-              ),
+            SnackBar(
+              content: Text('try_on.err_api'.tr()),
             ),
           );
         }
@@ -97,7 +96,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
         });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(content: Text('try_on.error'.tr(args: [e.toString()]))));
       }
     }
   }
@@ -128,7 +127,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Virtual Try-On',
+          'try_on.title'.tr(),
           style: GoogleFonts.outfit(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -149,7 +148,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Your AI Fit',
+                'try_on.ai_fit'.tr(),
                 style: GoogleFonts.rufina(
                   color: Colors.white,
                   fontSize: 28,
@@ -180,7 +179,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                   ),
                 ),
                 child: Text(
-                  'Try Another Outfit',
+                  'try_on.try_another'.tr(),
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -202,7 +201,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Mix & Match',
+                'try_on.mix_match'.tr(),
                 style: GoogleFonts.rufina(
                   color: Colors.white,
                   fontSize: 32,
@@ -212,7 +211,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Upload your photo and build your outfit to see the magic.',
+                'try_on.desc'.tr(),
                 style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
@@ -223,7 +222,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                 children: [
                   Expanded(
                     child: _buildUploadBox(
-                      title: 'Person',
+                      title: 'try_on.person'.tr(),
                       icon: Icons.person_add_alt_1_rounded,
                       imageBytes: _userPhotoBytes,
                       onTap: () => _pickImage((f, b) {
@@ -236,7 +235,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildUploadBox(
-                      title: 'Shirt / Top',
+                      title: 'try_on.shirt'.tr(),
                       icon: Icons.checkroom_rounded,
                       imageBytes: _shirtPhotoBytes,
                       onTap: () => _pickImage((f, b) {
@@ -252,7 +251,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                 children: [
                   Expanded(
                     child: _buildUploadBox(
-                      title: 'Pants / Bottom',
+                      title: 'try_on.pants'.tr(),
                       icon: Icons.dry_cleaning_rounded,
                       imageBytes: _pantsPhotoBytes,
                       onTap: () => _pickImage((f, b) {
@@ -264,7 +263,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildUploadBox(
-                      title: 'Sneakers',
+                      title: 'try_on.shoes'.tr(),
                       icon: Icons.snowshoeing_rounded,
                       imageBytes: _shoesPhotoBytes,
                       onTap: () => _pickImage((f, b) {
@@ -301,7 +300,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                         ),
                       )
                     : Text(
-                        'Generate Try-On',
+                        'try_on.generate'.tr(),
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,

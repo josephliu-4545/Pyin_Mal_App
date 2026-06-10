@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
@@ -15,7 +16,7 @@ class CartScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to checkout and earn points!')),
+        SnackBar(content: Text('cart.login_prompt'.tr())),
       );
       return;
     }
@@ -40,7 +41,7 @@ class CartScreen extends StatelessWidget {
         elevation: 0,
         iconTheme: IconThemeData(color: isDark ? Colors.white : AppColors.inkBlack),
         title: Text(
-          'Your Cart',
+          'cart.title'.tr(),
           style: GoogleFonts.rufina(
             color: isDark ? Colors.white : AppColors.inkBlack,
             fontWeight: FontWeight.bold,
@@ -60,7 +61,7 @@ class CartScreen extends StatelessWidget {
                   Icon(Icons.shopping_bag_outlined, size: 80, color: isDark ? AppColors.darkBorder : AppColors.inkGrey.withOpacity(0.5)),
                   const SizedBox(height: 16),
                   Text(
-                    'Your cart is empty',
+                    'cart.empty'.tr(),
                     style: GoogleFonts.outfit(fontSize: 18, color: isDark ? AppColors.paleText : AppColors.inkGrey),
                   ),
                 ],
@@ -100,7 +101,7 @@ class CartScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Total', style: GoogleFonts.outfit(fontSize: 18, color: isDark ? AppColors.paleText : AppColors.inkGrey)),
+                          Text('cart.total'.tr(), style: GoogleFonts.outfit(fontSize: 18, color: isDark ? AppColors.paleText : AppColors.inkGrey)),
                           Text(
                             '${cart.totalPrice.toStringAsFixed(0)} MMK',
                             style: GoogleFonts.rufina(fontSize: 24, fontWeight: FontWeight.bold, color: accent),
@@ -119,7 +120,7 @@ class CartScreen extends StatelessWidget {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
                           child: Text(
-                            'Checkout',
+                            'cart.checkout'.tr(),
                             style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                         ),

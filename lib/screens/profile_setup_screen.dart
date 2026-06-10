@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/screens/onboarding_screen.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// Collected after sign-up: body info + style preferences.
 /// On finish, saves to Firestore (best-effort) and continues to onboarding.
@@ -178,7 +179,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: _finish,
-                    child: Text('Skip',
+                    child: Text('profile.skip'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -237,7 +238,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          _step == _totalSteps - 1 ? 'Finish' : 'Continue',
+                          _step == _totalSteps - 1 ? 'profile.finish'.tr() : 'profile.continue_btn'.tr(),
                           style: GoogleFonts.outfit(
                               fontSize: 15, fontWeight: FontWeight.w700),
                         ),
@@ -259,8 +260,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       case 2:
         return _multiStep(
           isDark, accent, ink,
-          title: 'What do you like to wear?',
-          subtitle: 'Pick the outfit types you reach for most.',
+          title: 'profile.what_to_wear'.tr(),
+          subtitle: 'profile.what_to_wear_desc'.tr(),
           options: _outfitOptions.map((o) => o.$1).toList(),
           icons: _outfitOptions.map((o) => o.$2).toList(),
           selected: _outfitTypes,
@@ -299,11 +300,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _heading('Tell us about you', 'This helps us recommend the right fit.',
+        _heading('profile.about_you'.tr(), 'profile.about_desc'.tr(),
             ink, isDark),
-
         // Gender
-        Text('Gender',
+        Text('profile.gender'.tr(),
             style: GoogleFonts.outfit(
                 fontSize: 13, fontWeight: FontWeight.w600, color: ink)),
         const SizedBox(height: 10),
@@ -327,7 +327,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               ? AppColors.darkBorder
                               : AppColors.creamAlt)),
                 ),
-                child: Text(g,
+                child: Text('profile.genders.$g'.tr(),
                     style: GoogleFonts.outfit(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -340,13 +340,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         ),
         const SizedBox(height: 24),
 
-        _slider('Age', _age, 14, 70, 'yrs', accent, isDark, ink,
+        _slider('profile.age'.tr(), _age, 14, 70, 'profile.yrs'.tr(), accent, isDark, ink,
             (v) => setState(() => _age = v)),
         const SizedBox(height: 20),
-        _slider('Height', _height, 130, 210, 'cm', accent, isDark, ink,
+        _slider('profile.height'.tr(), _height, 130, 210, 'profile.cm'.tr(), accent, isDark, ink,
             (v) => setState(() => _height = v)),
         const SizedBox(height: 20),
-        _slider('Weight', _weight, 35, 150, 'kg', accent, isDark, ink,
+        _slider('profile.weight'.tr(), _weight, 35, 150, 'profile.kg'.tr(), accent, isDark, ink,
             (v) => setState(() => _weight = v)),
       ],
     );
@@ -394,8 +394,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _heading('Your skin tone',
-            'We use this to suggest colors that flatter you.', ink, isDark),
+        _heading('profile.skin_tone'.tr(),
+            'profile.skin_desc'.tr(), ink, isDark),
         Center(
           child: Wrap(
             spacing: 16,
@@ -428,7 +428,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(_skinToneLabels[i],
+                    Text('profile.skin_tones.${_skinToneLabels[i]}'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 11,
                             fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
@@ -498,7 +498,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                             : (isDark ? AppColors.paleText : AppColors.inkGrey)),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(label,
+                      child: Text('profile.outfits.$label'.tr(),
                           style: GoogleFonts.outfit(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -529,8 +529,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _heading('Build your palette',
-            'Mix any colour and add the ones you love.', ink, isDark),
+        _heading('profile.palette'.tr(),
+            'profile.palette_desc'.tr(), ink, isDark),
 
         // ── Live preview + Add button ────────────────────────────────────
         Row(
@@ -576,7 +576,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               }),
                       icon: const Icon(Icons.add_rounded, size: 18),
                       label: Text(
-                        _palette.length >= 8 ? 'Palette full' : 'Add to palette',
+                        _palette.length >= 8 ? 'profile.palette_full'.tr() : 'profile.add_palette'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 12, fontWeight: FontWeight.w700),
                       ),
@@ -603,7 +603,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
         // ── Hue / Saturation / Brightness sliders ────────────────────────
         _colorSlider(
-          label: 'Hue',
+          label: 'profile.hue'.tr(),
           value: _hue,
           min: 0,
           max: 360,
@@ -619,7 +619,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         ),
         const SizedBox(height: 16),
         _colorSlider(
-          label: 'Saturation',
+          label: 'profile.saturation'.tr(),
           value: _sat,
           min: 0,
           max: 1,
@@ -634,7 +634,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         ),
         const SizedBox(height: 16),
         _colorSlider(
-          label: 'Brightness',
+          label: 'profile.brightness'.tr(),
           value: _val,
           min: 0,
           max: 1,
@@ -653,7 +653,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Your palette',
+            Text('profile.your_palette'.tr(),
                 style: GoogleFonts.outfit(
                     fontSize: 13, fontWeight: FontWeight.w700, color: ink)),
             Text('${_palette.length}/8',
@@ -672,7 +672,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
             ),
             child: Center(
-              child: Text('No colours yet — add your first above',
+              child: Text('profile.no_colors'.tr(),
                   style: GoogleFonts.outfit(fontSize: 12, color: muted)),
             ),
           )
@@ -770,8 +770,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _heading('Your style vibe',
-            'Almost done — pick the words that fit you.', ink, isDark),
+        _heading('profile.style_vibe'.tr(),
+            'profile.style_vibe_desc'.tr(), ink, isDark),
         Wrap(
           spacing: 10,
           runSpacing: 10,
@@ -795,7 +795,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               ? AppColors.darkBorder
                               : AppColors.creamAlt)),
                 ),
-                child: Text(s,
+                child: Text('profile.vibes.$s'.tr(),
                     style: GoogleFonts.outfit(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -833,7 +833,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                 : AppColors.creamAlt),
                         width: sel ? 2 : 1),
                   ),
-                  child: Text(f,
+                  child: Text('profile.fits.$f'.tr(),
                       style: GoogleFonts.outfit(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,

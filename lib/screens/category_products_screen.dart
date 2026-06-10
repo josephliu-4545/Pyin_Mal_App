@@ -5,6 +5,7 @@ import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class CategoryProductsScreen extends StatelessWidget {
   final String category;
@@ -102,7 +103,7 @@ class CategoryProductsScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
                 child: Text(
-                  '${products.length} ${products.length == 1 ? "product" : "products"}',
+                  'category_products.count'.tr(args: [products.length.toString()]),
                   style: GoogleFonts.outfit(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -125,7 +126,7 @@ class CategoryProductsScreen extends StatelessWidget {
                           size: 48,
                           color: isDark ? Colors.white24 : Colors.grey),
                       const SizedBox(height: 12),
-                      Text('No products in $category yet',
+                      Text('category_products.no_products'.tr(args: [category]),
                           style: GoogleFonts.outfit(
                               fontSize: 13,
                               color: isDark

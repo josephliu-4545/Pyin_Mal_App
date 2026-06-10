@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:http/http.dart' as http;
 import 'package:pyin_mal_app/core/constants/api_constants.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
@@ -85,7 +86,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
-        if (mounted) setState(() => _cameraError = 'No camera found.');
+        if (mounted) setState(() => _cameraError = 'scan.no_camera'.tr());
         return;
       }
       final back = cameras.firstWhere(
@@ -117,7 +118,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
       _startAutoScan();
 
     } catch (e) {
-      if (mounted) setState(() => _cameraError = 'Could not start camera.');
+      if (mounted) setState(() => _cameraError = 'scan.err_start'.tr());
     } finally {
       _isInitializing = false;
     }
@@ -155,10 +156,10 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
       cameraFailed = true;
       debugPrint('ScanScreen: CameraException → ${e.code}: ${e.description}');
     } on TimeoutException {
-      scanError = 'Scan timed out. Try again.';
+      scanError = 'scan.err_timeout'.tr();
       debugPrint('ScanScreen: takePicture or AI proxy timed out');
     } catch (e) {
-      scanError = 'Scan error. Try again.';
+      scanError = 'scan.err_scan'.tr();
       debugPrint('ScanScreen: _analyzeCurrentFrame error → $e');
     } finally {
       _isAnalyzing = false;
@@ -190,9 +191,9 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
       _showResultsSheet(bytes, results);
     } else if (bytes.isNotEmpty && results.isEmpty) {
       // AI returned no matches — give brief feedback so user knows scan ran
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('No matching items found. Scanning again...'),
-        duration: Duration(seconds: 2),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('scan.no_match'.tr()),
+        duration: const Duration(seconds: 2),
       ));
     }
   }
@@ -368,7 +369,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                         color: Colors.white, size: 20)),
                 ),
                 const SizedBox(width: 14),
-                Text('Smart Scan', style: GoogleFonts.rufina(
+                Text('scan.title'.tr(), style: GoogleFonts.rufina(
                     fontSize: 22, fontWeight: FontWeight.bold,
                     color: Colors.white)),
               ]),
@@ -394,11 +395,11 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                     duration: const Duration(milliseconds: 300),
                     child: _isAnalyzing
                         ? _StatusChip(key: const ValueKey('a'),
-                            label: 'Identifying... keep phone steady',
+                            label: 'scan.identifying'.tr(),
                             icon: Icons.auto_awesome_rounded,
                             color: accent, textColor: Colors.white)
                         : _StatusChip(key: const ValueKey('i'),
-                            label: 'Auto-scanning every 6s',
+                            label: 'scan.auto_scan'.tr(),
                             icon: Icons.radar_rounded,
                             color: Colors.white.withOpacity(0.15),
                             textColor: Colors.white),
@@ -430,7 +431,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Text('Tap to scan now', style: GoogleFonts.outfit(
+                  Text('scan.tap_to_scan'.tr(), style: GoogleFonts.outfit(
                       fontSize: 12,
                       color: Colors.white.withOpacity(0.7))),
                 ]),
@@ -592,11 +593,11 @@ class _ResultsSheet extends StatelessWidget {
               Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Similar Items Found',
+                  Text('scan.similar_items'.tr(),
                       style: GoogleFonts.rufina(
                           fontSize: 18, fontWeight: FontWeight.bold,
                           color: isDark ? Colors.white : AppColors.inkBlack)),
-                  Text('${products.length} match${products.length == 1 ? "" : "es"} from catalog',
+                  Text('scan.matches'.tr(args: [products.length.toString()]),
                       style: GoogleFonts.outfit(fontSize: 12,
                           color: isDark ? AppColors.paleText : AppColors.inkGrey)),
                 ],
@@ -612,7 +613,7 @@ class _ResultsSheet extends StatelessWidget {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(Icons.refresh_rounded, size: 14, color: accent),
                     const SizedBox(width: 5),
-                    Text('Rescan', style: GoogleFonts.outfit(
+                    Text('scan.rescan'.tr(), style: GoogleFonts.outfit(
                         fontSize: 12, fontWeight: FontWeight.w600, color: accent)),
                   ]),
                 ),
