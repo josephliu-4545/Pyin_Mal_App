@@ -8,6 +8,7 @@ import 'package:pyin_mal_app/models/user_profile.dart';
 import 'package:pyin_mal_app/utils/ranking_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
+import 'package:pyin_mal_app/screens/body_scan_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -321,6 +322,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     accent: accent,
                     isFirst: true,
                     onTap: () {},
+                  ),
+                  Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.creamAlt, indent: 56),
+                  _buildActionTile(
+                    icon: Icons.straighten_rounded,
+                    label: 'profile.body_measurements'.tr(),
+                    isDark: isDark,
+                    accent: accent,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const BodyScanScreen()),
+                    ),
                   ),
                   Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.creamAlt, indent: 56),
                   _buildActionTile(
