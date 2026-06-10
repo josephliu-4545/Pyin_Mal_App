@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "home": "Home",
+    "shop": "Shop",
+    "hair": "Hair",
+    "saved": "Saved",
+    "profile": "Profile"
+  },
+  "greeting": {
+    "morning": "good morning,",
+    "afternoon": "good afternoon,",
+    "evening": "good evening,"
+  },
+  "sections": {
+    "ai_tools": "AI styling tools",
+    "discover": "Discover & explore",
+    "wardrobe": "Your wardrobe",
+    "give_back": "Give back"
+  },
+  "language": {
+    "title": "Language / ဘာသာစကား",
+    "subtitle": "English · မြန်မာ · Multi-language support",
+    "select": "Select Language",
+    "active": "Active",
+    "coming_soon": "Coming soon"
+  },
+  "menu": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "about": "About Pyin Mal"
+  },
+  "search": {
+    "title": "Search",
+    "hint": "Search products, styles...",
+    "coming_soon": "Search coming soon"
+  },
+  "shop": {
+    "search_hint": "Search products...",
+    "camera_coming_soon": "Camera/Scan feature coming soon",
+    "shops_title": "Shops",
+    "see_all": "See all",
+    "all_products": "All Products",
+    "flash_sale": "Flash Sale",
+    "categories": {
+      "New in": "New in",
+      "Women": "Women",
+      "Men": "Men",
+      "T-Shirts": "T-Shirts",
+      "Hoodies": "Hoodies",
+      "Pants": "Pants",
+      "Shoes": "Shoes",
+      "Bags": "Bags",
+      "Hats": "Hats",
+      "Accessories": "Accessories",
+      "Sports": "Sports",
+      "Sets": "Sets"
+    }
+  },
+  "haircut": {
+    "title": "Hair & Grooming",
+    "hero_subtitle": "AI HAIR GUIDE",
+    "hero_title": "Find Your Best Hair Look",
+    "hero_desc": "Explore hairstyle ideas that match your face shape and personal style. Our AI analysis helps balance your features for a perfect look.",
+    "ar_filter": "AR Filter",
+    "ai_try_on": "AI Try-On",
+    "select_face_shape": "Select Face Shape",
+    "recommended": "Recommended for You",
+    "trending": "Trending Now",
+    "styling_tips": "Styling Tips",
+    "face_shapes": {
+      "Oval Face": "Oval Face",
+      "Round Face": "Round Face",
+      "Square Face": "Square Face",
+      "Diamond Face": "Diamond Face"
+    }
+  },
+  "favorites": {
+    "title": "Saved Wardrobe",
+    "header_subtitle": "PERSONAL COLLECTION",
+    "header_title": "Saved Looks",
+    "header_desc": "Your favorite outfits, hairstyles, and style ideas in one place.",
+    "collection_items": "Collection Items",
+    "saved_count": "{} saved",
+    "search_hint": "Search collection...",
+    "saved_recently": "Saved Recently",
+    "empty_title": "No saved looks yet",
+    "empty_desc": "Browse outfits and hairstyles to build your personal style board.",
+    "explore": "Explore Trends"
+  },
+  "profile": {
+    "create_profile": "Create Your Style Profile",
+    "login_desc": "Log in to view your points, rank, and get personalized fashion recommendations from our AI.",
+    "login_btn": "LOG IN OR SIGN UP",
+    "style_rank": "Style Rank",
+    "progress": "Progress",
+    "pts_to_next": "{} pts to next rank",
+    "max_rank": "Max Rank Reached!",
+    "account": "ACCOUNT",
+    "settings": "Settings",
+    "order_history": "Order History",
+    "sign_out": "Sign Out"
+  }
+}

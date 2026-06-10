@@ -156,7 +156,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
       debugPrint('ScanScreen: CameraException → ${e.code}: ${e.description}');
     } on TimeoutException {
       scanError = 'Scan timed out. Try again.';
-      debugPrint('ScanScreen: takePicture or Gemini timed out');
+      debugPrint('ScanScreen: takePicture or AI proxy timed out');
     } catch (e) {
       scanError = 'Scan error. Try again.';
       debugPrint('ScanScreen: _analyzeCurrentFrame error → $e');
@@ -189,7 +189,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
       _autoScanTimer?.cancel();
       _showResultsSheet(bytes, results);
     } else if (bytes.isNotEmpty && results.isEmpty) {
-      // Gemini returned no matches — give brief feedback so user knows scan ran
+      // AI returned no matches — give brief feedback so user knows scan ran
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('No matching items found. Scanning again...'),
         duration: Duration(seconds: 2),
@@ -197,13 +197,14 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     }
   }
 
-  // Returns up to 4 ranked similar products.
-  // Uses Groq LLaMA vision API — global coverage, no Myanmar geo-restriction,
-  // free tier (https://console.groq.com). Gemini AI Studio is blocked in Myanmar.
+  // Returns up to 4 ranked similar products using Groq LLaMA vision.
+  // Groq API is called directly — free tier, global coverage.
+  // (api.groq.com was temporarily unreachable on a prior test; it is accessible
+  //  from Myanmar. If DNS fails again, check mobile data vs Wi-Fi.)
   Future<List<Product>> _identifyProducts(Uint8List imageBytes) async {
-    // Build rich catalog context: ID + description + visual tags
+    // Build rich catalog context: ID + visual description + tags
     final productsContext = ProductRepository.allProducts.map((p) {
-      final desc = p.description ?? p.name;
+      final desc   = p.description ?? p.name;
       final tagStr = p.tags.isNotEmpty ? p.tags.join(', ') : p.category;
       return '- ID: "${p.id}" | ${p.category} | ${p.brand} | Visual: $desc | Tags: $tagStr';
     }).join('\n');
@@ -211,33 +212,29 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     const groqModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
     // Burmese-aware prompt — understands Myanmar fashion context
-    const promptHeader = '''You are a fashion AI assistant for Pyin Mal, a Myanmar clothing app.
-Analyze the clothing item visible in this image. The photo may be taken in Myanmar.
-You understand both English and Burmese (မြန်မာဘာသာ) clothing terms.
+    const promptHeader =
+        'You are a fashion AI assistant for Pyin Mal, a Myanmar clothing app.\n'
+        'Analyze the clothing item visible in this image. The photo may be taken in Myanmar.\n'
+        'You understand both English and Burmese (မြန်မာဘာသာ) clothing terms.\n\n'
+        'Step 1 — Describe what you see:\n'
+        '  • Clothing type (hoodie, t-shirt, set, dress, jacket, etc.)\n'
+        '  • Color(s) — be specific (black, oatmeal/cream, navy, etc.)\n'
+        '  • Style (graphic print, plain/minimal, sporty, feminine, streetwear, etc.)\n'
+        '  • Key visual details (zipper, skull graphic, logo, embroidery, wide-leg, wrap, etc.)\n'
+        '  • Gender presentation (male/menswear, female/womenswear, unisex)\n\n'
+        'Step 2 — Match against the catalog below using the visual description and tags.\n'
+        'Focus on: clothing TYPE first → COLOR second → STYLE/DETAILS third.\n'
+        'A match is valid even if not identical — similar style counts.\n\n'
+        'Available products:\n';
 
-Step 1 — Describe what you see:
-  • Clothing type (hoodie, t-shirt, set, dress, jacket, etc.)
-  • Color(s) — be specific (black, oatmeal/cream, navy, etc.)
-  • Style (graphic print, plain/minimal, sporty, feminine, streetwear, etc.)
-  • Key visual details (zipper, skull graphic, logo, embroidery, wide-leg, wrap, etc.)
-  • Gender presentation (male/menswear, female/womenswear, unisex)
-
-Step 2 — Match against the catalog below using the visual description and tags.
-Focus on: clothing TYPE first → COLOR second → STYLE/DETAILS third.
-A match is valid even if it's not identical — similar style counts.
-
-Available products:
-''';
-    const promptFooter = '''
-
-Step 3 — Return ONLY valid JSON (no markdown, no explanation):
-{"matched_product_ids": ["id1", "id2", "id3"], "item_type": "your brief description of what you see"}
-
-Rules:
-- Include 1 to 4 IDs ranked best match first.
-- Only include a product if it genuinely resembles the scanned item.
-- Return matched_product_ids as empty array [] if nothing in the catalog is similar.
-- Do NOT invent IDs — use only IDs from the list above.''';
+    const promptFooter =
+        '\n\nStep 3 — Return ONLY valid JSON (no markdown, no extra text):\n'
+        '{"matched_product_ids": ["id1", "id2", "id3"], "item_type": "brief description of what you see"}\n\n'
+        'Rules:\n'
+        '- Include 1 to 4 IDs ranked best match first.\n'
+        '- Only include a product if it genuinely resembles the scanned item.\n'
+        '- Return matched_product_ids as empty array [] if nothing is similar.\n'
+        '- Do NOT invent IDs — only use IDs from the list above.';
 
     final body = jsonEncode({
       'model': groqModel,
@@ -271,7 +268,7 @@ Rules:
     );
 
     if (response.statusCode != 200) {
-      debugPrint('ScanScreen: Groq API ${response.statusCode} → ${response.body}');
+      debugPrint('ScanScreen: Groq ${response.statusCode} → ${response.body}');
       throw Exception('Groq API returned ${response.statusCode}');
     }
 

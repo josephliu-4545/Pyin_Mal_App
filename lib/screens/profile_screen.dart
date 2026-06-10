@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/services/auth_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
@@ -69,13 +70,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  'Create Your Style Profile',
+                  'profile.create_profile'.tr(),
                   style: GoogleFonts.rufina(fontSize: 28, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Log in to view your points, rank, and get personalized fashion recommendations from our AI.',
+                  'profile.login_desc'.tr(),
                   style: GoogleFonts.outfit(fontSize: 15, height: 1.6, color: isDark ? AppColors.paleText : AppColors.inkGrey),
                   textAlign: TextAlign.center,
                 ),
@@ -91,7 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 0,
                     ),
-                    child: Text('LOG IN OR SIGN UP', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                    child: Text('profile.login_btn'.tr(), style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                   ),
                 ),
               ],
@@ -245,7 +246,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Style Rank', style: GoogleFonts.outfit(color: Colors.white60, fontSize: 12, letterSpacing: 0.5)),
+                      Text('profile.style_rank'.tr(), style: GoogleFonts.outfit(color: Colors.white60, fontSize: 12, letterSpacing: 0.5)),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
@@ -269,9 +270,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Progress', style: GoogleFonts.outfit(color: Colors.white54, fontSize: 11)),
+                      Text('profile.progress'.tr(), style: GoogleFonts.outfit(color: Colors.white54, fontSize: 11)),
                       Text(
-                        nextPoints > 0 ? '$nextPoints pts to next rank' : 'Max Rank Reached!',
+                        nextPoints > 0 ? 'profile.pts_to_next'.tr(args: [nextPoints.toString()]) : 'profile.max_rank'.tr(),
                         style: GoogleFonts.outfit(color: Colors.white60, fontSize: 11),
                       ),
                     ],
@@ -297,7 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
             child: Text(
-              'ACCOUNT',
+              'profile.account'.tr(),
               style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: isDark ? AppColors.paleText : AppColors.inkGrey, letterSpacing: 1.2),
             ),
           ),
@@ -315,7 +316,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   _buildActionTile(
                     icon: Icons.settings_outlined,
-                    label: 'Settings',
+                    label: 'profile.settings'.tr(),
                     isDark: isDark,
                     accent: accent,
                     isFirst: true,
@@ -324,7 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.creamAlt, indent: 56),
                   _buildActionTile(
                     icon: Icons.receipt_long_outlined,
-                    label: 'Order History',
+                    label: 'profile.order_history'.tr(),
                     isDark: isDark,
                     accent: accent,
                     isLast: true,
@@ -343,7 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: OutlinedButton.icon(
               onPressed: () => _auth.signOut(),
               icon: const Icon(Icons.logout_rounded, size: 18, color: Color(0xFFC9A96E)),
-              label: Text('Sign Out', style: GoogleFonts.outfit(fontSize: 15, color: Color(0xFFC9A96E), fontWeight: FontWeight.w600)),
+              label: Text('profile.sign_out'.tr(), style: GoogleFonts.outfit(fontSize: 15, color: Color(0xFFC9A96E), fontWeight: FontWeight.w600)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: BorderSide(color: Color(0xFFC9A96E).withOpacity(0.5)),
