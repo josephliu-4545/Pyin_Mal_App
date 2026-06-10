@@ -1,0 +1,17 @@
+{
+  "name": "pyin-mal-functions",
+  "description": "Firebase Cloud Functions for Pyin Mal app",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "firebase-functions": "^6.0.0"
+  },
+  "private": true
+}

@@ -43,7 +43,8 @@ class ProductRepository {
       gender: 'Male',
       brand: 'Fartech',
       shopName: 'Pyin Mal Official',
-      description: '3D Interactive Black Cotton Sweatshirt. Experience our revolutionary 3D viewer - rotate to see all angles of this premium quality hoodie made from 100% soft cotton fabric.',
+      description: 'Black pullover sweatshirt made from 100% soft premium cotton. Clean minimal design, no front graphics.',
+      tags: ['black', 'sweatshirt', 'hoodie', 'pullover', 'cotton', 'minimal', 'no-graphic', 'plain', 'male'],
     ),
     Product(
       id: 'hoodie_deathwish',
@@ -54,7 +55,8 @@ class ProductRepository {
       gender: 'Male',
       brand: 'NRF',
       shopName: 'Pyin Mal Official',
-      description: 'A bold heavyweight hoodie with gothic-inspired graphics. Crafted from premium brushed fleece for ultimate warmth and street-ready style.',
+      description: 'Black heavyweight pullover hoodie with bold gothic skull and dark graphic print on the front. Streetwear style with brushed fleece interior.',
+      tags: ['black', 'hoodie', 'pullover', 'gothic', 'skull', 'dark graphic', 'heavyweight', 'streetwear', 'front print', 'male'],
     ),
     Product(
       id: 'hoodie_ajohn',
@@ -65,7 +67,8 @@ class ProductRepository {
       gender: 'Male',
       brand: 'AJOHN',
       shopName: 'Pyin Mal Official',
-      description: 'The second generation AJOHN hoodie featuring a refined silhouette and signature embroidered logo. Made from a soft cotton-polyester blend.',
+      description: 'Pullover hoodie with embroidered AJOHN logo on chest. Refined silhouette, cotton-polyester blend, subtle branding only.',
+      tags: ['hoodie', 'pullover', 'embroidered logo', 'subtle branding', 'minimal graphic', 'cotton', 'male'],
     ),
     Product(
       id: 'hoodie_abcd',
@@ -76,7 +79,8 @@ class ProductRepository {
       gender: 'Male',
       brand: 'ABCD',
       shopName: 'Pyin Mal Official',
-      description: 'A versatile zip-up hoodie in an oversized 2XL cut. Features a full front zipper and kangaroo pocket for an effortlessly relaxed look.',
+      description: 'Oversized zip-up hoodie with full front zipper and kangaroo pocket. ABCD lettering on front. Relaxed baggy fit.',
+      tags: ['hoodie', 'zip-up', 'zipper', 'oversized', 'baggy', 'kangaroo pocket', 'lettering', 'front print', 'male'],
     ),
     Product(
       id: 'hoodie_v1',
@@ -87,7 +91,8 @@ class ProductRepository {
       gender: 'Male',
       brand: 'NRF',
       shopName: 'Pyin Mal Official',
-      description: 'The debut piece from NRF. A clean, minimal hoodie with the classic NRF wordmark — the foundation of every wardrobe.',
+      description: 'Clean minimal pullover hoodie with small NRF wordmark logo. No large graphics, simple and understated design.',
+      tags: ['hoodie', 'pullover', 'minimal', 'clean', 'wordmark', 'small logo', 'no large graphic', 'male'],
     ),
     Product(
       id: 'tee_abcd',
@@ -98,7 +103,8 @@ class ProductRepository {
       gender: 'Male',
       brand: 'ABCD',
       shopName: 'Pyin Mal Official',
-      description: 'A lightweight everyday tee with clean lettering graphics. 100% combed cotton construction keeps it breathable all day.',
+      description: 'Lightweight everyday t-shirt with ABCD lettering graphic on the chest. 100% combed cotton, crew neck, regular fit.',
+      tags: ['t-shirt', 'tee', 'crew neck', 'lettering', 'text graphic', 'cotton', 'lightweight', 'casual', 'male'],
     ),
     Product(
       id: 'tee_acid',
@@ -109,7 +115,8 @@ class ProductRepository {
       gender: 'Male',
       brand: 'NRF',
       shopName: 'Pyin Mal Official',
-      description: 'An edgy statement tee with acid-wash inspired print. Relaxed fit with dropped shoulders for a contemporary streetwear silhouette.',
+      description: 'Streetwear t-shirt with bold ACID text and distressed or wash-effect print. Relaxed fit with dropped shoulders.',
+      tags: ['t-shirt', 'tee', 'acid', 'bold text', 'distressed print', 'washed', 'streetwear', 'relaxed fit', 'dropped shoulder', 'male'],
     ),
     Product(
       id: 'tee_nrfc',
@@ -120,7 +127,8 @@ class ProductRepository {
       gender: 'Male',
       brand: 'NRF',
       shopName: 'Pyin Mal Official',
-      description: 'Sport-meets-street jersey with moisture-wicking mesh fabric. The NRFC crest on the chest makes it an instant statement piece.',
+      description: 'Sports-style jersey with NRFC crest badge on the chest. Mesh or moisture-wicking fabric, sporty streetwear design.',
+      tags: ['jersey', 't-shirt', 'sport', 'crest', 'badge', 'mesh fabric', 'moisture-wicking', 'sporty', 'streetwear', 'male'],
     ),
     Product(
       id: 'tee_lapses',
@@ -131,7 +139,8 @@ class ProductRepository {
       gender: 'Male',
       brand: 'LAPSES',
       shopName: 'Pyin Mal Official',
-      description: 'A neutral oatmeal tee from LAPSES with a subtle tonal logo. The go-to blank canvas for any outfit — pairs with everything.',
+      description: 'Neutral oatmeal / cream / beige coloured t-shirt with subtle LAPSES tonal logo. Plain relaxed everyday tee, no bold graphics.',
+      tags: ['t-shirt', 'tee', 'oatmeal', 'beige', 'cream', 'neutral', 'subtle logo', 'tonal', 'plain', 'minimal', 'male'],
     ),
     Product(
       id: 'set_luna_1',
@@ -142,7 +151,8 @@ class ProductRepository {
       gender: 'Female',
       brand: 'Luna',
       shopName: 'Luna Boutique',
-      description: 'A coordinated two-piece set from Luna. Elegant fabric with a feminine cut — perfect for both casual outings and evening wear.',
+      description: 'Elegant coordinated two-piece set for women. Feminine cut with soft fabric, suitable for casual or evening wear.',
+      tags: ['set', 'two-piece', 'coordinated', 'feminine', 'elegant', 'women', 'female', 'soft fabric', 'casual', 'evening'],
     ),
     Product(
       id: 'set_luna_2',
@@ -153,7 +163,8 @@ class ProductRepository {
       gender: 'Female',
       brand: 'Luna',
       shopName: 'Luna Boutique',
-      description: 'Flowing co-ord set with a relaxed fit top and matching wide-leg trousers. Lightweight summer fabric with a soft drape.',
+      description: 'Flowing women\'s co-ord set with relaxed top and wide-leg matching trousers. Lightweight summer fabric.',
+      tags: ['set', 'co-ord', 'flowing', 'wide-leg', 'trousers', 'summer', 'lightweight', 'relaxed', 'women', 'female'],
     ),
     Product(
       id: 'set_luna_3',
@@ -164,7 +175,8 @@ class ProductRepository {
       gender: 'Female',
       brand: 'Luna',
       shopName: 'Luna Boutique',
-      description: 'A chic monochrome set featuring a structured blazer-style top paired with tailored shorts. Effortlessly polished for any occasion.',
+      description: 'Monochrome women\'s set with structured blazer-style top and tailored shorts. Polished and smart look.',
+      tags: ['set', 'monochrome', 'blazer', 'structured', 'tailored', 'shorts', 'smart', 'polished', 'women', 'female'],
     ),
     Product(
       id: 'set_luna_4',
@@ -175,7 +187,8 @@ class ProductRepository {
       gender: 'Female',
       brand: 'Luna',
       shopName: 'Luna Boutique',
-      description: 'Luna\'s signature wrap-style set with adjustable ties. Flattering on all body types with its draped silhouette and rich fabric.',
+      description: 'Wrap-style women\'s set with adjustable ties and draped silhouette. Flattering feminine design.',
+      tags: ['set', 'wrap', 'draped', 'adjustable ties', 'feminine', 'flattering', 'silhouette', 'women', 'female'],
     ),
   ];
 }

@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:http/http.dart' as http;
 import 'package:pyin_mal_app/core/constants/api_constants.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/main.dart';
@@ -13,13 +13,18 @@ import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Strategy: CameraX preview + takePicture() for frame capture.
+// Strategy: base Camera2 plugin preview + takePicture() for frame capture.
 //
-// Xiaomi Redmi Note 9S camera driver crashes after ~6 frames of any
-// continuous image stream (YUV_420_888 or JPEG), even with CameraX.
-// The camera HAL supports single-frame JPEG capture (takePicture) fine.
-// CameraX handles autofocus for takePicture automatically, so the old
-// STATE_WAITING_FOCUS hang is also gone.
+// camera_android_camerax is intentionally NOT used. CameraX always creates
+// an ImageAnalysis use case (YUV_420_888 ImageReader) even with no stream,
+// and its onCameraAccessPrioritiesChanged handler tears down the entire session
+// — both are fatal on Xiaomi Redmi Note 9S.
+//
+// Base Camera2 plugin with takePicture():
+//   • Preview + ImageCapture only — no ImageAnalysis/YUV ImageReader
+//   • No onCameraAccessPrioritiesChanged handler → session stays alive
+//   • FocusMode.locked + ExposureMode.locked → skip AE precapture,
+//     takePicture() completes immediately without STATE_WAITING_FOCUS hang
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ScanScreen extends StatefulWidget {
@@ -98,6 +103,16 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
       await ctrl.initialize();
       if (!mounted) { ctrl.dispose(); return; }
 
+      // FlashMode.off is the key: it causes camera_android to skip the entire
+      // AE precapture sequence (runPrecaptureSequence) before each takePicture().
+      // With FlashMode.auto the precapture runs ~14 frames (~0.5s) per capture.
+      // FocusMode.locked + ExposureMode.locked still trigger refreshPreviewCaptureSession
+      // which can interfere — just disabling flash is sufficient and cleaner.
+      try {
+        await ctrl.setFlashMode(FlashMode.off);
+      } catch (_) {} // non-fatal
+
+      if (!mounted) { ctrl.dispose(); return; }
       setState(() { _controller = ctrl; _cameraReady = true; });
       _startAutoScan();
 
@@ -122,69 +137,148 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
 
     setState(() => _isAnalyzing = true);
 
-    Uint8List? bytes;
+    Uint8List bytes = Uint8List(0);
     List<Product> results = [];
+    bool cameraFailed = false;
+    String? scanError;
+
     try {
-      // takePicture() — CameraX handles AF automatically, no STATE_WAITING_FOCUS
       final XFile file = await ctrl.takePicture()
           .timeout(const Duration(seconds: 10));
       bytes = await file.readAsBytes();
 
-      if (bytes.isEmpty) return;
-
-      results = await _identifyProducts(bytes)
-          .timeout(const Duration(seconds: 25), onTimeout: () => []);
-
-    } catch (_) {
-      // finally handles cleanup
+      if (bytes.isNotEmpty) {
+        results = await _identifyProducts(bytes)
+            .timeout(const Duration(seconds: 30), onTimeout: () => []);
+      }
+    } on CameraException catch (e) {
+      cameraFailed = true;
+      debugPrint('ScanScreen: CameraException → ${e.code}: ${e.description}');
+    } on TimeoutException {
+      scanError = 'Scan timed out. Try again.';
+      debugPrint('ScanScreen: takePicture or Gemini timed out');
+    } catch (e) {
+      scanError = 'Scan error. Try again.';
+      debugPrint('ScanScreen: _analyzeCurrentFrame error → $e');
     } finally {
       _isAnalyzing = false;
       if (mounted) setState(() {});
     }
 
     if (!mounted) return;
-    if (bytes != null && bytes.isNotEmpty && results.isNotEmpty) {
+
+    // Camera hardware died → reinitialize so preview recovers
+    if (cameraFailed) {
+      _autoScanTimer?.cancel();
+      _disposeCamera();
+      setState(() { _cameraReady = false; });
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted) _initCamera();
+      return;
+    }
+
+    // Show any scan-level errors as a brief snackbar
+    if (scanError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(scanError), duration: const Duration(seconds: 2)));
+      return;
+    }
+
+    if (bytes.isNotEmpty && results.isNotEmpty) {
       setState(() => _resultShown = true);
       _autoScanTimer?.cancel();
       _showResultsSheet(bytes, results);
+    } else if (bytes.isNotEmpty && results.isEmpty) {
+      // Gemini returned no matches — give brief feedback so user knows scan ran
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('No matching items found. Scanning again...'),
+        duration: Duration(seconds: 2),
+      ));
     }
   }
 
-  // Returns up to 4 ranked similar products
+  // Returns up to 4 ranked similar products.
+  // Uses Groq LLaMA vision API — global coverage, no Myanmar geo-restriction,
+  // free tier (https://console.groq.com). Gemini AI Studio is blocked in Myanmar.
   Future<List<Product>> _identifyProducts(Uint8List imageBytes) async {
-    final productsContext = ProductRepository.allProducts.map((p) =>
-      '- ID: "${p.id}" | Name: "${p.name}" | Category: ${p.category} | Brand: ${p.brand}'
-    ).join('\n');
+    // Build rich catalog context: ID + description + visual tags
+    final productsContext = ProductRepository.allProducts.map((p) {
+      final desc = p.description ?? p.name;
+      final tagStr = p.tags.isNotEmpty ? p.tags.join(', ') : p.category;
+      return '- ID: "${p.id}" | ${p.category} | ${p.brand} | Visual: $desc | Tags: $tagStr';
+    }).join('\n');
 
-    final prompt = '''
-You are a fashion AI for the Pyin Mal app. Analyze the clothing item in this image.
+    const groqModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
+
+    // Burmese-aware prompt — understands Myanmar fashion context
+    const promptHeader = '''You are a fashion AI assistant for Pyin Mal, a Myanmar clothing app.
+Analyze the clothing item visible in this image. The photo may be taken in Myanmar.
+You understand both English and Burmese (မြန်မာဘာသာ) clothing terms.
+
+Step 1 — Describe what you see:
+  • Clothing type (hoodie, t-shirt, set, dress, jacket, etc.)
+  • Color(s) — be specific (black, oatmeal/cream, navy, etc.)
+  • Style (graphic print, plain/minimal, sporty, feminine, streetwear, etc.)
+  • Key visual details (zipper, skull graphic, logo, embroidery, wide-leg, wrap, etc.)
+  • Gender presentation (male/menswear, female/womenswear, unisex)
+
+Step 2 — Match against the catalog below using the visual description and tags.
+Focus on: clothing TYPE first → COLOR second → STYLE/DETAILS third.
+A match is valid even if it's not identical — similar style counts.
 
 Available products:
-$productsContext
-
-Instructions:
-1. Identify the clothing type, color, style, and graphic details in the image.
-2. Return the top 1-4 most visually similar products from the list, ranked best match first.
-3. Return ONLY valid JSON, no markdown:
-{"matched_product_ids": ["id1", "id2", "id3"], "item_type": "<what you see, e.g. black graphic hoodie>"}
-
-Only include IDs that are genuinely similar. Return an empty list if nothing matches.
 ''';
+    const promptFooter = '''
 
-    final model = GenerativeModel(
-      model: 'gemini-2.5-flash',
-      apiKey: ApiConstants.geminiApiKey,
-      generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+Step 3 — Return ONLY valid JSON (no markdown, no explanation):
+{"matched_product_ids": ["id1", "id2", "id3"], "item_type": "your brief description of what you see"}
+
+Rules:
+- Include 1 to 4 IDs ranked best match first.
+- Only include a product if it genuinely resembles the scanned item.
+- Return matched_product_ids as empty array [] if nothing in the catalog is similar.
+- Do NOT invent IDs — use only IDs from the list above.''';
+
+    final body = jsonEncode({
+      'model': groqModel,
+      'response_format': {'type': 'json_object'},
+      'messages': [
+        {
+          'role': 'user',
+          'content': [
+            {
+              'type': 'image_url',
+              'image_url': {
+                'url': 'data:image/jpeg;base64,${base64Encode(imageBytes)}',
+              },
+            },
+            {
+              'type': 'text',
+              'text': '$promptHeader$productsContext$promptFooter',
+            },
+          ],
+        },
+      ],
+    });
+
+    final response = await http.post(
+      Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
+      headers: {
+        'Authorization': 'Bearer ${ApiConstants.groqApiKey}',
+        'Content-Type': 'application/json',
+      },
+      body: body,
     );
 
-    final response = await model.generateContent([
-      Content.multi([TextPart(prompt), DataPart('image/jpeg', imageBytes)]),
-    ]);
+    if (response.statusCode != 200) {
+      debugPrint('ScanScreen: Groq API ${response.statusCode} → ${response.body}');
+      throw Exception('Groq API returned ${response.statusCode}');
+    }
 
-    final raw = response.text;
-    if (raw == null || raw.isEmpty) return [];
+    final data    = jsonDecode(response.body) as Map<String, dynamic>;
+    final content = (data['choices'] as List).first['message']['content'] as String;
 
-    final cleaned = raw
+    final cleaned = content
         .replaceAll(RegExp(r'```json\s*'), '')
         .replaceAll(RegExp(r'```\s*'), '')
         .trim();

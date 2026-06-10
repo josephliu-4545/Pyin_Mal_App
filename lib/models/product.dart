@@ -8,6 +8,9 @@ class Product {
   final String brand;
   final String? description;
   final String? shopName;
+  /// Visual search tags: color, clothing type, style keywords, graphics details.
+  /// Used by the AI scan feature to match camera photos against the catalog.
+  final List<String> tags;
 
   Product({
     required this.id,
@@ -19,6 +22,7 @@ class Product {
     this.brand = 'NRF',
     this.description,
     this.shopName,
+    this.tags = const [],
   });
 
   // Parse a product from OpenCart's REST API JSON response.
