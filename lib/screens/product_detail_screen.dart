@@ -5,6 +5,9 @@ import 'package:pyin_mal_app/main.dart';
 import '../widgets/product_3d_viewer.dart';
 import '../widgets/cdn_image.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
+import 'package:pyin_mal_app/services/database_service.dart';
+import 'package:pyin_mal_app/services/size_recommendation_service.dart';
+import 'package:pyin_mal_app/models/body_measurements.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
 
@@ -38,6 +41,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String _selectedSize = 'M';
   bool _isFavorite = false;
   String _selectedColor = 'Black';
+
+  // Size recommendation from the user's saved Bodygram measurements.
+  SizeRecommendation? _sizeRec;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSizeRecommendation();
+  }
+
+  Future<void> _loadSizeRecommendation() async {
+    try {
+      final data = await DatabaseService().getUserData();
+      final saved = data?['bodyMeasurements'];
+      if (saved is! Map) return;
+      final rec = SizeRecommendationService.recommend(
+        measurements:
+            BodyMeasurements.fromMap(Map<String, dynamic>.from(saved)),
+        category: widget.category,
+        gender: data?['gender'] as String? ?? 'Female',
+      );
+      if (rec != null && mounted) {
+        setState(() {
+          _sizeRec = rec;
+          _selectedSize = rec.size;
+        });
+      }
+    } catch (_) {} // no measurements / offline — selector works as before
+  }
 
   // Hero view toggle — image (Photo) is default
   bool _show3DView = false;
@@ -278,6 +310,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: _sizes.map((size) {
                                           final sel = _selectedSize == size;
+                                          final isRec =
+                                              _sizeRec?.size == size;
                                           return GestureDetector(
                                             onTap: () => setState(
                                                 () => _selectedSize = size),
@@ -295,6 +329,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                         isDark ? 0.16 : 0.9),
                                                 borderRadius:
                                                     BorderRadius.circular(9),
+                                                border: isRec
+                                                    ? Border.all(
+                                                        color: AppColors.gold,
+                                                        width: 2)
+                                                    : null,
                                                 boxShadow: [
                                                   BoxShadow(
                                                     color: Colors.black
@@ -327,6 +366,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ),
                             ),
                     ),
+
+                    // ── Size recommendation pill (from body scan) ────────────
+                    if (_sizeRec != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 14),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: AppColors.gold
+                                  .withOpacity(isDark ? 0.16 : 0.22),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  color: AppColors.gold.withOpacity(0.5)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.straighten_rounded,
+                                    size: 15, color: AppColors.gold),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'product.your_size'
+                                      .tr(args: [_sizeRec!.size]),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? AppColors.goldLight
+                                        : AppColors.inkBlack,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
 
                     // ── 2. COLOR STRIP (directly under product) ──────────────
                     Padding(

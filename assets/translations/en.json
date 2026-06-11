@@ -218,7 +218,8 @@
       "fit_val": "Regular fit",
       "material": "Material",
       "material_val": "Premium quality"
-    }
+    },
+    "your_size": "Your size: {} (from your body scan)"
   },
   "try_on": {
     "title": "Virtual Try-On",
@@ -428,7 +429,7 @@
     "right_photo": "Right-side photo",
     "take_photo": "Take a photo",
     "from_gallery": "Choose from gallery",
-    "tips": "Wear fitted clothing, stand against a plain background, keep your whole body in the frame, and hold the phone upright at chest height.",
+    "tips": "Prop the phone upright at chest height 2-3m away and use a timer. Wear fitted clothing, plain background, whole body in frame, arms angled 30-45° out. Stay centered — the photo sides get trimmed.",
     "scan_btn": "Get my measurements",
     "estimate_btn": "Estimate without photos",
     "estimate_hint": "Add both photos for the most accurate results.",
@@ -449,6 +450,12 @@
       "thighGirth": "Thigh",
       "inseamLength": "Inseam",
       "totalLength": "Height (measured)"
-    }
+    },
+    "err_front_photo": "Front photo: ",
+    "err_right_photo": "Side photo: ",
+    "err_not_in_frame": "your whole body must be in the frame. Step back so your head and feet are both visible.",
+    "err_arm_angle": "hold your arms straight, angled about 30-45° away from your body. Don't hold the phone yourself - prop it up and use a timer.",
+    "err_leg_angle": "stand straight with your feet about shoulder-width apart.",
+    "err_generic": "Scan failed ({}). Check your pose and photos, then try again."
   }
 }

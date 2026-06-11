@@ -95,8 +95,9 @@ class _BodyScanScreenState extends State<BodyScanScreen> {
       // imageQuality forces JPEG re-encode — Bodygram requires JPEG.
       final file = await _picker.pickImage(
         source: source,
-        maxWidth: 1080,
-        imageQuality: 90,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 92,
         preferredCameraDevice: CameraDevice.rear,
       );
       if (file == null) return;
