@@ -440,22 +440,33 @@
     "generic_error": "Something went wrong. Please try again.",
     "m": {
       "neckGirth": "Neck",
-      "shoulderWidth": "Shoulder width",
+      "neckBaseGirth": "Neck base",
+      "acrossBackShoulderWidth": "Shoulder width",
       "bustGirth": "Bust / Chest",
       "underBustGirth": "Under bust",
       "waistGirth": "Waist",
+      "bellyWaistGirth": "Belly waist",
       "hipGirth": "Hips",
-      "sleeveLength": "Sleeve length",
-      "armLength": "Arm length",
-      "thighGirth": "Thigh",
-      "inseamLength": "Inseam",
-      "totalLength": "Height (measured)"
+      "topHipGirth": "Top hip",
+      "backNeckPointToWristLengthR": "Sleeve length",
+      "outerArmLengthR": "Arm length",
+      "upperArmGirthR": "Upper arm",
+      "forearmGirthR": "Forearm",
+      "wristGirthR": "Wrist",
+      "thighGirthR": "Thigh",
+      "midThighGirthR": "Mid thigh",
+      "kneeGirthR": "Knee",
+      "calfGirthR": "Calf",
+      "insideLegLengthR": "Inseam",
+      "outseamR": "Outseam"
     },
     "err_front_photo": "Front photo: ",
     "err_right_photo": "Side photo: ",
     "err_not_in_frame": "your whole body must be in the frame. Step back so your head and feet are both visible.",
     "err_arm_angle": "hold your arms straight, angled about 30-45° away from your body. Don't hold the phone yourself - prop it up and use a timer.",
     "err_leg_angle": "stand straight with your feet about shoulder-width apart.",
-    "err_generic": "Scan failed ({}). Check your pose and photos, then try again."
+    "err_generic": "Scan failed ({}). Check your pose and photos, then try again.",
+    "source_photo": "Photo scan",
+    "source_stats": "Quick estimate (no photos)"
   }
 }
