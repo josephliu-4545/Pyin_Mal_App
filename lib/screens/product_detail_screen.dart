@@ -79,7 +79,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   // Floating video pip state
   bool _showVideoPip = true;
-  Offset _pipOffset = const Offset(220, 16);
+  Offset _pipOffset = const Offset(220, 90);
   static const double _pipW = 100;
   static const double _pipH = 130;
   static const double _heroH = 420;
@@ -106,9 +106,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final bgColor = isDark ? AppColors.charcoal : const Color(0xFFF5F5F5);
     final cardBg  = isDark ? AppColors.darkWarm  : Colors.white;
 
+    final screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: bgColor,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          SafeArea(
         child: Column(
           children: [
             // ── Top bar ──────────────────────────────────────────────────────
@@ -240,31 +244,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     ),
                                   ),
 
-                                  // Draggable video PiP
-                                  if (_showVideoPip)
-                                    Positioned(
-                                      left: _pipOffset.dx,
-                                      top:  _pipOffset.dy,
-                                      child: GestureDetector(
-                                        onPanUpdate: (d) {
-                                          setState(() {
-                                            double nx = (_pipOffset.dx + d.delta.dx)
-                                                .clamp(0.0, _heroH * 0.6 - _pipW);
-                                            double ny = (_pipOffset.dy + d.delta.dy)
-                                                .clamp(0.0, _heroH - _pipH);
-                                            _pipOffset = Offset(nx, ny);
-                                          });
-                                        },
-                                        child: _FloatingVideoPip(
-                                          isDark: isDark,
-                                          image: widget.image,
-                                          accent: accent,
-                                          onClose: () =>
-                                              setState(() => _showVideoPip = false),
-                                        ),
-                                      ),
-                                    ),
-
+                                  // (Video PiP is rendered at screen level so
+                                  // it can be dragged anywhere on the page.)
                                   if (!_showVideoPip)
                                     Positioned(
                                       top: 12,
@@ -272,7 +253,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       child: GestureDetector(
                                         onTap: () => setState(() {
                                           _showVideoPip = true;
-                                          _pipOffset = const Offset(180, 16);
+                                          _pipOffset = Offset(
+                                              screenSize.width - _pipW - 16, 90);
                                         }),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
@@ -987,6 +969,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ],
         ),
+          ),
+
+          // Screen-wide draggable video PiP — floats over the whole page
+          if (_showVideoPip)
+            Positioned(
+              left: _pipOffset.dx,
+              top: _pipOffset.dy,
+              child: GestureDetector(
+                onPanUpdate: (d) {
+                  setState(() {
+                    final nx = (_pipOffset.dx + d.delta.dx)
+                        .clamp(0.0, screenSize.width - _pipW);
+                    final ny = (_pipOffset.dy + d.delta.dy)
+                        .clamp(0.0, screenSize.height - _pipH);
+                    _pipOffset = Offset(nx, ny);
+                  });
+                },
+                child: _FloatingVideoPip(
+                  isDark: isDark,
+                  image: widget.image,
+                  accent: accent,
+                  onClose: () => setState(() => _showVideoPip = false),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../services/nanobanana_api_service.dart';
-
+import '../main.dart'; // For AppColors
 class TryOnScreen extends StatefulWidget {
   const TryOnScreen({super.key});
 
@@ -134,79 +134,66 @@ class _TryOnScreenState extends State<TryOnScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'try_on.title'.tr(),
-          style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      backgroundColor: _bg,
+      body: SafeArea(
+        child: _resultImageUrl != null ? _buildResult() : _buildBody(),
       ),
-      body: _buildBody(),
     );
   }
 
-  Widget _buildBody() {
-    // If result exists, show the result
-    if (_resultImageUrl != null) {
-      return Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'try_on.ai_fit'.tr(),
-                style: GoogleFonts.rufina(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Image.network(
-                  _resultImageUrl!,
-                  height: 400,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: _reset,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
+  // ── Inline top bar ─────────────────────────────────────────────────────────
+  Widget _topBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: _surface,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(_isDark ? 0.2 : 0.07),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                ),
-                child: Text(
-                  'try_on.try_another'.tr(),
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                ],
               ),
-            ],
+              child: Icon(Icons.arrow_back_ios_rounded, size: 18, color: _ink),
+            ),
           ),
-        ),
-      );
-    }
+          const SizedBox(width: 12),
+          Text('try_on.title'.tr(),
+              style: GoogleFonts.outfit(
+                  fontSize: 16, fontWeight: FontWeight.w600, color: _ink)),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _accent.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome_rounded, size: 13, color: _accent),
+                const SizedBox(width: 4),
+                Text('AI',
+                    style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: _accent)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   // ── Build (upload) flow ──────────────────────────────────────────────────
   Widget _buildBody() {
@@ -214,120 +201,99 @@ class _TryOnScreenState extends State<TryOnScreen> {
 
     return Column(
       children: [
-        SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'try_on.mix_match'.tr(),
-                style: GoogleFonts.rufina(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'try_on.desc'.tr(),
-                style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
+        _topBar(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('try_on.mix_match'.tr(),
+                    style: GoogleFonts.rufina(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: _ink)),
+                const SizedBox(height: 6),
+                Text('try_on.desc'.tr(),
+                    style: GoogleFonts.outfit(
+                        fontSize: 13, height: 1.4, color: _muted)),
+                const SizedBox(height: 24),
 
-              // Upload Grid
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildUploadBox(
-                      title: 'try_on.person'.tr(),
-                      icon: Icons.person_add_alt_1_rounded,
-                      imageBytes: _userPhotoBytes,
-                      onTap: () => _pickImage((f, b) {
-                        _userPhoto = f;
-                        _userPhotoBytes = b;
-                      }),
-                      isAccent: true,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildUploadBox(
-                      title: 'try_on.shirt'.tr(),
-                      icon: Icons.checkroom_rounded,
-                      imageBytes: _shirtPhotoBytes,
-                      onTap: () => _pickImage((f, b) {
-                        _shirtPhoto = f;
-                        _shirtPhotoBytes = b;
-                      }),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildUploadBox(
-                      title: 'try_on.pants'.tr(),
-                      icon: Icons.dry_cleaning_rounded,
-                      imageBytes: _pantsPhotoBytes,
-                      onTap: () => _pickImage((f, b) {
-                        _pantsPhoto = f;
-                        _pantsPhotoBytes = b;
-                      }),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildUploadBox(
-                      title: 'try_on.shoes'.tr(),
-                      icon: Icons.snowshoeing_rounded,
-                      imageBytes: _shoesPhotoBytes,
-                      onTap: () => _pickImage((f, b) {
-                        _shoesPhoto = f;
-                        _shoesPhotoBytes = b;
-                      }),
-                    ),
-                  ),
-                ],
-              ),
+                // Step 1 — your photo
+                _stepLabel('1', 'try_on.person'.tr(), 'try_on.required'.tr()),
+                const SizedBox(height: 12),
+                _personCard(),
+                const SizedBox(height: 24),
 
-              const SizedBox(height: 48),
-
-              // Process Button
-              ElevatedButton(
-                onPressed: _isLoading ? null : _processTryOn,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3064E3), // NanoBanana blue
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey.shade800,
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  elevation: 0,
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Text(
-                        'try_on.generate'.tr(),
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
+                // Step 2 — your pieces
+                _stepLabel('2', 'try_on.pieces'.tr(),
+                    'try_on.selected'.tr(args: [_itemsAdded.toString()])),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _garmentCard(
+                        title: 'try_on.shirt'.tr(),
+                        icon: Icons.checkroom_rounded,
+                        imageBytes: _shirtPhotoBytes,
+                        onTap: () => _pickImage((f, b) {
+                          _shirtPhoto = f;
+                          _shirtPhotoBytes = b;
+                        }),
+                        onRemove: () => setState(() {
+                          _shirtPhoto = null;
+                          _shirtPhotoBytes = null;
+                        }),
                       ),
-              ),
-              const SizedBox(height: 32),
-            ],
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _garmentCard(
+                        title: 'try_on.pants'.tr(),
+                        icon: Icons.dry_cleaning_rounded,
+                        imageBytes: _pantsPhotoBytes,
+                        onTap: () => _pickImage((f, b) {
+                          _pantsPhoto = f;
+                          _pantsPhotoBytes = b;
+                        }),
+                        onRemove: () => setState(() {
+                          _pantsPhoto = null;
+                          _pantsPhotoBytes = null;
+                        }),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _garmentCard(
+                        title: 'try_on.shoes'.tr(),
+                        icon: Icons.ice_skating_rounded,
+                        imageBytes: _shoesPhotoBytes,
+                        onTap: () => _pickImage((f, b) {
+                          _shoesPhoto = f;
+                          _shoesPhotoBytes = b;
+                        }),
+                        onRemove: () => setState(() {
+                          _shoesPhoto = null;
+                          _shoesPhotoBytes = null;
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+
+                _generateButton(canGenerate),
+                const SizedBox(height: 10),
+                Center(
+                  child: Text(
+                    canGenerate
+                        ? 'try_on.ready'.tr()
+                        : 'try_on.hint'.tr(),
+                    style: GoogleFonts.outfit(fontSize: 12, color: _muted),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -425,7 +391,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                             const Icon(Icons.check_circle_rounded,
                                 color: Colors.white, size: 16),
                             const SizedBox(width: 6),
-                            Text('Photo added',
+                            Text('try_on.photo_added'.tr(),
                                 style: GoogleFonts.outfit(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -451,13 +417,13 @@ class _TryOnScreenState extends State<TryOnScreen> {
                         color: _accent, size: 28),
                   ),
                   const SizedBox(height: 14),
-                  Text('Upload your photo',
+                  Text('try_on.upload_photo'.tr(),
                       style: GoogleFonts.outfit(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: _ink)),
                   const SizedBox(height: 4),
-                  Text('A clear, full-body shot works best',
+                  Text('try_on.photo_hint'.tr(),
                       style: GoogleFonts.outfit(fontSize: 12, color: _muted)),
                 ],
               ),
@@ -610,13 +576,13 @@ class _TryOnScreenState extends State<TryOnScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 8),
-                Text('Your AI Fit',
+                Text('try_on.ai_fit'.tr(),
                     style: GoogleFonts.rufina(
                         color: _ink,
                         fontSize: 28,
                         fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
-                Text('Generated just for you',
+                Text('try_on.generated_for_you'.tr(),
                     style: GoogleFonts.outfit(fontSize: 13, color: _muted)),
                 const SizedBox(height: 22),
                 ClipRRect(
@@ -644,7 +610,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _reset,
                     icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: Text('Try Another Outfit',
+                    label: Text('try_on.try_another'.tr(),
                         style: GoogleFonts.outfit(
                             fontWeight: FontWeight.w700, fontSize: 15)),
                     style: ElevatedButton.styleFrom(
@@ -664,4 +630,5 @@ class _TryOnScreenState extends State<TryOnScreen> {
       ],
     );
   }
+
 }
