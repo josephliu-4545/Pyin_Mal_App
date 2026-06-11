@@ -301,6 +301,22 @@ class _BodyScanScreenState extends State<BodyScanScreen> {
           if (_result != null) ...[
             const SizedBox(height: 28),
             _sectionLabel('bodygram.results'.tr(), muted),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    _result!.source == 'statsEstimation'
+                        ? Icons.calculate_outlined
+                        : Icons.photo_camera_outlined,
+                    size: 14, color: AppColors.gold,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(_scanInfoLabel(),
+                      style: GoogleFonts.outfit(fontSize: 12, color: muted)),
+                ],
+              ),
+            ),
             Container(
               decoration: BoxDecoration(
                 color: card,
@@ -309,9 +325,8 @@ class _BodyScanScreenState extends State<BodyScanScreen> {
               ),
               child: Column(
                 children: [
-                  for (final name in BodyMeasurements.keyMeasurements)
-                    if (_result!.cm(name) != null)
-                      _measureRow(name, _result!.cm(name)!, ink, muted, border),
+                  for (final name in _orderedMeasurementNames())
+                    _measureRow(name, _result!.cm(name)!, ink, muted, border),
                 ],
               ),
             ),
@@ -443,6 +458,41 @@ class _BodyScanScreenState extends State<BodyScanScreen> {
     );
   }
 
+  /// e.g. "Photo scan · 11.06.2026"
+  String _scanInfoLabel() {
+    final src = _result!.source == 'statsEstimation'
+        ? 'bodygram.source_stats'.tr()
+        : 'bodygram.source_photo'.tr();
+    final d = _result!.measuredAt;
+    if (d == null) return src;
+    final date = '${d.day.toString().padLeft(2, '0')}.'
+        '${d.month.toString().padLeft(2, '0')}.${d.year}';
+    return '$src · $date';
+  }
+
+  /// Fit-relevant measurements first, everything else Bodygram returned after.
+  List<String> _orderedMeasurementNames() {
+    final all = _result!.valuesMm.keys.toSet();
+    final key = BodyMeasurements.keyMeasurements
+        .where(all.contains)
+        .toList();
+    final rest = (all.difference(key.toSet()).toList())..sort();
+    return [...key, ...rest];
+  }
+
+  /// Translated label, falling back to a humanized camelCase name
+  /// (e.g. outerAnkleHeightR → "Outer ankle height").
+  String _measureLabel(String name) {
+    final key = 'bodygram.m.$name';
+    final t = key.tr();
+    if (t != key) return t;
+    var s = name
+        .replaceAllMapped(RegExp('[A-Z]'), (m) => ' ${m[0]!.toLowerCase()}')
+        .trim();
+    if (s.endsWith(' r')) s = s.substring(0, s.length - 2);
+    return s[0].toUpperCase() + s.substring(1);
+  }
+
   Widget _measureRow(
       String name, double cm, Color ink, Color muted, Color border) {
     return Container(
@@ -453,7 +503,7 @@ class _BodyScanScreenState extends State<BodyScanScreen> {
       child: Row(
         children: [
           Expanded(
-            child: Text('bodygram.m.$name'.tr(),
+            child: Text(_measureLabel(name),
                 style: GoogleFonts.outfit(fontSize: 14, color: ink)),
           ),
           Text('${cm.toStringAsFixed(1)} cm',

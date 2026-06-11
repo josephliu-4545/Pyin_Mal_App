@@ -449,22 +449,33 @@
     "generic_error": "တစ်ခုခု မှားယွင်းသွားပါသည်။ ထပ်စမ်းကြည့်ပါ။",
     "m": {
       "neckGirth": "လည်ပင်း",
-      "shoulderWidth": "ပခုံးအကျယ်",
+      "neckBaseGirth": "လည်ပင်းအောက်ခြေ",
+      "acrossBackShoulderWidth": "ပခုံးအကျယ်",
       "bustGirth": "ရင်အုံ",
       "underBustGirth": "ရင်အောက်",
       "waistGirth": "ခါး",
+      "bellyWaistGirth": "ဗိုက်ခါး",
       "hipGirth": "တင်ပါး",
-      "sleeveLength": "အင်္ကျီလက် အရှည်",
-      "armLength": "လက် အရှည်",
-      "thighGirth": "ပေါင်",
-      "inseamLength": "ပေါင်တွင်း အရှည်",
-      "totalLength": "အရပ် (တိုင်းထား)"
+      "topHipGirth": "တင်ပါးအပေါ်",
+      "backNeckPointToWristLengthR": "အင်္ကျီလက် အရှည်",
+      "outerArmLengthR": "လက် အရှည်",
+      "upperArmGirthR": "လက်မောင်း",
+      "forearmGirthR": "လက်ဖျံ",
+      "wristGirthR": "လက်ကောက်ဝတ်",
+      "thighGirthR": "ပေါင်",
+      "midThighGirthR": "ပေါင်အလယ်",
+      "kneeGirthR": "ဒူး",
+      "calfGirthR": "ခြေသလုံး",
+      "insideLegLengthR": "ပေါင်တွင်း အရှည်",
+      "outseamR": "ဘောင်းဘီအပြင် အရှည်"
     },
     "err_front_photo": "ရှေ့မှ ဓာတ်ပုံ - ",
     "err_right_photo": "ဘေးတိုက် ဓာတ်ပုံ - ",
     "err_not_in_frame": "တစ်ကိုယ်လုံး ပုံထဲတွင် ပါရပါမည်။ ခေါင်းနှင့် ခြေဖဝါး ပါအောင် နောက်ဆုတ်ပါ။",
     "err_arm_angle": "လက်နှစ်ဖက်ကို ကိုယ်မှ 30-45 ဒီဂရီခန့် ဖြဲထားပါ။ ဖုန်းကို ကိုယ်တိုင်မကိုင်ဘဲ ထောက်ထားပြီး timer သုံးပါ။",
     "err_leg_angle": "ခြေထောက်ကို ပခုံးအကျယ်ခန့် ဖြဲပြီး မတ်မတ်ရပ်ပါ။",
-    "err_generic": "စကင်န် မအောင်မြင်ပါ ({})။ အနေအထားနှင့် ဓာတ်ပုံများကို စစ်ပြီး ထပ်စမ်းကြည့်ပါ။"
+    "err_generic": "စကင်န် မအောင်မြင်ပါ ({})။ အနေအထားနှင့် ဓာတ်ပုံများကို စစ်ပြီး ထပ်စမ်းကြည့်ပါ။",
+    "source_photo": "ဓာတ်ပုံ စကင်န်",
+    "source_stats": "ဓာတ်ပုံမပါ ခန့်မှန်းချက်"
   }
 }

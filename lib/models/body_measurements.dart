@@ -24,19 +24,21 @@ class BodyMeasurements {
     return v == null ? null : v / 10.0;
   }
 
-  // The measurements that matter most for clothing fit.
+  // The measurements that matter most for clothing fit, in display order.
+  // Names follow Bodygram's API exactly; trailing R = right side.
   static const keyMeasurements = [
     'neckGirth',
-    'shoulderWidth',
+    'acrossBackShoulderWidth',
     'bustGirth',
     'underBustGirth',
     'waistGirth',
+    'bellyWaistGirth',
     'hipGirth',
-    'sleeveLength',
-    'armLength',
-    'thighGirth',
-    'inseamLength',
-    'totalLength',
+    'backNeckPointToWristLengthR',
+    'outerArmLengthR',
+    'thighGirthR',
+    'insideLegLengthR',
+    'outseamR',
   ];
 
   Map<String, dynamic> toMap() => {
