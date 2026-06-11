@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/ar_hair_filter_screen.dart';
 import 'package:pyin_mal_app/screens/hair_try_on_screen.dart';
@@ -89,7 +90,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
         backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: Text('Hair & Grooming', style: GoogleFonts.rufina(
+        title: Text('haircut.title'.tr(), style: GoogleFonts.rufina(
           fontWeight: FontWeight.bold,
           color: accent,
         )),
@@ -142,7 +143,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'AI HAIR GUIDE',
+              'haircut.hero_subtitle'.tr(),
               style: GoogleFonts.outfit(
                 color: AppColors.charcoal,
                 fontSize: 10,
@@ -153,7 +154,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Find Your Best Hair Look',
+            'haircut.hero_title'.tr(),
             style: GoogleFonts.rufina(
               fontSize: isMobile ? 36 : 52,
               fontWeight: FontWeight.bold,
@@ -166,7 +167,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
             child: Text(
-              'Explore hairstyle ideas that match your face shape and personal style. Our AI analysis helps balance your features for a perfect look.',
+              'haircut.hero_desc'.tr(),
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(
                 color: isDark ? AppColors.paleText : AppColors.inkGrey,
@@ -188,7 +189,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                   );
                 },
                 icon: const Icon(Icons.face_retouching_natural),
-                label: const Text('AR Filter'),
+                label: Text('haircut.ar_filter'.tr()),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isDark ? AppColors.darkWarm : AppColors.creamCard,
                   foregroundColor: isDark ? Colors.white : AppColors.inkBlack,
@@ -205,7 +206,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                   );
                 },
                 icon: const Icon(Icons.auto_awesome),
-                label: const Text('AI Try-On'),
+                label: Text('haircut.ai_try_on'.tr()),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accent,
                   foregroundColor: isDark ? AppColors.charcoal : Colors.white,
@@ -236,7 +237,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 40, 24, 16),
           child: Text(
-            'Select Face Shape',
+            'haircut.select_face_shape'.tr(),
             style: GoogleFonts.rufina(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -293,7 +294,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        shape['name']!,
+                        'haircut.face_shapes.${shape['name']}'.tr(),
                         style: GoogleFonts.outfit(
                           fontSize: 12,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -616,7 +617,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Recommended for You',
+                'haircut.recommended'.tr(),
                 style: GoogleFonts.rufina(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -624,7 +625,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                 ),
               ),
               Text(
-                'Trending Now',
+                'haircut.trending'.tr(),
                 style: GoogleFonts.outfit(color: accent, fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ],
@@ -784,7 +785,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
               Icon(Icons.lightbulb_outline, color: AppColors.gold, size: 24),
               const SizedBox(width: 12),
               Text(
-                'Styling Tips',
+                'haircut.styling_tips'.tr(),
                 style: GoogleFonts.rufina(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

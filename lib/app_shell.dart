@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/theme_notifier.dart';
 import 'package:pyin_mal_app/screens/shop_screen.dart';
@@ -72,11 +73,11 @@ class _GlassNav extends StatelessWidget {
   const _GlassNav({required this.currentIndex, required this.onTap, required this.isDark});
 
   static const _items = [
-    (icon: Icons.home_rounded,        outline: Icons.home_outlined,              label: 'Home'),
-    (icon: Icons.store_rounded,       outline: Icons.store_outlined,             label: 'Shop'),
-    (icon: Icons.content_cut_rounded, outline: Icons.content_cut_outlined,       label: 'Hair'),
-    (icon: Icons.favorite_rounded,    outline: Icons.favorite_outline_rounded,   label: 'Saved'),
-    (icon: Icons.person_rounded,      outline: Icons.person_outline_rounded,     label: 'Profile'),
+    (icon: Icons.home_rounded,        outline: Icons.home_outlined,              label: 'nav.home'),
+    (icon: Icons.store_rounded,       outline: Icons.store_outlined,             label: 'nav.shop'),
+    (icon: Icons.content_cut_rounded, outline: Icons.content_cut_outlined,       label: 'nav.hair'),
+    (icon: Icons.favorite_rounded,    outline: Icons.favorite_outline_rounded,   label: 'nav.saved'),
+    (icon: Icons.person_rounded,      outline: Icons.person_outline_rounded,     label: 'nav.profile'),
   ];
 
   @override
@@ -132,7 +133,7 @@ class _GlassNav extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        item.label,
+                        item.label.tr(),
                         style: GoogleFonts.outfit(
                           fontSize: 10,
                           color: selected ? accent : (isDark ? AppColors.paleText : AppColors.inkGrey),
@@ -306,19 +307,19 @@ class _HomeTabState extends State<_HomeTab> {
                 const SizedBox(height: 28),
 
                 // ── AI Styling Tools ───────────────────────────────────────
-                _buildSectionLabel('AI styling tools', isDark),
+                _buildSectionLabel('sections.ai_tools', isDark),
                 const SizedBox(height: 16),
                 _buildAIToolsSection(isDark),
                 const SizedBox(height: 28),
 
                 // ── Discover & Explore ─────────────────────────────────────
-                _buildSectionLabel('Discover & explore', isDark),
+                _buildSectionLabel('sections.discover', isDark),
                 const SizedBox(height: 16),
                 _buildDiscoverSection(isDark),
                 const SizedBox(height: 28),
 
                 // ── Wardrobe & Recycling ───────────────────────────────────
-                _buildSectionLabel('Your wardrobe', isDark),
+                _buildSectionLabel('sections.wardrobe', isDark),
                 const SizedBox(height: 16),
                 _buildWardrobeRecommendations(isDark, isMobile),
                 const SizedBox(height: 16),
@@ -326,7 +327,7 @@ class _HomeTabState extends State<_HomeTab> {
                 const SizedBox(height: 28),
 
                 // ── Give Back ─────────────────────────────────────────────
-                _buildSectionLabel('Give back', isDark),
+                _buildSectionLabel('sections.give_back', isDark),
                 const SizedBox(height: 16),
                 _buildGiveBackSection(isDark),
                 const SizedBox(height: 28),
@@ -347,11 +348,11 @@ class _HomeTabState extends State<_HomeTab> {
     final hour = now.hour;
     String greeting;
     if (hour < 12) {
-      greeting = 'good morning,';
+      greeting = 'greeting.morning'.tr();
     } else if (hour < 17) {
-      greeting = 'good afternoon,';
+      greeting = 'greeting.afternoon'.tr();
     } else {
-      greeting = 'good evening,';
+      greeting = 'greeting.evening'.tr();
     }
     
     final days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -395,7 +396,7 @@ class _HomeTabState extends State<_HomeTab> {
   // ── Section Label ─────────────────────────────────────────────────────────
   Widget _buildSectionLabel(String title, bool isDark) {
     return Text(
-      title,
+      title.tr(),
       style: GoogleFonts.rufina(
         fontSize: 20,
         fontWeight: FontWeight.bold,
@@ -745,12 +746,12 @@ class _HomeTabState extends State<_HomeTab> {
               ),
             ),
             const SizedBox(height: 24),
-            _buildMenuItem(Icons.person_rounded, 'Profile', () {
+            _buildMenuItem(Icons.person_rounded, 'menu.profile'.tr(), () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
             }, isDark),
-            _buildMenuItem(Icons.settings_rounded, 'Settings', () => Navigator.pop(context), isDark),
-            _buildMenuItem(Icons.info_outline_rounded, 'About Pyin Mal', () => Navigator.pop(context), isDark),
+            _buildMenuItem(Icons.settings_rounded, 'menu.settings'.tr(), () => Navigator.pop(context), isDark),
+            _buildMenuItem(Icons.info_outline_rounded, 'menu.about'.tr(), () => Navigator.pop(context), isDark),
             const SizedBox(height: 32),
           ],
         ),
@@ -789,7 +790,7 @@ class _HomeTabState extends State<_HomeTab> {
           children: [
             const SizedBox(height: 20),
             Text(
-              'Search',
+              'search.title'.tr(),
               style: GoogleFonts.rufina(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -805,7 +806,7 @@ class _HomeTabState extends State<_HomeTab> {
               ),
               child: TextField(
                 decoration: InputDecoration(
-                  hintText: 'Search products, styles...',
+                  hintText: 'search.hint'.tr(),
                   hintStyle: GoogleFonts.outfit(
                     color: isDark ? AppColors.paleText : AppColors.inkGrey,
                     fontSize: 14,
@@ -825,7 +826,7 @@ class _HomeTabState extends State<_HomeTab> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Search coming soon',
+              'search.coming_soon'.tr(),
               style: GoogleFonts.outfit(
                 fontSize: 13,
                 color: isDark ? AppColors.paleText : AppColors.inkGrey,
@@ -1194,10 +1195,10 @@ class _HomeTabState extends State<_HomeTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Language / ဘာသာစကား',
+                  Text('language.title'.tr(),
                       style: GoogleFonts.rufina(fontSize: 15, fontWeight: FontWeight.bold,
                           color: isDark ? Colors.white : AppColors.inkBlack)),
-                  Text('English · မြန်မာ · Multi-language support',
+                  Text('language.subtitle'.tr(),
                       style: GoogleFonts.outfit(fontSize: 13,
                           color: isDark ? AppColors.paleText : AppColors.inkGrey)),
                 ],
@@ -1362,11 +1363,11 @@ class _HomeTabState extends State<_HomeTab> {
   // ── Language Sheet ────────────────────────────────────────────────────────
   void _showLanguageSheet(BuildContext context, bool isDark) {
     final languages = [
-      (code: '🇬🇧', name: 'English', native: 'English'),
-      (code: '🇲🇲', name: 'Burmese', native: 'မြန်မာဘာသာ'),
-      (code: '🇨🇳', name: 'Chinese', native: '中文'),
-      (code: '🇯🇵', name: 'Japanese', native: '日本語'),
-      (code: '🇹🇭', name: 'Thai', native: 'ภาษาไทย'),
+      (code: '🇬🇧', name: 'English', native: 'English', locale: const Locale('en')),
+      (code: '🇲🇲', name: 'Burmese', native: 'မြန်မာဘာသာ', locale: const Locale('my')),
+      (code: '🇨🇳', name: 'Chinese', native: '中文', locale: null),
+      (code: '🇯🇵', name: 'Japanese', native: '日本語', locale: null),
+      (code: '🇹🇭', name: 'Thai', native: 'ภาษาไทย', locale: null),
     ];
     showModalBottomSheet(
       context: context,
@@ -1385,7 +1386,7 @@ class _HomeTabState extends State<_HomeTab> {
                 decoration: BoxDecoration(color: AppColors.inkGrey.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 20),
-            Text('Select Language', style: GoogleFonts.rufina(fontSize: 22, fontWeight: FontWeight.bold,
+            Text('language.select'.tr(), style: GoogleFonts.rufina(fontSize: 22, fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white : AppColors.inkBlack)),
             const SizedBox(height: 16),
             ...languages.map((l) => ListTile(
@@ -1395,13 +1396,20 @@ class _HomeTabState extends State<_HomeTab> {
                   color: isDark ? Colors.white : AppColors.inkBlack)),
               subtitle: Text(l.native, style: GoogleFonts.outfit(fontSize: 13,
                   color: isDark ? AppColors.paleText : AppColors.inkGrey)),
-              trailing: l.name == 'English'
+              trailing: context.locale == l.locale
                   ? Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(color: const Color(0xFFC9A96E), borderRadius: BorderRadius.circular(8)),
-                      child: Text('Active', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)))
-                  : Text('Coming soon', style: GoogleFonts.outfit(fontSize: 11,
+                      child: Text('language.active'.tr(), style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)))
+                  : Text('language.coming_soon'.tr(), style: GoogleFonts.outfit(fontSize: 11,
                       color: isDark ? AppColors.paleText : AppColors.inkGrey)),
-              onTap: () { Navigator.pop(context); if (l.name != 'English') _comingSoon('${l.name} language'); },
+              onTap: () {
+                Navigator.pop(context);
+                if (l.locale != null) {
+                  context.setLocale(l.locale!);
+                } else {
+                  _comingSoon('${l.name} language');
+                }
+              },
             )),
             const SizedBox(height: 16),
           ],

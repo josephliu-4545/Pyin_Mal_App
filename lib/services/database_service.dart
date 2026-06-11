@@ -52,6 +52,25 @@ class DatabaseService {
     );
   }
 
+  /// One-shot read of the raw user doc (profile-setup stats, measurements…).
+  Future<Map<String, dynamic>?> getUserData() async {
+    if (_uid == null) return null;
+    final snap = await _db.collection('users').doc(_uid).get();
+    return snap.data();
+  }
+
+  /// Persist the latest Bodygram scan result on the user doc.
+  Future<void> saveBodyMeasurements(Map<String, dynamic> data) async {
+    if (_uid == null) return;
+    await _db.collection('users').doc(_uid).set(
+      {
+        'bodyMeasurements': data,
+        'bodyMeasuredAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
   // ── Tracking ───────────────────────────────────────────────────────────────
 
   Future<void> trackProductView(String productId) async {

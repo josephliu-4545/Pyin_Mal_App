@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class ARHairFilterScreen extends StatefulWidget {
   const ARHairFilterScreen({super.key});
@@ -144,7 +145,7 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'AR Hair Filter',
+            'ar_hair.title'.tr(),
             style: GoogleFonts.outfit(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -164,7 +165,7 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Platform Not Supported',
+                  'ar_hair.not_supported_title'.tr(),
                   style: GoogleFonts.outfit(
                     color: Colors.white,
                     fontSize: 24,
@@ -174,7 +175,7 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'The AR Hair Filter feature is only available on mobile devices (Android and iOS).\n\nPlease use a mobile device or emulator to try this feature.',
+                  'ar_hair.not_supported_desc'.tr(),
                   style: GoogleFonts.outfit(
                     color: Colors.white70,
                     fontSize: 16,
@@ -198,7 +199,7 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'AR Hair Filter',
+          'ar_hair.title'.tr(),
           style: GoogleFonts.outfit(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -209,7 +210,7 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
             icon: const Icon(Icons.info_outline, color: Colors.white),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Position your face in the center to try hairstyles')),
+                SnackBar(content: Text('ar_hair.toast_position'.tr())),
               );
             },
           ),
@@ -261,8 +262,8 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
                       ),
                       child: Text(
                         _faces.isEmpty 
-                            ? 'Position your face in the center' 
-                            : 'Face detected! Hairstyle overlay applied',
+                            ? 'ar_hair.status_position'.tr() 
+                            : 'ar_hair.status_detected'.tr(),
                         style: GoogleFonts.outfit(
                           color: Colors.white,
                           fontSize: 14,

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../services/nanobanana_api_service.dart';
 
 class HairTryOnScreen extends StatefulWidget {
@@ -42,15 +43,15 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
   Future<void> _processTryOn() async {
     if (_userPhoto == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please upload a photo of the person!')),
+        SnackBar(content: Text('hair_try_on.err_person'.tr())),
       );
       return;
     }
 
     if (_hairPhoto == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload a reference hairstyle!'),
+        SnackBar(
+          content: Text('hair_try_on.err_hair'.tr()),
         ),
       );
       return;
@@ -78,10 +79,8 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
 
         if (resultUrl == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Failed to generate hairstyle image. Please check API settings.',
-              ),
+            SnackBar(
+              content: Text('hair_try_on.err_api'.tr()),
             ),
           );
         }
@@ -93,7 +92,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
         });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(content: Text('hair_try_on.error'.tr(args: [e.toString()]))));
       }
     }
   }
@@ -120,7 +119,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Virtual Hair Try-On',
+          'hair_try_on.title'.tr(),
           style: GoogleFonts.rufina(
             color: const Color(0xFFD4AF37), // Gold accent
             fontWeight: FontWeight.bold,
@@ -142,7 +141,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Your New Look',
+                'hair_try_on.new_look'.tr(),
                 style: GoogleFonts.rufina(
                   color: Colors.white,
                   fontSize: 28,
@@ -173,7 +172,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
                   ),
                 ),
                 child: Text(
-                  'Try Another Style',
+                  'hair_try_on.try_another'.tr(),
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -195,7 +194,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'AI Hair Studio',
+                'hair_try_on.studio'.tr(),
                 style: GoogleFonts.rufina(
                   color: Colors.white,
                   fontSize: 32,
@@ -205,7 +204,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Upload your photo and a reference hairstyle to see the magic.',
+                'hair_try_on.desc'.tr(),
                 style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
@@ -216,7 +215,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
                 children: [
                   Expanded(
                     child: _buildUploadBox(
-                      title: 'Your Photo',
+                      title: 'hair_try_on.photo'.tr(),
                       icon: Icons.face,
                       imageBytes: _userPhotoBytes,
                       onTap: () => _pickImage((f, b) {
@@ -229,7 +228,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildUploadBox(
-                      title: 'Reference Hairstyle',
+                      title: 'hair_try_on.reference'.tr(),
                       icon: Icons.content_cut,
                       imageBytes: _hairPhotoBytes,
                       onTap: () => _pickImage((f, b) {
@@ -266,7 +265,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
                         ),
                       )
                     : Text(
-                        'Generate Hairstyle',
+                        'hair_try_on.generate'.tr(),
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 
 class Shelter {
@@ -154,7 +155,7 @@ class _DonateScreenState extends State<DonateScreen>
                         onTap: () => Navigator.pop(context),
                       ),
                       const SizedBox(width: 12),
-                      Text('Donate Clothes',
+                      Text('donate.title'.tr(),
                           style: GoogleFonts.outfit(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -190,7 +191,7 @@ class _DonateScreenState extends State<DonateScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Shelters near you',
+                      Text('donate.shelters_near_you'.tr(),
                           style: GoogleFonts.outfit(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -209,7 +210,7 @@ class _DonateScreenState extends State<DonateScreen>
                             Icon(Icons.location_on_rounded,
                                 size: 13, color: accent),
                             const SizedBox(width: 3),
-                            Text('Yangon',
+                            Text('donate.yangon'.tr(),
                                 style: GoogleFonts.outfit(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -342,14 +343,14 @@ class _HeroImpactCardState extends State<_HeroImpactCard>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Your kindness counts',
+                    Text('donate.kindness_counts'.tr(),
                         style: GoogleFonts.outfit(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         )),
                     const SizedBox(height: 3),
-                    Text('Clothes you no longer wear can keep\nsomeone warm tonight.',
+                    Text('donate.kindness_desc'.tr(),
                         style: GoogleFonts.outfit(
                           fontSize: 12,
                           height: 1.35,
@@ -367,19 +368,19 @@ class _HeroImpactCardState extends State<_HeroImpactCard>
               _Stat(
                   progress: widget.progress,
                   target: 1240,
-                  label: 'Items donated',
+                  label: 'donate.items_donated'.tr(),
                   suffix: '+'),
               _divider(),
               _Stat(
                   progress: widget.progress,
                   target: 38,
-                  label: 'Families helped',
+                  label: 'donate.families_helped'.tr(),
                   suffix: ''),
               _divider(),
               _Stat(
                   progress: widget.progress,
                   target: 5,
-                  label: 'Shelters',
+                  label: 'donate.shelters_count'.tr(),
                   suffix: ''),
             ],
           ),
@@ -537,7 +538,7 @@ class _ShelterCardState extends State<_ShelterCard> {
                                       .withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
-                                child: Text('Urgent',
+                                child: Text('donate.urgent'.tr(),
                                     style: GoogleFonts.outfit(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
@@ -585,7 +586,7 @@ class _ShelterCardState extends State<_ShelterCard> {
                 ],
               ),
               const SizedBox(height: 14),
-              Text('Currently needs',
+              Text('donate.currently_needs'.tr(),
                   style: GoogleFonts.outfit(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -615,9 +616,9 @@ class _ShelterCardState extends State<_ShelterCard> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _confirm('Directions to'),
+                      onPressed: () => _confirm('${'donate.directions_to'.tr()} '),
                       icon: const Icon(Icons.directions_rounded, size: 15),
-                      label: Text('Directions',
+                      label: Text('donate.directions'.tr(),
                           style: GoogleFonts.outfit(
                               fontSize: 12, fontWeight: FontWeight.w600)),
                       style: OutlinedButton.styleFrom(
@@ -636,14 +637,14 @@ class _ShelterCardState extends State<_ShelterCard> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => _confirm(s.pickup
-                          ? 'Pickup requested from'
-                          : 'Drop-off saved for'),
+                          ? 'donate.pickup_from'.tr()
+                          : 'donate.drop_off_for'.tr()),
                       icon: Icon(
                           s.pickup
                               ? Icons.local_shipping_rounded
                               : Icons.volunteer_activism_rounded,
                           size: 15),
-                      label: Text(s.pickup ? 'Request pickup' : 'Donate',
+                      label: Text(s.pickup ? 'donate.request_pickup'.tr() : 'donate.donate_btn'.tr(),
                           style: GoogleFonts.outfit(
                               fontSize: 12, fontWeight: FontWeight.w600)),
                       style: ElevatedButton.styleFrom(

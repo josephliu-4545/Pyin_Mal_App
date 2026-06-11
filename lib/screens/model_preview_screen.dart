@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/cdn_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class ModelPreviewScreen extends StatefulWidget {
   const ModelPreviewScreen({super.key});
@@ -33,7 +34,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
           icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.inkBlack),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Virtual Studio', style: GoogleFonts.rufina(fontWeight: FontWeight.bold, color: accent)),
+        title: Text('model_preview.title'.tr(), style: GoogleFonts.rufina(fontWeight: FontWeight.bold, color: accent)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -55,7 +56,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'AI POWERED',
+                      'model_preview.ai_powered'.tr(),
                       style: GoogleFonts.outfit(
                         color: AppColors.charcoal,
                         fontSize: 10,
@@ -66,7 +67,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Virtual Style Studio',
+                    'model_preview.subtitle'.tr(),
                     style: GoogleFonts.rufina(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -76,7 +77,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Mix outfits and preview your look with AI styling guidance.',
+                    'model_preview.desc'.tr(),
                     textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
                       color: isDark ? AppColors.paleText : AppColors.inkGrey,
@@ -144,7 +145,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
               Icon(Icons.checkroom, color: accent, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Wardrobe',
+                'model_preview.wardrobe'.tr(),
                 style: GoogleFonts.rufina(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -155,7 +156,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Tops',
+            'model_preview.tops'.tr(),
             style: GoogleFonts.outfit(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -171,13 +172,13 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
             crossAxisSpacing: 12,
             childAspectRatio: 0.85,
             children: [
-              _buildItemCard('White Shirt', 'assets/images/outfits/top-1.png', 'top', isDark, accent),
-              _buildItemCard('Knit Tank', 'assets/images/outfits/top-2.png', 'top', isDark, accent),
+              _buildItemCard('model_preview.items.white_shirt'.tr(), 'assets/images/outfits/top-1.png', 'top', isDark, accent),
+              _buildItemCard('model_preview.items.knit_tank'.tr(), 'assets/images/outfits/top-2.png', 'top', isDark, accent),
             ],
           ),
           const SizedBox(height: 24),
           Text(
-            'Bottoms',
+            'model_preview.bottoms'.tr(),
             style: GoogleFonts.outfit(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -193,8 +194,8 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
             crossAxisSpacing: 12,
             childAspectRatio: 0.85,
             children: [
-              _buildItemCard('Wide Trousers', 'assets/images/outfits/bottom-1.png', 'bottom', isDark, accent),
-              _buildItemCard('Relaxed Denim', 'assets/images/outfits/bottom-2.png', 'bottom', isDark, accent),
+              _buildItemCard('model_preview.items.wide_trousers'.tr(), 'assets/images/outfits/bottom-1.png', 'bottom', isDark, accent),
+              _buildItemCard('model_preview.items.relaxed_denim'.tr(), 'assets/images/outfits/bottom-2.png', 'bottom', isDark, accent),
             ],
           ),
         ],
@@ -284,8 +285,8 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
             ),
             child: Row(
               children: [
-                Expanded(child: _buildToggleButton('Mannequin', _mode == 'Mannequin', () => setState(() => _mode = 'Mannequin'), isDark, accent)),
-                Expanded(child: _buildToggleButton('AI Real View', _mode == 'AI Real View', () => setState(() => _mode = 'AI Real View'), isDark, accent)),
+                Expanded(child: _buildToggleButton('model_preview.modes.mannequin'.tr(), _mode == 'Mannequin', () => setState(() => _mode = 'Mannequin'), isDark, accent)),
+                Expanded(child: _buildToggleButton('model_preview.modes.ai_real_view'.tr(), _mode == 'AI Real View', () => setState(() => _mode = 'AI Real View'), isDark, accent)),
               ],
             ),
           ),
@@ -295,9 +296,9 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _buildToggleButton('Female', _gender == 'Female', () => setState(() => _gender = 'Female'), isDark, accent),
+              _buildToggleButton('model_preview.genders.female'.tr(), _gender == 'Female', () => setState(() => _gender = 'Female'), isDark, accent),
               const SizedBox(width: 8),
-              _buildToggleButton('Male', _gender == 'Male', () => setState(() => _gender = 'Male'), isDark, accent),
+              _buildToggleButton('model_preview.genders.male'.tr(), _gender == 'Male', () => setState(() => _gender = 'Male'), isDark, accent),
             ],
           ),
           const SizedBox(height: 20),
@@ -356,7 +357,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                         child: CdnImage(
                           _selectedTop!,
                           fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => Center(child: Text('Top Preview', style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
+                          errorBuilder: (c, e, s) => Center(child: Text('model_preview.top_preview'.tr(), style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
                         ),
                       ),
                     ),
@@ -379,7 +380,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                         child: CdnImage(
                           _selectedBottom!,
                           fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => Center(child: Text('Bottom Preview', style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
+                          errorBuilder: (c, e, s) => Center(child: Text('model_preview.bottom_preview'.tr(), style: GoogleFonts.outfit(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
                         ),
                       ),
                     ),
@@ -405,7 +406,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: Text('Reset', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  child: Text('model_preview.reset'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -413,7 +414,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Result saved to collection!')),
+                      SnackBar(content: Text('model_preview.toast_saved'.tr())),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -422,7 +423,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: Text('Save Result', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  child: Text('model_preview.save_result'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -454,7 +455,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
               Icon(Icons.auto_awesome, color: AppColors.gold, size: 24),
               const SizedBox(width: 10),
               Text(
-                'AI Styling Insights',
+                'model_preview.ai_insights'.tr(),
                 style: GoogleFonts.rufina(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -466,18 +467,18 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
           const SizedBox(height: 24),
           
           // Style Metrics
-          _buildMetricRow(Icons.bolt, 'Style Match', '92%', isDark),
+          _buildMetricRow(Icons.bolt, 'model_preview.style_match'.tr(), '92%', isDark),
           const SizedBox(height: 12),
-          _buildMetricRow(Icons.event, 'Best Occasion', 'Casual Out', isDark),
+          _buildMetricRow(Icons.event, 'model_preview.best_occasion'.tr(), 'model_preview.casual_out'.tr(), isDark),
           const SizedBox(height: 12),
-          _buildMetricRow(Icons.palette, 'Color Balance', 'Neutral', isDark),
+          _buildMetricRow(Icons.palette, 'model_preview.color_balance'.tr(), 'model_preview.neutral'.tr(), isDark),
           
           const SizedBox(height: 32),
           const Divider(),
           const SizedBox(height: 24),
           
           Text(
-            'Upload for Real View',
+            'model_preview.upload_title'.tr(),
             style: GoogleFonts.outfit(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -505,7 +506,7 @@ class _ModelPreviewScreenState extends State<ModelPreviewScreen> {
                 children: [
                   Icon(Icons.upload_file, size: 20, color: accent),
                   const SizedBox(width: 8),
-                  Text('Upload Photo', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  Text('model_preview.upload_button'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -578,7 +579,7 @@ class DottedBorderPlaceholder extends StatelessWidget {
         children: [
           Icon(Icons.add_a_photo_outlined, color: Colors.grey.withOpacity(0.5), size: 32),
           const SizedBox(height: 8),
-          Text('Drop photo here', style: GoogleFonts.outfit(color: Colors.grey.withOpacity(0.5), fontSize: 12)),
+          Text('model_preview.drop_photo'.tr(), style: GoogleFonts.outfit(color: Colors.grey.withOpacity(0.5), fontSize: 12)),
         ],
       ),
     );

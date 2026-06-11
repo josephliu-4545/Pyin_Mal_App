@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/screens/category_products_screen.dart';
@@ -111,7 +112,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         child: TextField(
                           controller: _searchController,
                           decoration: InputDecoration(
-                            hintText: 'Search products...',
+                            hintText: 'shop.search_hint'.tr(),
                             hintStyle: GoogleFonts.outfit(
                               fontSize: 14,
                               color: isDark ? Colors.white60 : Colors.grey,
@@ -143,7 +144,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         icon: Icon(Icons.camera_alt_rounded, color: accent),
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Camera/Scan feature coming soon')),
+                            SnackBar(content: Text('shop.camera_coming_soon'.tr())),
                           );
                         },
                       ),
@@ -290,7 +291,7 @@ class _ShopScreenState extends State<ShopScreen> {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: Text(
-                                  label,
+                                  'shop.categories.$label'.tr(),
                                   style: GoogleFonts.outfit(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -322,7 +323,7 @@ class _ShopScreenState extends State<ShopScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Shops',
+                          'shop.shops_title'.tr(),
                           style: GoogleFonts.outfit(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -330,7 +331,7 @@ class _ShopScreenState extends State<ShopScreen> {
                           ),
                         ),
                         Text(
-                          'See all',
+                          'shop.see_all'.tr(),
                           style: GoogleFonts.outfit(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -417,7 +418,7 @@ class _ShopScreenState extends State<ShopScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'All Products',
+                  'shop.all_products'.tr(),
                   style: GoogleFonts.outfit(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -488,7 +489,7 @@ class _ShopScreenState extends State<ShopScreen> {
                             Icon(Icons.local_fire_department_rounded, color: Colors.red, size: 20),
                             const SizedBox(width: 8),
                             Text(
-                              'Flash Sale',
+                              'shop.flash_sale'.tr(),
                               style: GoogleFonts.outfit(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,

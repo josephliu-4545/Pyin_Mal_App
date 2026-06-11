@@ -7,6 +7,7 @@ import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/services/gemini_service.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class AiChatScreen extends StatefulWidget {
   const AiChatScreen({super.key});
@@ -22,7 +23,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
   final List<AiMessage> _messages = [
     AiMessage(
-      text: "Hi! I'm your Pyin Mal Stylist ✨\nI can help you find the perfect outfit or suggest a great haircut. What are you looking for today?",
+      text: 'ai_chat.greeting'.tr(),
       isUser: false,
     ),
   ];
@@ -91,7 +92,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'AI Stylist',
+          'ai_chat.title'.tr(),
           style: GoogleFonts.rufina(
             color: isDark ? Colors.white : AppColors.inkBlack,
             fontWeight: FontWeight.bold,
@@ -309,7 +310,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   color: isDark ? Colors.white : AppColors.inkBlack,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Ask for advice...',
+                  hintText: 'ai_chat.ask_advice'.tr(),
                   hintStyle: GoogleFonts.outfit(
                     color: isDark ? AppColors.paleText : AppColors.inkGrey,
                   ),

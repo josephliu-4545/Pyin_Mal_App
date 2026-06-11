@@ -4,6 +4,7 @@ import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/onboarding_screen.dart';
 import 'package:pyin_mal_app/screens/profile_setup_screen.dart';
 import 'package:pyin_mal_app/services/auth_service.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (user != null && mounted) {
           Navigator.pop(context); // Go back after success
         } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Login failed. Check your email and password.')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('login.err_login'.tr())));
         }
       } else {
         final profile = await _auth.registerWithEmail(
@@ -51,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // which then continues to the avatar onboarding.
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ProfileSetupScreen()));
         } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration failed. Password must be at least 6 characters.')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('login.err_register'.tr())));
         }
       }
     } finally {
@@ -165,18 +166,18 @@ class _LoginScreenState extends State<LoginScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              'STYLE STARTS HERE',
+              'login.style_starts_here'.tr(),
               style: GoogleFonts.outfit(color: AppColors.charcoal, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            'Welcome to Pyin Mal',
+            'login.welcome'.tr(),
             style: GoogleFonts.rufina(fontSize: 28, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack),
           ),
           const SizedBox(height: 8),
           Text(
-            'Your AI fashion and beauty companion.',
+            'login.subtitle'.tr(),
             style: GoogleFonts.outfit(color: isDark ? AppColors.paleText : AppColors.inkGrey, fontSize: 14),
           ),
         ],
@@ -224,10 +225,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('New Here?', style: GoogleFonts.rufina(fontSize: 32, fontWeight: FontWeight.bold, color: isDark ? AppColors.charcoal : Colors.white)),
+                          Text('login.new_here'.tr(), style: GoogleFonts.rufina(fontSize: 32, fontWeight: FontWeight.bold, color: isDark ? AppColors.charcoal : Colors.white)),
                           const SizedBox(height: 24),
                           Text(
-                            'Join our community to save looks, preview outfits, and discover your best style.',
+                            'login.new_here_desc'.tr(),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.outfit(color: isDark ? AppColors.charcoal.withOpacity(0.7) : Colors.white70, fontSize: 15),
                           ),
@@ -240,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
-                            child: Text('CREATE ACCOUNT', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                            child: Text('login.create_account'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1)),
                           )
                         ],
                       ),
@@ -259,10 +260,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('Welcome Back!', style: GoogleFonts.rufina(fontSize: 32, fontWeight: FontWeight.bold, color: isDark ? AppColors.charcoal : Colors.white)),
+                          Text('login.welcome_back'.tr(), style: GoogleFonts.rufina(fontSize: 32, fontWeight: FontWeight.bold, color: isDark ? AppColors.charcoal : Colors.white)),
                           const SizedBox(height: 24),
                           Text(
-                            'Continue your style journey with your personalized AI fashion assistant.',
+                            'login.welcome_back_desc'.tr(),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.outfit(color: isDark ? AppColors.charcoal.withOpacity(0.7) : Colors.white70, fontSize: 15),
                           ),
@@ -275,7 +276,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
-                            child: Text('SIGN IN', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                            child: Text('login.sign_in'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1)),
                           )
                         ],
                       ),
@@ -298,8 +299,8 @@ class _LoginScreenState extends State<LoginScreen> {
           color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
           child: Row(
             children: [
-              Expanded(child: _buildMobileTab('Sign In', _isLogin, () => setState(() => _isLogin = true), isDark, accent)),
-              Expanded(child: _buildMobileTab('Sign Up', !_isLogin, () => setState(() => _isLogin = false), isDark, accent)),
+              Expanded(child: _buildMobileTab('login.sign_in_tab'.tr(), _isLogin, () => setState(() => _isLogin = true), isDark, accent)),
+              Expanded(child: _buildMobileTab('login.sign_up_tab'.tr(), !_isLogin, () => setState(() => _isLogin = false), isDark, accent)),
             ],
           ),
         ),
@@ -342,7 +343,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Account Login', style: GoogleFonts.rufina(fontSize: 28, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack)),
+          Text('login.account_login'.tr(), style: GoogleFonts.rufina(fontSize: 28, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack)),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -353,15 +354,15 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          Text('or use your email account', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
+          Text('login.or_email'.tr(), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
           const SizedBox(height: 24),
-          _buildTextField('Email', Icons.email_outlined, false, isDark, accent, controller: _emailController),
+          _buildTextField('login.email'.tr(), Icons.email_outlined, false, isDark, accent, controller: _emailController),
           const SizedBox(height: 16),
-          _buildTextField('Password', Icons.lock_outline, true, isDark, accent, controller: _passwordController),
+          _buildTextField('login.password'.tr(), Icons.lock_outline, true, isDark, accent, controller: _passwordController),
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
-            child: Text('Forgot Password?', style: GoogleFonts.outfit(fontSize: 13, color: accent, fontWeight: FontWeight.w600)),
+            child: Text('login.forgot_password'.tr(), style: GoogleFonts.outfit(fontSize: 13, color: accent, fontWeight: FontWeight.w600)),
           ),
           const SizedBox(height: 32),
           SizedBox(
@@ -377,7 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: _isLoading 
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : Text('SIGN IN', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                : Text('login.sign_in'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             ),
           ),
           const SizedBox(height: 16),
@@ -391,7 +392,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
               },
               icon: Icon(Icons.auto_awesome_rounded, size: 20, color: accent),
-              label: Text('Start Styling', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: accent)),
+              label: Text('login.start_styling'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: accent)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: accent),
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -410,7 +411,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Create Style Account', style: GoogleFonts.rufina(fontSize: 28, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack)),
+          Text('login.create_account_title'.tr(), style: GoogleFonts.rufina(fontSize: 28, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack)),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -421,13 +422,13 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          Text('or use your email for registration', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
+          Text('login.or_email_reg'.tr(), style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
           const SizedBox(height: 24),
-          _buildTextField('Name', Icons.person_outline, false, isDark, accent, controller: _nameController),
+          _buildTextField('login.name'.tr(), Icons.person_outline, false, isDark, accent, controller: _nameController),
           const SizedBox(height: 16),
-          _buildTextField('Email', Icons.email_outlined, false, isDark, accent, controller: _emailController),
+          _buildTextField('login.email'.tr(), Icons.email_outlined, false, isDark, accent, controller: _emailController),
           const SizedBox(height: 16),
-          _buildTextField('Password', Icons.lock_outline, true, isDark, accent, controller: _passwordController),
+          _buildTextField('login.password'.tr(), Icons.lock_outline, true, isDark, accent, controller: _passwordController),
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
@@ -442,7 +443,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: _isLoading 
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : Text('SIGN UP', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                : Text('login.sign_up'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             ),
           ),
           const SizedBox(height: 16),
@@ -456,7 +457,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
               },
               icon: Icon(Icons.auto_awesome_rounded, size: 20, color: accent),
-              label: Text('Start Styling', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: accent)),
+              label: Text('login.start_styling'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: accent)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: accent),
                 padding: const EdgeInsets.symmetric(vertical: 14),

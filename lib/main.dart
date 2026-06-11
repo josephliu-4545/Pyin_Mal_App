@@ -6,14 +6,23 @@ import 'package:pyin_mal_app/app_shell.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:pyin_mal_app/firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const PyinMalApp());
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [Locale('en'), Locale('my')],
+      path: 'assets/translations',
+      fallbackLocale: const Locale('en'),
+      child: const PyinMalApp(),
+    ),
+  );
 }
 
 // ── Luxury Fashion Palette ────────────────────────────────────────────────────
@@ -49,6 +58,9 @@ class PyinMalApp extends StatelessWidget {
       valueListenable: themeNotifier,
       builder: (context, mode, _) {
         return MaterialApp(
+          localizationsDelegates: context.localizationDelegates,
+          supportedLocales: context.supportedLocales,
+          locale: context.locale,
           title: 'Pyin Mal',
           debugShowCheckedModeBanner: false,
           themeMode: mode,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/cdn_image.dart';
 
@@ -97,7 +98,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: Text('Saved Wardrobe', style: GoogleFonts.rufina(
+        title: Text('favorites.title'.tr(), style: GoogleFonts.rufina(
           fontWeight: FontWeight.bold,
           color: accent,
         )),
@@ -165,7 +166,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              'PERSONAL COLLECTION',
+              'favorites.header_subtitle'.tr(),
               style: GoogleFonts.outfit(
                 color: AppColors.charcoal,
                 fontSize: 10,
@@ -176,7 +177,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Saved Looks',
+            'favorites.header_title'.tr(),
             style: GoogleFonts.rufina(
               color: isDark ? Colors.white : AppColors.inkBlack,
               fontSize: isMobile ? 36 : 48,
@@ -186,7 +187,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Your favorite outfits, hairstyles, and style ideas in one place.',
+            'favorites.header_desc'.tr(),
             style: GoogleFonts.outfit(
               color: isDark ? AppColors.paleText : AppColors.inkGrey,
               fontSize: 15,
@@ -217,7 +218,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Collection Items',
+                'favorites.collection_items'.tr(),
                 style: GoogleFonts.rufina(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -225,7 +226,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
               ),
               Text(
-                '${_filteredFavorites.length} saved',
+                'favorites.saved_count'.tr(args: [_filteredFavorites.length.toString()]),
                 style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12),
               ),
             ],
@@ -239,7 +240,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   onChanged: _filter,
                   style: GoogleFonts.outfit(fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: 'Search collection...',
+                    hintText: 'favorites.search_hint'.tr(),
                     prefixIcon: Icon(Icons.search, color: accent, size: 20),
                     filled: true,
                     fillColor: isDark ? AppColors.charcoal : AppColors.creamAlt,
@@ -377,7 +378,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         ],
                       ),
                       Text(
-                        'Saved Recently',
+                        'favorites.saved_recently'.tr(),
                         style: GoogleFonts.outfit(fontSize: 9, color: Colors.grey),
                       ),
                     ],
@@ -406,7 +407,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'No saved looks yet',
+            'favorites.empty_title'.tr(),
             style: GoogleFonts.rufina(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -417,7 +418,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
-              'Browse outfits and hairstyles to build your personal style board.',
+              'favorites.empty_desc'.tr(),
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(color: Colors.grey, fontSize: 14),
             ),
@@ -433,7 +434,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
-            child: Text('Explore Trends', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            child: Text('favorites.explore'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
