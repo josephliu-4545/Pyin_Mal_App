@@ -458,7 +458,22 @@
       "kneeGirthR": "Knee",
       "calfGirthR": "Calf",
       "insideLegLengthR": "Inseam",
-      "outseamR": "Outseam"
+      "outseamR": "Outseam",
+      "bustHeight": "Bust height",
+      "hipHeight": "Hip height",
+      "insideLegHeight": "Inside leg height",
+      "kneeHeightR": "Knee height",
+      "outerAnkleHeightR": "Ankle height",
+      "outsideLegLengthR": "Outside leg length",
+      "shoulderToElbowR": "Shoulder to elbow",
+      "topHipHeight": "Top hip height",
+      "waistHeight": "Waist height",
+      "backNeckHeight": "Back neck height",
+      "backNeckPointToGroundContoured": "Back neck to ground",
+      "backNeckPointToWaist": "Back neck to waist",
+      "bellyWaistDepth": "Belly waist depth",
+      "bellyWaistHeight": "Belly waist height",
+      "bellyWaistWidth": "Belly waist width"
     },
     "err_front_photo": "Front photo: ",
     "err_right_photo": "Side photo: ",
@@ -467,6 +482,7 @@
     "err_leg_angle": "stand straight with your feet about shoulder-width apart.",
     "err_generic": "Scan failed ({}). Check your pose and photos, then try again.",
     "source_photo": "Photo scan",
-    "source_stats": "Quick estimate (no photos)"
+    "source_stats": "Quick estimate (no photos)",
+    "err_no_credits": "You're out of Bodygram scan credits. Top up your balance in the Bodygram dashboard, then try again."
   }
 }

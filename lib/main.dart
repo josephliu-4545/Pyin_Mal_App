@@ -1,18 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/theme_notifier.dart';
 import 'package:pyin_mal_app/app_shell.dart';
+import 'package:pyin_mal_app/overlay/overlay_entry.dart';
+import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:pyin_mal_app/firebase_options.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:easy_localization/easy_localization.dart';
+
+/// Entry point for the overlay Flutter engine (separate from the main app).
+/// flutter_overlay_window calls this by name — must be in the root library.
+@pragma('vm:entry-point')
+void overlayMain() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const OverlayApp());
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Set up overlay listener before the app renders
+  FloatingScannerService.initialize();
+
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('en'), Locale('my')],

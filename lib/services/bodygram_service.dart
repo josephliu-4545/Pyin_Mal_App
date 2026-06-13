@@ -148,6 +148,9 @@ class BodygramService {
     if (res.statusCode == 401 || res.statusCode == 403) {
       throw BodygramException('Bodygram rejected the API key (HTTP ${res.statusCode}).');
     }
+    if (res.statusCode == 402) {
+      throw BodygramException('bodygram.err_no_credits'.tr());
+    }
     if (res.statusCode < 200 || res.statusCode >= 300) {
       debugPrint('Bodygram HTTP ${res.statusCode}: ${res.body}');
       throw BodygramException('Bodygram error (HTTP ${res.statusCode}).');

@@ -16,6 +16,8 @@ import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/profile_screen.dart';
 import 'package:pyin_mal_app/screens/scan_screen.dart';
 import 'package:pyin_mal_app/screens/donate_screen.dart';
+import 'package:pyin_mal_app/screens/product_detail_screen.dart';
+import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
 class MainShell extends StatefulWidget {
@@ -26,6 +28,37 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    pendingOverlayProduct.addListener(_onOverlayProduct);
+  }
+
+  @override
+  void dispose() {
+    pendingOverlayProduct.removeListener(_onOverlayProduct);
+    super.dispose();
+  }
+
+  void _onOverlayProduct() {
+    final p = pendingOverlayProduct.value;
+    if (p == null) return;
+    pendingOverlayProduct.value = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(
+        productId:   p['id']          as String? ?? '',
+        name:        p['name']        as String? ?? '',
+        price:       p['price']       as String? ?? '',
+        image:       p['image']       as String? ?? '',
+        brand:       p['brand']       as String? ?? '',
+        category:    p['category']    as String? ?? '',
+        description: p['description'] as String?,
+        shopName:    p['shopName']    as String?,
+      )));
+    });
+  }
 
   void _switchTab(int index) {
     setState(() => _currentIndex = index);

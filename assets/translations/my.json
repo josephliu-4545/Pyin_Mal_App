@@ -458,7 +458,22 @@
       "kneeGirthR": "ဒူး",
       "calfGirthR": "ခြေသလုံး",
       "insideLegLengthR": "ပေါင်တွင်း အရှည်",
-      "outseamR": "ဘောင်းဘီအပြင် အရှည်"
+      "outseamR": "ဘောင်းဘီအပြင် အရှည်",
+      "bustHeight": "ရင်အုံ အမြင့်",
+      "hipHeight": "တင်ပါး အမြင့်",
+      "insideLegHeight": "ပေါင်တွင်း အမြင့်",
+      "kneeHeightR": "ဒူး အမြင့်",
+      "outerAnkleHeightR": "ခြေချင်းဝတ် အမြင့်",
+      "outsideLegLengthR": "ခြေထောက်အပြင် အရှည်",
+      "shoulderToElbowR": "ပခုံးမှ တံတောင်",
+      "topHipHeight": "တင်ပါးအပေါ် အမြင့်",
+      "waistHeight": "ခါး အမြင့်",
+      "backNeckHeight": "နောက်လည်ပင်း အမြင့်",
+      "backNeckPointToGroundContoured": "နောက်လည်ပင်းမှ မြေ",
+      "backNeckPointToWaist": "နောက်လည်ပင်းမှ ခါး",
+      "bellyWaistDepth": "ဗိုက်ခါး အနက်",
+      "bellyWaistHeight": "ဗိုက်ခါး အမြင့်",
+      "bellyWaistWidth": "ဗိုက်ခါး အကျယ်"
     },
     "err_front_photo": "ရှေ့မှ ဓာတ်ပုံ - ",
     "err_right_photo": "ဘေးတိုက် ဓာတ်ပုံ - ",
@@ -467,6 +482,7 @@
     "err_leg_angle": "ခြေထောက်ကို ပခုံးအကျယ်ခန့် ဖြဲပြီး မတ်မတ်ရပ်ပါ။",
     "err_generic": "စကင်န် မအောင်မြင်ပါ ({})။ အနေအထားနှင့် ဓာတ်ပုံများကို စစ်ပြီး ထပ်စမ်းကြည့်ပါ။",
     "source_photo": "ဓာတ်ပုံ စကင်န်",
-    "source_stats": "ဓာတ်ပုံမပါ ခန့်မှန်းချက်"
+    "source_stats": "ဓာတ်ပုံမပါ ခန့်မှန်းချက်",
+    "err_no_credits": "Bodygram စကင်န် ခရက်ဒစ် ကုန်သွားပါပြီ။ Bodygram dashboard တွင် ဖြည့်ပြီး ထပ်စမ်းကြည့်ပါ။"
   }
 }

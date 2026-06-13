@@ -9,6 +9,8 @@ import 'package:pyin_mal_app/utils/ranking_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/body_scan_screen.dart';
+import 'package:pyin_mal_app/screens/overlay_permission_screen.dart';
+import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -336,6 +338,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.creamAlt, indent: 56),
                   _buildActionTile(
+                    icon: Icons.document_scanner_outlined,
+                    label: 'Floating Scanner',
+                    isDark: isDark,
+                    accent: accent,
+                    trailing: ValueListenableBuilder<Map<String, dynamic>?>(
+                      valueListenable: pendingOverlayProduct,
+                      builder: (_, __, ___) => Switch(
+                        value: FloatingScannerService.isEnabled,
+                        activeColor: accent,
+                        onChanged: (on) async {
+                          if (on) {
+                            await Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => const OverlayPermissionScreen()));
+                          } else {
+                            await FloatingScannerService.disable();
+                          }
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                    onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const OverlayPermissionScreen())),
+                  ),
+                  Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.creamAlt, indent: 56),
+                  _buildActionTile(
                     icon: Icons.receipt_long_outlined,
                     label: 'profile.order_history'.tr(),
                     isDark: isDark,
@@ -378,6 +405,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required VoidCallback onTap,
     bool isFirst = false,
     bool isLast = false,
+    Widget? trailing,
   }) {
     return InkWell(
       onTap: onTap,
@@ -402,7 +430,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Expanded(
               child: Text(label, style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w500, color: isDark ? Colors.white : AppColors.inkBlack)),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, size: 13, color: isDark ? AppColors.paleText : AppColors.inkGrey),
+            trailing ?? Icon(Icons.arrow_forward_ios_rounded, size: 13, color: isDark ? AppColors.paleText : AppColors.inkGrey),
           ],
         ),
       ),

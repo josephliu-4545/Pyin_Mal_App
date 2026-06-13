@@ -1,13 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:http/http.dart' as http;
-import 'package:pyin_mal_app/core/constants/api_constants.dart';
-import 'package:pyin_mal_app/data/product_repository.dart';
+import 'package:pyin_mal_app/services/ai_scan_service.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
@@ -198,97 +195,8 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     }
   }
 
-  // Returns up to 4 ranked similar products using Groq LLaMA vision.
-  // Groq API is called directly — free tier, global coverage.
-  // (api.groq.com was temporarily unreachable on a prior test; it is accessible
-  //  from Myanmar. If DNS fails again, check mobile data vs Wi-Fi.)
-  Future<List<Product>> _identifyProducts(Uint8List imageBytes) async {
-    // Build rich catalog context: ID + visual description + tags
-    final productsContext = ProductRepository.allProducts.map((p) {
-      final desc   = p.description ?? p.name;
-      final tagStr = p.tags.isNotEmpty ? p.tags.join(', ') : p.category;
-      return '- ID: "${p.id}" | ${p.category} | ${p.brand} | Visual: $desc | Tags: $tagStr';
-    }).join('\n');
-
-    const groqModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
-
-    // Burmese-aware prompt — understands Myanmar fashion context
-    const promptHeader =
-        'You are a fashion AI assistant for Pyin Mal, a Myanmar clothing app.\n'
-        'Analyze the clothing item visible in this image. The photo may be taken in Myanmar.\n'
-        'You understand both English and Burmese (မြန်မာဘာသာ) clothing terms.\n\n'
-        'Step 1 — Describe what you see:\n'
-        '  • Clothing type (hoodie, t-shirt, set, dress, jacket, etc.)\n'
-        '  • Color(s) — be specific (black, oatmeal/cream, navy, etc.)\n'
-        '  • Style (graphic print, plain/minimal, sporty, feminine, streetwear, etc.)\n'
-        '  • Key visual details (zipper, skull graphic, logo, embroidery, wide-leg, wrap, etc.)\n'
-        '  • Gender presentation (male/menswear, female/womenswear, unisex)\n\n'
-        'Step 2 — Match against the catalog below using the visual description and tags.\n'
-        'Focus on: clothing TYPE first → COLOR second → STYLE/DETAILS third.\n'
-        'A match is valid even if not identical — similar style counts.\n\n'
-        'Available products:\n';
-
-    const promptFooter =
-        '\n\nStep 3 — Return ONLY valid JSON (no markdown, no extra text):\n'
-        '{"matched_product_ids": ["id1", "id2", "id3"], "item_type": "brief description of what you see"}\n\n'
-        'Rules:\n'
-        '- Include 1 to 4 IDs ranked best match first.\n'
-        '- Only include a product if it genuinely resembles the scanned item.\n'
-        '- Return matched_product_ids as empty array [] if nothing is similar.\n'
-        '- Do NOT invent IDs — only use IDs from the list above.';
-
-    final body = jsonEncode({
-      'model': groqModel,
-      'response_format': {'type': 'json_object'},
-      'messages': [
-        {
-          'role': 'user',
-          'content': [
-            {
-              'type': 'image_url',
-              'image_url': {
-                'url': 'data:image/jpeg;base64,${base64Encode(imageBytes)}',
-              },
-            },
-            {
-              'type': 'text',
-              'text': '$promptHeader$productsContext$promptFooter',
-            },
-          ],
-        },
-      ],
-    });
-
-    final response = await http.post(
-      Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
-      headers: {
-        'Authorization': 'Bearer ${ApiConstants.groqApiKey}',
-        'Content-Type': 'application/json',
-      },
-      body: body,
-    );
-
-    if (response.statusCode != 200) {
-      debugPrint('ScanScreen: Groq ${response.statusCode} → ${response.body}');
-      throw Exception('Groq API returned ${response.statusCode}');
-    }
-
-    final data    = jsonDecode(response.body) as Map<String, dynamic>;
-    final content = (data['choices'] as List).first['message']['content'] as String;
-
-    final cleaned = content
-        .replaceAll(RegExp(r'```json\s*'), '')
-        .replaceAll(RegExp(r'```\s*'), '')
-        .trim();
-
-    final json = jsonDecode(cleaned) as Map<String, dynamic>;
-    final ids  = (json['matched_product_ids'] as List?)?.cast<String>() ?? [];
-
-    return ids
-        .map((id) => ProductRepository.getProductById(id))
-        .whereType<Product>()
-        .toList();
-  }
+  Future<List<Product>> _identifyProducts(Uint8List imageBytes) =>
+      AiScanService.identifyProducts(imageBytes);
 
   void _showResultsSheet(Uint8List scannedBytes, List<Product> products) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
