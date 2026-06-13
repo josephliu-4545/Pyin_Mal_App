@@ -12,9 +12,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('en'), Locale('my')],
@@ -28,25 +26,26 @@ Future<void> main() async {
 // ── Luxury Fashion Palette ────────────────────────────────────────────────────
 class AppColors {
   // Accent
-  static const burgundy  = Color(0xFF8B1A2F);   // deep burgundy — primary action
+  static const burgundy = Color(0xFF8B1A2F); // deep burgundy — primary action
   static const burgundyLight = Color(0xFFB0293F); // lighter burgundy for hover
-  static const gold      = Color(0xFFC9A96E);   // warm gold — secondary accent
-  static const goldLight = Color(0xFFE2C99A);   // pale gold
+  static const gold = Color(0xFFC9A96E); // warm gold — secondary accent
+  static const goldLight = Color(0xFFE2C99A); // pale gold
 
   // Light theme surfaces
-  static const cream     = Color(0xFFF5EFE6);   // warm cream — light scaffold
-  static const creamCard = Color(0xFFFFFFFF);   // pure white cards on cream
-  static const creamAlt  = Color(0xFFEDE7DC);   // slightly deeper cream for sections
+  static const cream = Color(0xFFF5EFE6); // warm cream — light scaffold
+  static const creamCard = Color(0xFFFFFFFF); // pure white cards on cream
+  static const creamAlt =
+      Color(0xFFEDE7DC); // slightly deeper cream for sections
 
   // Dark theme surfaces
-  static const charcoal  = Color(0xFF1C1A1A);   // near-black warm dark scaffold
-  static const darkWarm  = Color(0xFF2A2320);   // warm dark card surface
-  static const darkBorder= Color(0xFF3D3330);   // warm dark border
+  static const charcoal = Color(0xFF1C1A1A); // near-black warm dark scaffold
+  static const darkWarm = Color(0xFF2A2320); // warm dark card surface
+  static const darkBorder = Color(0xFF3D3330); // warm dark border
 
   // Text
-  static const inkBlack  = Color(0xFF1A1210);   // near-black text on light
-  static const inkGrey   = Color(0xFF6B5F5A);   // muted text on light
-  static const paleText  = Color(0xFFB8A99F);   // muted text on dark
+  static const inkBlack = Color(0xFF1A1210); // near-black text on light
+  static const inkGrey = Color(0xFF6B5F5A); // muted text on light
+  static const paleText = Color(0xFFB8A99F); // muted text on dark
 }
 
 class PyinMalApp extends StatelessWidget {
@@ -79,12 +78,16 @@ class PyinMalApp extends StatelessWidget {
               onSurface: AppColors.inkBlack,
             ),
             textTheme: TextTheme(
-              displayLarge:  GoogleFonts.rufina(fontWeight: FontWeight.bold, color: AppColors.inkBlack),
-              headlineLarge: GoogleFonts.rufina(fontWeight: FontWeight.bold, color: AppColors.inkBlack),
-              headlineMedium:GoogleFonts.rufina(fontWeight: FontWeight.bold, color: AppColors.inkBlack),
-              bodyLarge:     GoogleFonts.outfit(color: AppColors.inkGrey),
-              bodyMedium:    GoogleFonts.outfit(color: AppColors.inkGrey),
-              labelLarge:    GoogleFonts.outfit(fontWeight: FontWeight.w600, color: AppColors.inkBlack),
+              displayLarge: GoogleFonts.rufina(
+                  fontWeight: FontWeight.bold, color: AppColors.inkBlack),
+              headlineLarge: GoogleFonts.rufina(
+                  fontWeight: FontWeight.bold, color: AppColors.inkBlack),
+              headlineMedium: GoogleFonts.rufina(
+                  fontWeight: FontWeight.bold, color: AppColors.inkBlack),
+              bodyLarge: GoogleFonts.outfit(color: AppColors.inkGrey),
+              bodyMedium: GoogleFonts.outfit(color: AppColors.inkGrey),
+              labelLarge: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w600, color: AppColors.inkBlack),
             ),
             appBarTheme: AppBarTheme(
               backgroundColor: AppColors.cream,
@@ -92,7 +95,9 @@ class PyinMalApp extends StatelessWidget {
               scrolledUnderElevation: 0,
               foregroundColor: AppColors.inkBlack,
               titleTextStyle: GoogleFonts.rufina(
-                fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.inkBlack,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.inkBlack,
               ),
             ),
             chipTheme: ChipThemeData(
@@ -106,8 +111,10 @@ class PyinMalApp extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.burgundy,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 textStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
               ),
             ),
@@ -115,7 +122,8 @@ class PyinMalApp extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.burgundy,
                 side: const BorderSide(color: AppColors.burgundy),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
               ),
             ),
@@ -142,12 +150,16 @@ class PyinMalApp extends StatelessWidget {
               onSurface: Colors.white,
             ),
             textTheme: TextTheme(
-              displayLarge:  GoogleFonts.rufina(fontWeight: FontWeight.bold, color: Colors.white),
-              headlineLarge: GoogleFonts.rufina(fontWeight: FontWeight.bold, color: Colors.white),
-              headlineMedium:GoogleFonts.rufina(fontWeight: FontWeight.bold, color: Colors.white),
-              bodyLarge:     GoogleFonts.outfit(color: AppColors.paleText),
-              bodyMedium:    GoogleFonts.outfit(color: AppColors.paleText),
-              labelLarge:    GoogleFonts.outfit(fontWeight: FontWeight.w600, color: Colors.white),
+              displayLarge: GoogleFonts.rufina(
+                  fontWeight: FontWeight.bold, color: Colors.white),
+              headlineLarge: GoogleFonts.rufina(
+                  fontWeight: FontWeight.bold, color: Colors.white),
+              headlineMedium: GoogleFonts.rufina(
+                  fontWeight: FontWeight.bold, color: Colors.white),
+              bodyLarge: GoogleFonts.outfit(color: AppColors.paleText),
+              bodyMedium: GoogleFonts.outfit(color: AppColors.paleText),
+              labelLarge: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w600, color: Colors.white),
             ),
             appBarTheme: AppBarTheme(
               backgroundColor: AppColors.charcoal,
@@ -155,7 +167,9 @@ class PyinMalApp extends StatelessWidget {
               scrolledUnderElevation: 0,
               foregroundColor: Colors.white,
               titleTextStyle: GoogleFonts.rufina(
-                fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
             chipTheme: ChipThemeData(
@@ -169,8 +183,10 @@ class PyinMalApp extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.gold,
                 foregroundColor: AppColors.charcoal,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 textStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
               ),
             ),
@@ -178,7 +194,8 @@ class PyinMalApp extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.gold,
                 side: const BorderSide(color: AppColors.gold),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
               ),
             ),
