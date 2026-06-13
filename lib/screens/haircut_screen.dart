@@ -16,6 +16,66 @@ class HaircutScreen extends StatefulWidget {
 class _HaircutScreenState extends State<HaircutScreen> {
   String _selectedFaceShape = 'Oval Face';
 
+  // ── Hairstyle try-on gallery ──────────────────────────────────────────────
+  String _hairGender = 'Women'; // 'Women' | 'Men'
+  String _hairCategory = 'Hot';
+  String? _selectedHairstyle;
+  final Set<String> _favHairstyles = {};
+
+  // Category tabs per gender
+  static const _womenCategories = [
+    'Hot', 'Bangs', 'Curls', 'Straight', 'Short', 'Wavy', 'Updo'
+  ];
+  static const _menCategories = [
+    'Hot', 'Fade', 'Crop', 'Quiff', 'Curly', 'Long', 'Buzz'
+  ];
+
+  List<String> get _hairCategories =>
+      _hairGender == 'Women' ? _womenCategories : _menCategories;
+
+  // label, gender, category, gradient seed colors
+  static const _hairstyles = <(String, String, String, Color, Color)>[
+    // ── Women ──────────────────────────────────────────────────────────────
+    ('Feather',        'Women', 'Hot',      Color(0xFFB5838D), Color(0xFF6D4C5A)),
+    ('Clarity',        'Women', 'Hot',      Color(0xFFC9A96E), Color(0xFF8A6A3A)),
+    ('Half-Up',        'Women', 'Hot',      Color(0xFFA68A64), Color(0xFF5E4B33)),
+    ('Wispy Side',     'Women', 'Bangs',    Color(0xFF8E9AAF), Color(0xFF4A5468)),
+    ('Thick Side Part','Women', 'Bangs',    Color(0xFF6D6875), Color(0xFF3A3543)),
+    ('Curtain Bangs',  'Women', 'Bangs',    Color(0xFFB08968), Color(0xFF6F543C)),
+    ('Soft Waves',     'Women', 'Curls',    Color(0xFFCB997E), Color(0xFF8A5E45)),
+    ('Spiral Curls',   'Women', 'Curls',    Color(0xFFA5668B), Color(0xFF5E3354)),
+    ('Sleek',          'Women', 'Straight', Color(0xFF6B705C), Color(0xFF3B3E32)),
+    ('Long Straight',  'Women', 'Straight', Color(0xFF7F7065), Color(0xFF463C35)),
+    ('Pixie',          'Women', 'Short',    Color(0xFF936639), Color(0xFF5A3E22)),
+    ('Bob',            'Women', 'Short',    Color(0xFFB98B73), Color(0xFF6E4F3E)),
+    ('Beach Wave',     'Women', 'Wavy',     Color(0xFFDDA15E), Color(0xFF9A6B36)),
+    ('Loose Wave',     'Women', 'Wavy',     Color(0xFFBC9B6A), Color(0xFF7A6240)),
+    ('Top Knot',       'Women', 'Updo',     Color(0xFF8C7A6B), Color(0xFF534639)),
+    ('Braided Bun',    'Women', 'Updo',     Color(0xFFA47551), Color(0xFF634530)),
+    // ── Men ────────────────────────────────────────────────────────────────
+    ('Textured Crop',  'Men',   'Hot',      Color(0xFF4A6670), Color(0xFF2A3B42)),
+    ('Side Part',      'Men',   'Hot',      Color(0xFF5C6B73), Color(0xFF353E44)),
+    ('Slick Back',     'Men',   'Hot',      Color(0xFF6B5D4F), Color(0xFF3E352C)),
+    ('Low Fade',       'Men',   'Fade',     Color(0xFF52616B), Color(0xFF2F383E)),
+    ('High Fade',      'Men',   'Fade',     Color(0xFF5E5548), Color(0xFF35302A)),
+    ('Skin Fade',      'Men',   'Fade',     Color(0xFF646E78), Color(0xFF383F45)),
+    ('French Crop',    'Men',   'Crop',     Color(0xFF6E5C4B), Color(0xFF3F342A)),
+    ('Caesar Cut',     'Men',   'Crop',     Color(0xFF7A6A55), Color(0xFF463C30)),
+    ('Classic Quiff',  'Men',   'Quiff',    Color(0xFF566573), Color(0xFF313943)),
+    ('Modern Quiff',   'Men',   'Quiff',    Color(0xFF625B4E), Color(0xFF38332C)),
+    ('Curly Top',      'Men',   'Curly',    Color(0xFF6B5848), Color(0xFF3D3229)),
+    ('Afro',           'Men',   'Curly',    Color(0xFF4F4639), Color(0xFF2E2820)),
+    ('Man Bun',        'Men',   'Long',     Color(0xFF5A5043), Color(0xFF332E26)),
+    ('Shoulder Length','Men',   'Long',     Color(0xFF6E5F4E), Color(0xFF3F362C)),
+    ('Buzz Cut',       'Men',   'Buzz',     Color(0xFF5C5C5C), Color(0xFF343434)),
+    ('Crew Cut',       'Men',   'Buzz',     Color(0xFF676052), Color(0xFF3B362E)),
+  ];
+
+  List<(String, String, String, Color, Color)> get _visibleHairstyles =>
+      _hairstyles
+          .where((h) => h.$2 == _hairGender && h.$3 == _hairCategory)
+          .toList();
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -44,6 +104,9 @@ class _HaircutScreenState extends State<HaircutScreen> {
 
             // 2. Face Shape Selector
             _buildFaceShapeSelector(isDark, accent),
+
+            // 2b. Hairstyle Try-On Gallery (category tabs + selectable cards)
+            _buildHairstyleGallery(isDark, accent),
 
             // 3. Recommended Hairstyles
             _buildHairstyleSection(context, isMobile, isDark, accent),
@@ -245,6 +308,301 @@ class _HaircutScreenState extends State<HaircutScreen> {
             },
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _genderTab(
+      String label, IconData icon, bool isDark, Color accent, Color ink) {
+    final sel = _hairGender == label;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (_hairGender == label) return;
+          setState(() {
+            _hairGender = label;
+            _hairCategory = _hairCategories.first;
+            _selectedHairstyle = null;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: sel ? accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 18,
+                  color: sel
+                      ? (isDark ? AppColors.charcoal : Colors.white)
+                      : ink),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: sel
+                          ? (isDark ? AppColors.charcoal : Colors.white)
+                          : ink)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Hairstyle Try-On Gallery ──────────────────────────────────────────────
+  Widget _buildHairstyleGallery(bool isDark, Color accent) {
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Heading
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Try a hairstyle',
+                  style: GoogleFonts.rufina(
+                      fontSize: 20, fontWeight: FontWeight.bold, color: ink)),
+              if (_selectedHairstyle != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(_selectedHairstyle!,
+                      style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: accent)),
+                ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
+          child: Text('Pick a category, then tap a look to preview it.',
+              style: GoogleFonts.outfit(fontSize: 13, color: muted)),
+        ),
+
+        // ── Women / Men toggle ───────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                _genderTab('Women', Icons.female_rounded, isDark, accent, ink),
+                _genderTab('Men', Icons.male_rounded, isDark, accent, ink),
+              ],
+            ),
+          ),
+        ),
+
+        // Category tabs
+        SizedBox(
+          height: 38,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            physics: const BouncingScrollPhysics(),
+            itemCount: _hairCategories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) {
+              final cat = _hairCategories[i];
+              final sel = _hairCategory == cat;
+              return GestureDetector(
+                onTap: () => setState(() => _hairCategory = cat),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: sel ? accent : Colors.transparent,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                        color: sel
+                            ? accent
+                            : (isDark
+                                ? AppColors.darkBorder
+                                : AppColors.inkGrey.withOpacity(0.3))),
+                  ),
+                  child: Center(
+                    child: Text(cat,
+                        style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: sel
+                                ? (isDark ? AppColors.charcoal : Colors.white)
+                                : ink)),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Hairstyle cards
+        SizedBox(
+          height: 180,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            physics: const BouncingScrollPhysics(),
+            itemCount: _visibleHairstyles.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) {
+              final h = _visibleHairstyles[i];
+              final label = h.$1;
+              final sel = _selectedHairstyle == label;
+              final fav = _favHairstyles.contains(label);
+              return GestureDetector(
+                onTap: () => setState(() => _selectedHairstyle = label),
+                child: Column(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 120,
+                      height: 148,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [h.$4, h.$5],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: sel ? accent : Colors.transparent,
+                            width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          // Stylised "portrait" placeholder
+                          Center(
+                            child: Icon(
+                                _hairGender == 'Women'
+                                    ? Icons.face_3_rounded
+                                    : Icons.face_6_rounded,
+                                size: 64,
+                                color: Colors.white.withOpacity(0.55)),
+                          ),
+                          // Favourite heart badge
+                          Positioned(
+                            top: 6,
+                            left: 6,
+                            child: GestureDetector(
+                              onTap: () => setState(() {
+                                fav
+                                    ? _favHairstyles.remove(label)
+                                    : _favHairstyles.add(label);
+                              }),
+                              child: Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.9),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  fav
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  size: 14,
+                                  color: fav
+                                      ? const Color(0xFFE53935)
+                                      : Colors.black54,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Selected check
+                          if (sel)
+                            Positioned(
+                              bottom: 6,
+                              right: 6,
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: accent,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(Icons.check_rounded,
+                                    size: 15,
+                                    color: isDark
+                                        ? AppColors.charcoal
+                                        : Colors.white),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(label,
+                        style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                            color: sel ? accent : ink)),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+
+        // Apply button (only when a look is selected)
+        if (_selectedHairstyle != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      content: Text('Previewing "$_selectedHairstyle"'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
+                label: Text('Preview on me',
+                    style: GoogleFonts.outfit(
+                        fontSize: 14, fontWeight: FontWeight.w700)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
