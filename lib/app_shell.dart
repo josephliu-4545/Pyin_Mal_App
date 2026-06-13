@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -161,6 +162,58 @@ class _HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<_HomeTab> {
+  // ── Top tabs ──────────────────────────────────────────────────────────────
+  int _homeTab = 0; // 0 = For You, 1 = My Closet
+
+  // ── Advertisement carousel ────────────────────────────────────────────────
+  final PageController _adController = PageController();
+  Timer? _adTimer;
+  int _adPage = 0;
+
+  static const _ads = <(String, String, List<Color>, IconData)>[
+    ('New season drop', 'Up to 40% off select styles',
+        [Color(0xFF6B2737), Color(0xFFB0293F)], Icons.local_offer_rounded),
+    ('AI styling, free', 'Get outfit ideas tailored to you',
+        [Color(0xFF1F3A5F), Color(0xFF3D6CA8)], Icons.auto_awesome_rounded),
+    ('Donate & earn', 'Give clothes, earn reward points',
+        [Color(0xFF2E6B4F), Color(0xFF4FA37A)], Icons.volunteer_activism_rounded),
+  ];
+
+  // Bordered feature shortcuts (third row)
+  late final List<(String, IconData, VoidCallback)> _quickFeatures = [
+    ('Try-On', Icons.checkroom_rounded,
+        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TryOnScreen()))),
+    ('Haircut', Icons.content_cut_rounded,
+        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()))),
+    ('Shop', Icons.storefront_rounded, () => widget.onTabRequested?.call(1)),
+    ('Saved', Icons.favorite_rounded, () => widget.onTabRequested?.call(3)),
+    ('Scan', Icons.document_scanner_rounded,
+        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanScreen()))),
+    ('AI Chat', Icons.smart_toy_rounded,
+        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiChatScreen()))),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _adTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!_adController.hasClients) return;
+      _adPage = (_adPage + 1) % _ads.length;
+      _adController.animateToPage(
+        _adPage,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _adTimer?.cancel();
+    _adController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -298,6 +351,18 @@ class _HomeTabState extends State<_HomeTab> {
                 _buildGreetingSection(isDark),
                 const SizedBox(height: 20),
 
+                // ── Row 1: Tabs ───────────────────────────────────────────
+                _buildHomeTabs(isDark),
+                const SizedBox(height: 18),
+
+                // ── Row 2: Sliding advertisement ──────────────────────────
+                _buildAdCarousel(isDark),
+                const SizedBox(height: 20),
+
+                // ── Row 3: Bordered scrollable features ───────────────────
+                _buildQuickFeatureRow(isDark),
+                const SizedBox(height: 24),
+
                 // ── Points & Lucky Draw ────────────────────────────────────
                 _buildPointsLuckyDrawBanner(isDark),
                 const SizedBox(height: 24),
@@ -343,6 +408,194 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   // ── Greeting Section ──────────────────────────────────────────────────────
+  // ── Row 1: Home tabs (For You / My Closet) ────────────────────────────────
+  Widget _buildHomeTabs(bool isDark) {
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+    const tabs = ['For You', 'My Closet'];
+
+    return Row(
+      children: List.generate(tabs.length, (i) {
+        final sel = _homeTab == i;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() => _homeTab = i),
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              children: [
+                Text(tabs[i],
+                    style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                        color: sel ? ink : muted)),
+                const SizedBox(height: 8),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  height: 3,
+                  width: sel ? 28 : 0,
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  // ── Row 2: Auto-sliding advertisement carousel ────────────────────────────
+  Widget _buildAdCarousel(bool isDark) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 130,
+          child: PageView.builder(
+            controller: _adController,
+            itemCount: _ads.length,
+            onPageChanged: (i) => setState(() => _adPage = i),
+            itemBuilder: (_, i) {
+              final ad = _ads[i];
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: ad.$3,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: ad.$3.first.withOpacity(0.35),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(ad.$1,
+                              style: GoogleFonts.rufina(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                          const SizedBox(height: 6),
+                          Text(ad.$2,
+                              style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  height: 1.3,
+                                  color: Colors.white.withOpacity(0.9))),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(ad.$4, color: Colors.white, size: 28),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Dots
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(_ads.length, (i) {
+            final sel = _adPage == i;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: sel ? 18 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: sel
+                    ? (isDark ? AppColors.gold : AppColors.burgundy)
+                    : (isDark
+                        ? AppColors.paleText.withOpacity(0.4)
+                        : AppColors.inkGrey.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  // ── Row 3: Bordered, horizontally scrollable feature shortcuts ────────────
+  Widget _buildQuickFeatureRow(bool isDark) {
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
+      ),
+      child: SizedBox(
+        height: 76,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: _quickFeatures.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 20),
+          itemBuilder: (_, i) {
+            final f = _quickFeatures[i];
+            return GestureDetector(
+              onTap: f.$3,
+              child: SizedBox(
+                width: 60,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: accent.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Icon(f.$2, color: accent, size: 23),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(f.$1,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: ink)),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildGreetingSection(bool isDark) {
     final now = DateTime.now();
     final hour = now.hour;
@@ -847,7 +1100,6 @@ class _HomeTabState extends State<_HomeTab> {
       _AICard(label: 'Haircut\nRec',       sub: 'AI hairstyle',      icon: Icons.face_retouching_natural_rounded, color: const Color(0xFF52B788), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()))),
     ];
     final row2 = [
-      _AICard(label: 'Body\nMeasure',      sub: 'AI precision',      icon: Icons.straighten_rounded,              color: const Color(0xFFE07A5F), onTap: () => _comingSoon('Body Measurement AI')),
       _AICard(label: 'AI Closet\nRecs',    sub: 'Smart wardrobe',    icon: Icons.auto_awesome_rounded,            color: const Color(0xFFC9A96E), onTap: () => _comingSoon('AI Closet Recommendations')),
       _AICard(label: 'Voice\nAssistant',   sub: 'Style by voice',    icon: Icons.mic_rounded,                     color: const Color(0xFF52B788), onTap: () => _showVoiceAssistantSheet(context, isDark)),
       _AICard(label: 'Shop\nOutfits',      sub: 'Browse fashion',    icon: Icons.store_rounded,                   color: const Color(0xFFC9A96E), onTap: () => widget.onTabRequested?.call(1)),
