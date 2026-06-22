@@ -74,27 +74,42 @@ class FloatingScannerService {
   static Future<bool> enable() async {
     // Check overlay permission
     final granted = await FlutterOverlayWindow.isPermissionGranted();
-    if (granted != true) return false;
+    if (granted != true) {
+      debugPrint('FloatingScannerService: overlay permission not granted');
+      return false;
+    }
 
-    // Start foreground service
-    await FlutterForegroundTask.startService(
-      serviceId:        1,
-      notificationTitle: 'ta chat nhate Scanner',
-      notificationText:  'ta chat nhate Scanner is active — tap to scan',
-      callback:          _foregroundTaskCallback,
-    );
+    // Start foreground service (ignore if already running)
+    try {
+      final result = await FlutterForegroundTask.startService(
+        serviceId:         1,
+        notificationTitle: 'ta chat nhate Scanner',
+        notificationText:  'ta chat nhate Scanner is active — tap to scan',
+        callback:          _foregroundTaskCallback,
+      );
+      debugPrint('FloatingScannerService: startService result = $result');
+    } catch (e) {
+      // ServiceAlreadyStartedException is fine — service is running
+      debugPrint('FloatingScannerService: startService error (may be already running): $e');
+    }
 
     // Show the overlay FAB (80×80 dp, right edge, draggable)
-    await FlutterOverlayWindow.showOverlay(
-      height:              80,
-      width:               80,
-      alignment:           OverlayAlignment.centerRight,
-      flag:                OverlayFlag.defaultFlag,
-      overlayTitle:        'ta chat nhate Scanner',
-      overlayContent:      'ta chat nhate Scanner is active — tap to scan',
-      enableDrag:          true,
-      positionGravity:     PositionGravity.auto,
-    );
+    try {
+      await FlutterOverlayWindow.showOverlay(
+        height:          80,
+        width:           80,
+        alignment:       OverlayAlignment.center,
+        flag:            OverlayFlag.focusPointer,
+        overlayTitle:    'ta chat nhate Scanner',
+        overlayContent:  'ta chat nhate Scanner is active — tap to scan',
+        enableDrag:      true,
+        positionGravity: PositionGravity.auto,
+      );
+      debugPrint('FloatingScannerService: showOverlay called');
+    } catch (e) {
+      debugPrint('FloatingScannerService: showOverlay error: $e');
+      return false;
+    }
 
     _enabled = true;
     return true;

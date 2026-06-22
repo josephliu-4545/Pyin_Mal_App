@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Overlay widgets — rendered inside the system overlay window by a separate
@@ -128,12 +127,16 @@ class _OverlayRootState extends State<_OverlayRoot> {
   // ── FAB tap ───────────────────────────────────────────────────────────────
 
   Future<void> _onFabTap() async {
+    debugPrint('overlayMain: FAB tapped');
     if (!_projectionReady) {
       // Ask main app to show the MediaProjection consent dialog.
       // After the user approves, _handleMessage will auto-proceed to crop.
       _waitingForProjection = true;
-      await FlutterOverlayWindow.shareData(
+      debugPrint('overlayMain: sending requestProjection');
+      // Fire-and-forget: OverlayService never calls reply(), so awaiting hangs.
+      FlutterOverlayWindow.shareData(
           jsonEncode({'action': 'requestProjection'}));
+      debugPrint('overlayMain: shareData sent (fire-and-forget)');
       return;
     }
     // Expand to full screen for crop selection
@@ -153,7 +156,7 @@ class _OverlayRootState extends State<_OverlayRoot> {
     await _resize(80, 80);
     setState(() => _state = _OverlayState.scanning);
 
-    await FlutterOverlayWindow.shareData(jsonEncode({
+    FlutterOverlayWindow.shareData(jsonEncode({
       'action': 'captureRegion',
       'x': x, 'y': y, 'w': w, 'h': h,
     }));
@@ -167,7 +170,7 @@ class _OverlayRootState extends State<_OverlayRoot> {
   // ── Results ───────────────────────────────────────────────────────────────
 
   Future<void> _onProductTap(Map<String, dynamic> product) async {
-    await FlutterOverlayWindow.shareData(
+    FlutterOverlayWindow.shareData(
         jsonEncode({'action': 'openProduct', ...product}));
     _closeResults();
   }
@@ -211,21 +214,28 @@ class _FabWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
+    behavior: HitTestBehavior.opaque,
     child: Container(
-      width: 60, height: 60,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF8B1A2F), Color(0xFFC9A96E)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
+      width: 80, height: 80,
+      color: Colors.red,
+      child: Center(
+        child: Container(
+          width: 60, height: 60,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF8B1A2F), Color(0xFFC9A96E)],
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.45),
+                  blurRadius: 12, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: const Icon(Icons.document_scanner_rounded,
+              color: Colors.white, size: 28),
         ),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.45),
-              blurRadius: 12, offset: const Offset(0, 4)),
-        ],
       ),
-      child: const Icon(Icons.document_scanner_rounded,
-          color: Colors.white, size: 28),
     ),
   );
 }
@@ -316,7 +326,7 @@ class _CropWidgetState extends State<_CropWidget> {
                 const Icon(Icons.touch_app_rounded, color: Colors.white70, size: 48),
                 const SizedBox(height: 12),
                 Text('Drag to select clothing item',
-                    style: GoogleFonts.outfit(color: Colors.white,
+                    style: const TextStyle(color: Colors.white,
                         fontSize: 16, fontWeight: FontWeight.w600)),
               ]),
             ),
@@ -410,7 +420,7 @@ class _CropButton extends StatelessWidget {
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, color: Colors.white, size: 18),
         const SizedBox(width: 8),
-        Text(label, style: GoogleFonts.outfit(color: Colors.white,
+        Text(label, style: const TextStyle(color: Colors.white,
             fontWeight: FontWeight.w600, fontSize: 14)),
       ]),
     ),
@@ -469,7 +479,7 @@ class _ResultsWidget extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Row(children: [
               Expanded(child: Text('Similar Items Found',
-                  style: GoogleFonts.rufina(color: Colors.white,
+                  style: const TextStyle(color: Colors.white,
                       fontWeight: FontWeight.bold, fontSize: 16))),
               GestureDetector(
                 onTap: onRescan,
@@ -533,12 +543,12 @@ class _ResultCard extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(product['name'] as String? ?? '',
-                    style: GoogleFonts.outfit(color: Colors.white,
+                    style: const TextStyle(color: Colors.white,
                         fontWeight: FontWeight.bold, fontSize: 11),
                     maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
                 Text(product['price'] as String? ?? '',
-                    style: GoogleFonts.outfit(color: const Color(0xFFC9A96E),
+                    style: const TextStyle(color: Color(0xFFC9A96E),
                         fontWeight: FontWeight.bold, fontSize: 11)),
               ]),
             ),

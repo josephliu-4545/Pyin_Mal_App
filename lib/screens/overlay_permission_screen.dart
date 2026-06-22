@@ -18,9 +18,10 @@ class OverlayPermissionScreen extends StatefulWidget {
 
 class _OverlayPermissionScreenState extends State<OverlayPermissionScreen>
     with WidgetsBindingObserver {
-  bool _overlayGranted   = false;
-  bool _batteryGranted   = false;
-  bool _checking         = false;
+  bool _overlayGranted      = false;
+  bool _batteryGranted      = false;
+  bool _notificationGranted = false;
+  bool _checking            = false;
 
   @override
   void initState() {
@@ -43,12 +44,18 @@ class _OverlayPermissionScreenState extends State<OverlayPermissionScreen>
 
   Future<void> _refreshStatus() async {
     final overlayResult = await FlutterOverlayWindow.isPermissionGranted();
-    final overlay  = overlayResult == true;
-    final battery  = await FlutterForegroundTask.isIgnoringBatteryOptimizations;
-    if (mounted) setState(() { _overlayGranted = overlay; _batteryGranted = battery; });
+    final overlay      = overlayResult == true;
+    final battery      = await FlutterForegroundTask.isIgnoringBatteryOptimizations;
+    final notifStatus  = await FlutterForegroundTask.checkNotificationPermission();
+    final notif        = notifStatus == NotificationPermission.granted;
+    if (mounted) setState(() {
+      _overlayGranted      = overlay;
+      _batteryGranted      = battery;
+      _notificationGranted = notif;
+    });
   }
 
-  bool get _allGranted => _overlayGranted && _batteryGranted;
+  bool get _allGranted => _overlayGranted && _batteryGranted && _notificationGranted;
 
   Future<void> _requestOverlay() async {
     await FlutterOverlayWindow.requestPermission();
@@ -57,6 +64,11 @@ class _OverlayPermissionScreenState extends State<OverlayPermissionScreen>
 
   Future<void> _requestBattery() async {
     await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+    await _refreshStatus();
+  }
+
+  Future<void> _requestNotification() async {
+    await FlutterForegroundTask.requestNotificationPermission();
     await _refreshStatus();
   }
 
@@ -123,6 +135,17 @@ class _OverlayPermissionScreenState extends State<OverlayPermissionScreen>
               granted: _batteryGranted,
               accent:  accent,
               onTap:   _batteryGranted ? null : _requestBattery,
+            ),
+            const SizedBox(height: 16),
+
+            // ── Permission 3: Notifications (Android 13+) ─────────────────
+            _PermissionTile(
+              icon:    Icons.notifications_outlined,
+              title:   'Show notifications',
+              desc:    'Required on Android 13+ to keep the scanner running.',
+              granted: _notificationGranted,
+              accent:  accent,
+              onTap:   _notificationGranted ? null : _requestNotification,
             ),
             const SizedBox(height: 28),
 

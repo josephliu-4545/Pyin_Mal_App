@@ -13,6 +13,7 @@
     <!-- Foreground service (keeps process alive on MIUI) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
 
     <!-- Screen capture via MediaProjection (Android 10+) -->
     <!-- FOREGROUND_SERVICE_MEDIA_PROJECTION is a no-op on API < 34 -->
@@ -61,6 +62,15 @@
             android:name=".ScreenCaptureService"
             android:foregroundServiceType="mediaProjection"
             android:exported="false"/>
+
+        <!-- ── flutter_overlay_window overlay service ──────────────────── -->
+        <service
+            android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Overlay FAB for ta chat nhate scanner"/>
+        </service>
 
         <!-- ── flutter_foreground_task service (keeps Flutter alive) ────── -->
         <!-- tools:replace lets us add mediaProjection to the type list    -->

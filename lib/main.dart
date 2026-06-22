@@ -14,8 +14,12 @@ import 'package:easy_localization/easy_localization.dart';
 /// flutter_overlay_window calls this by name — must be in the root library.
 @pragma('vm:entry-point')
 void overlayMain() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const OverlayApp());
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    runApp(const OverlayApp());
+  } catch (e, st) {
+    debugPrint('overlayMain error: $e\n$st');
+  }
 }
 
 Future<void> main() async {
