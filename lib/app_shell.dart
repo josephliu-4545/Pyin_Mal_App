@@ -19,6 +19,7 @@ import 'package:pyin_mal_app/screens/scan_screen.dart';
 import 'package:pyin_mal_app/screens/donate_screen.dart';
 import 'package:pyin_mal_app/screens/delivery_screen.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
+import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
@@ -419,8 +420,8 @@ class _HomeTabState extends State<_HomeTab> {
                 _buildPointsLuckyDrawBanner(isDark),
                 const SizedBox(height: 24),
 
-                // ── Today's Outfit ─────────────────────────────────────────
-                _buildOutfitSuggestionsCard(isDark, isMobile),
+                // ── On Sale ────────────────────────────────────────────────
+                _buildSaleSection(isDark),
                 const SizedBox(height: 28),
 
                 // ── AI Styling Tools ───────────────────────────────────────
@@ -877,13 +878,24 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   // ── Outfit Suggestions Card ────────────────────────────────────────────────
-  Widget _buildOutfitSuggestionsCard(bool isDark, bool isMobile) {
+  // ── On Sale section (shops with active discounts) ─────────────────────────
+  Widget _buildSaleSection(bool isDark) {
+    const red = Color(0xFFE53935);
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+
+    // Take a few products and pretend they carry a discount.
+    final all = ProductRepository.allProducts;
+    final saleItems = (all.length > 6 ? all.sublist(0, 6) : all);
+    const discounts = [30, 25, 40, 20, 35, 15];
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkWarm : AppColors.creamCard,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: red.withOpacity(isDark ? 0.25 : 0.18)),
         boxShadow: [
           BoxShadow(
             color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
@@ -895,92 +907,195 @@ class _HomeTabState extends State<_HomeTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Today's outfit suggestions",
-                    style: GoogleFonts.outfit(
-                      fontSize: 13,
-                      color: isDark ? AppColors.paleText : AppColors.inkGrey,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Smart Casual',
-                    style: GoogleFonts.rufina(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.inkBlack,
-                    ),
-                  ),
-                ],
-              ),
               Container(
-                width: 44,
-                height: 44,
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
-                  shape: BoxShape.circle,
+                  color: red.withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                child: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: isDark ? Colors.white : AppColors.inkBlack,
-                  size: 18,
+                child: const Icon(Icons.local_fire_department_rounded,
+                    color: red, size: 19),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('On Sale',
+                        style: GoogleFonts.rufina(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: ink)),
+                    Text('Shops with active discounts',
+                        style: GoogleFonts.outfit(fontSize: 11, color: muted)),
+                  ],
+                ),
+              ),
+              // Countdown pill
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: red.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.timer_outlined, color: red, size: 13),
+                    const SizedBox(width: 4),
+                    Text('02:45:30',
+                        style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: red,
+                            fontFeatures: const [
+                              FontFeature.tabularFigures()
+                            ])),
+                  ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            'Perfect for creative workspaces, weekend brunches, or urban exploring',
-            style: GoogleFonts.outfit(
-              fontSize: 14,
-              color: isDark ? AppColors.paleText : AppColors.inkGrey,
-              height: 1.4,
+
+          // Horizontal product cards
+          SizedBox(
+            height: 196,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: saleItems.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (_, i) {
+                final p = saleItems[i];
+                final off = discounts[i % discounts.length];
+                return GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProductDetailScreen(
+                        productId: p.id,
+                        name: p.name,
+                        price: p.price,
+                        image: p.image,
+                        brand: p.brand,
+                        category: p.category,
+                        description: p.description,
+                        shopName: p.shopName,
+                      ),
+                    ),
+                  ),
+                  child: Container(
+                    width: 134,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.charcoal : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : AppColors.creamAlt),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Image + discount badge
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(15),
+                                topRight: Radius.circular(15),
+                              ),
+                              child: SizedBox(
+                                height: 110,
+                                width: double.infinity,
+                                child: CdnImage(p.image,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                        color: isDark
+                                            ? AppColors.darkBorder
+                                            : AppColors.creamAlt)),
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: red,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text('-$off%',
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(p.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: ink)),
+                              const SizedBox(height: 3),
+                              // Shop name
+                              Row(
+                                children: [
+                                  Icon(Icons.storefront_rounded,
+                                      size: 10, color: muted),
+                                  const SizedBox(width: 3),
+                                  Expanded(
+                                    child: Text(p.shopName ?? p.brand,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.outfit(
+                                            fontSize: 10, color: muted)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              // Sale price + original (strikethrough)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Flexible(
+                                    child: Text(p.price,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.outfit(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w800,
+                                            color: red)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
-          const SizedBox(height: 20),
-          // Clothing Thumbnails
-          Row(
-            children: [
-              _buildClothingThumbnail('assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg', isDark),
-              const SizedBox(width: 12),
-              _buildClothingThumbnail('assets/images/Male/Nrf/Tee/ABCD TEE.jpg', isDark),
-              const SizedBox(width: 12),
-              _buildClothingThumbnail('assets/images/Male/Set/outfit set from sian store/', isDark),
-              const SizedBox(width: 12),
-              _buildClothingThumbnail('assets/images/Female/dress.set/Luna/luna set1.jpg', isDark),
-            ],
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildClothingThumbnail(String assetPath, bool isDark) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: CdnImage(
-          assetPath,
-          fit: BoxFit.cover,
-          errorBuilder: (c, e, s) => Icon(
-            Icons.image_outlined,
-            color: isDark ? AppColors.paleText : AppColors.inkGrey,
-            size: 24,
-          ),
-        ),
       ),
     );
   }
