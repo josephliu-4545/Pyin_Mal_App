@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
-import 'package:pyin_mal_app/screens/onboarding_screen.dart';
 import 'package:pyin_mal_app/screens/profile_setup_screen.dart';
 import 'package:pyin_mal_app/services/auth_service.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -58,6 +57,115 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  // ── Social sign-in ──────────────────────────────────────────────────────────
+  Future<void> _socialSignIn(Future<dynamic> Function() signIn) async {
+    setState(() => _isLoading = true);
+    try {
+      final user = await signIn();
+      if (user != null && mounted) {
+        Navigator.pop(context);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign-in was cancelled.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Social sign-in is not enabled yet. Enable the provider in Firebase to use it.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // ── Forgot password ─────────────────────────────────────────────────────────
+  Future<void> _forgotPassword() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    final controller =
+        TextEditingController(text: _emailController.text.trim());
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          backgroundColor: isDark ? AppColors.darkWarm : Colors.white,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
+          title: Text('Reset password',
+              style: GoogleFonts.rufina(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.inkBlack)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Enter your email and we'll send you a reset link.",
+                  style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      color: isDark ? AppColors.paleText : AppColors.inkGrey)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.emailAddress,
+                style: GoogleFonts.outfit(
+                    color: isDark ? Colors.white : AppColors.inkBlack),
+                decoration: InputDecoration(
+                  hintText: 'you@example.com',
+                  filled: true,
+                  fillColor:
+                      isDark ? Colors.white10 : const Color(0xFFF4F4F4),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: Text('Cancel',
+                  style: GoogleFonts.outfit(
+                      color: isDark ? AppColors.paleText : AppColors.inkGrey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accent,
+                foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                final email = controller.text.trim();
+                if (email.isEmpty) return;
+                Navigator.pop(dialogCtx);
+                final error = await _auth.sendPasswordReset(email);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(error ??
+                        'Reset link sent to $email. Check your inbox.'),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              },
+              child: Text('Send link',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -348,9 +456,14 @@ class _LoginScreenState extends State<LoginScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildSocialIcon(Icons.g_mobiledata, isDark, accent),
-              _buildSocialIcon(Icons.facebook, isDark, accent),
-              _buildSocialIcon(Icons.apple, isDark, accent),
+              _buildSocialIcon(Icons.g_mobiledata, isDark, accent,
+                  onTap: () => _socialSignIn(_auth.signInWithGoogle)),
+              _buildSocialIcon(Icons.facebook, isDark, accent,
+                  onTap: () => _socialSignIn(_auth.signInWithFacebook)),
+              _buildSocialIcon(Icons.apple, isDark, accent,
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Apple sign-in coming soon')))),
             ],
           ),
           const SizedBox(height: 24),
@@ -362,7 +475,10 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
-            child: Text('login.forgot_password'.tr(), style: GoogleFonts.outfit(fontSize: 13, color: accent, fontWeight: FontWeight.w600)),
+            child: GestureDetector(
+              onTap: _forgotPassword,
+              child: Text('login.forgot_password'.tr(), style: GoogleFonts.outfit(fontSize: 13, color: accent, fontWeight: FontWeight.w600)),
+            ),
           ),
           const SizedBox(height: 32),
           SizedBox(
@@ -381,25 +497,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 : Text('login.sign_in'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             ),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-                );
-              },
-              icon: Icon(Icons.auto_awesome_rounded, size: 20, color: accent),
-              label: Text('login.start_styling'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: accent)),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: accent),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-            ),
-          )
         ],
       ),
     );
@@ -416,9 +513,14 @@ class _LoginScreenState extends State<LoginScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildSocialIcon(Icons.g_mobiledata, isDark, accent),
-              _buildSocialIcon(Icons.facebook, isDark, accent),
-              _buildSocialIcon(Icons.apple, isDark, accent),
+              _buildSocialIcon(Icons.g_mobiledata, isDark, accent,
+                  onTap: () => _socialSignIn(_auth.signInWithGoogle)),
+              _buildSocialIcon(Icons.facebook, isDark, accent,
+                  onTap: () => _socialSignIn(_auth.signInWithFacebook)),
+              _buildSocialIcon(Icons.apple, isDark, accent,
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Apple sign-in coming soon')))),
             ],
           ),
           const SizedBox(height: 24),
@@ -446,41 +548,26 @@ class _LoginScreenState extends State<LoginScreen> {
                 : Text('login.sign_up'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             ),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-                );
-              },
-              icon: Icon(Icons.auto_awesome_rounded, size: 20, color: accent),
-              label: Text('login.start_styling'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: accent)),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: accent),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-            ),
-          )
         ],
       ),
     );
   }
 
-  Widget _buildSocialIcon(IconData icon, bool isDark, Color accent) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.charcoal : Colors.white,
-        border: Border.all(color: isDark ? AppColors.darkBorder : Colors.grey.shade200),
-        borderRadius: BorderRadius.circular(16),
+  Widget _buildSocialIcon(IconData icon, bool isDark, Color accent,
+      {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.charcoal : Colors.white,
+          border: Border.all(color: isDark ? AppColors.darkBorder : Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Icon(icon, color: isDark ? Colors.white : AppColors.inkBlack, size: 24),
       ),
-      child: Icon(icon, color: isDark ? Colors.white : AppColors.inkBlack, size: 24),
     );
   }
 

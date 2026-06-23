@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/models/user_profile.dart';
@@ -56,6 +57,62 @@ class AuthService {
       return null;
     }
   }
+
+  // Send a password reset email. Returns null on success, or an error message.
+  Future<String?> sendPasswordReset(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+      return null;
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'invalid-email':
+          return 'That email address looks invalid.';
+        case 'user-not-found':
+          return 'No account found with that email.';
+        default:
+          return e.message ?? 'Could not send reset email.';
+      }
+    } catch (e) {
+      return 'Could not send reset email.';
+    }
+  }
+
+  // ── Social sign-in via Firebase OAuth providers ────────────────────────────
+  // Works on web (popup) and mobile (native OAuth flow) without extra packages.
+  // Requires the provider to be enabled in the Firebase console.
+  Future<User?> _signInWithProvider(AuthProvider Function() build,
+      {required String fallbackProviderId}) async {
+    try {
+      final UserCredential result;
+      if (kIsWeb) {
+        result = await _auth.signInWithPopup(build());
+      } else {
+        result = await _auth.signInWithProvider(build());
+      }
+      final user = result.user;
+      if (user != null) {
+        // Create a profile if this is their first sign-in.
+        await _db.createUserProfile(UserProfile(
+          id: user.uid,
+          email: user.email ?? '',
+          displayName: user.displayName ?? 'Fashionista',
+          points: 0,
+        ));
+      }
+      return user;
+    } catch (e) {
+      print('$fallbackProviderId sign-in error: $e');
+      rethrow;
+    }
+  }
+
+  Future<User?> signInWithGoogle() =>
+      _signInWithProvider(() => GoogleAuthProvider(),
+          fallbackProviderId: 'google.com');
+
+  Future<User?> signInWithFacebook() =>
+      _signInWithProvider(() => FacebookAuthProvider(),
+          fallbackProviderId: 'facebook.com');
 
   // Sign out
   Future<void> signOut() async {

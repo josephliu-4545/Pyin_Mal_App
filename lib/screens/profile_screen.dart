@@ -98,10 +98,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Text('profile.login_btn'.tr(), style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                   ),
                 ),
+                const SizedBox(height: 14),
+                // Skip / continue without login
+                TextButton(
+                  onPressed: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: Text(
+                    'profile.maybe_later'.tr(),
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
         ),
+        // Back button (top-left)
+        if (Navigator.of(context).canPop())
+          Positioned(
+            top: 8,
+            left: 12,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.arrow_back_ios_rounded,
+                    size: 18,
+                    color: isDark ? Colors.white : AppColors.inkBlack),
+              ),
+            ),
+          ),
       ],
     );
   }

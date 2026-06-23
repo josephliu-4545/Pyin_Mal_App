@@ -89,6 +89,10 @@
     "explore": "Explore Trends"
   },
   "profile": {
+    "create_profile": "Create your profile",
+    "login_desc": "Sign in to save your looks, track orders, and get outfit picks made for you.",
+    "login_btn": "Sign in / Sign up",
+    "maybe_later": "Maybe later",
     "skip": "Skip",
     "finish": "Finish",
     "continue_btn": "Continue",

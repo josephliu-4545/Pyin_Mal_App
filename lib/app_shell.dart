@@ -204,13 +204,19 @@ class _HomeTabState extends State<_HomeTab> {
   Timer? _adTimer;
   int _adPage = 0;
 
-  static const _ads = <(String, String, List<Color>, IconData)>[
+  // (title, subtitle, gradient, icon, imageAsset)
+  // Drop matching images in assets/images/ to show them; until then the
+  // gradient shows as a graceful fallback. (Future: swap asset for a URL.)
+  static const _ads = <(String, String, List<Color>, IconData, String)>[
     ('New season drop', 'Up to 40% off select styles',
-        [Color(0xFF6B2737), Color(0xFFB0293F)], Icons.local_offer_rounded),
+        [Color(0xFF6B2737), Color(0xFFB0293F)], Icons.local_offer_rounded,
+        'assets/images/ad_sale.jpg'),
     ('AI styling, free', 'Get outfit ideas tailored to you',
-        [Color(0xFF1F3A5F), Color(0xFF3D6CA8)], Icons.auto_awesome_rounded),
+        [Color(0xFF1F3A5F), Color(0xFF3D6CA8)], Icons.auto_awesome_rounded,
+        'assets/images/ad_ai.jpg'),
     ('Donate & earn', 'Give clothes, earn reward points',
-        [Color(0xFF2E6B4F), Color(0xFF4FA37A)], Icons.volunteer_activism_rounded),
+        [Color(0xFF2E6B4F), Color(0xFF4FA37A)], Icons.volunteer_activism_rounded,
+        'assets/images/ad_donate.jpg'),
   ];
 
   // Bordered feature shortcuts — "For You" tools
@@ -507,13 +513,7 @@ class _HomeTabState extends State<_HomeTab> {
               final ad = _ads[i];
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 2),
-                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: ad.$3,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
@@ -523,37 +523,78 @@ class _HomeTabState extends State<_HomeTab> {
                     ),
                   ],
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(ad.$1,
-                              style: GoogleFonts.rufina(
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
-                          const SizedBox(height: 6),
-                          Text(ad.$2,
-                              style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  height: 1.3,
-                                  color: Colors.white.withOpacity(0.9))),
-                        ],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Gradient base (fallback + tint behind the image)
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: ad.$3,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
                       ),
-                    ),
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.18),
-                        shape: BoxShape.circle,
+                      // Optional banner image (sale / announcement)
+                      Image.asset(
+                        ad.$5,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox(),
                       ),
-                      child: Icon(ad.$4, color: Colors.white, size: 28),
-                    ),
-                  ],
+                      // Dark scrim so text stays readable over any image
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Colors.black.withOpacity(0.55),
+                              Colors.black.withOpacity(0.15),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Content
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(ad.$1,
+                                      style: GoogleFonts.rufina(
+                                          fontSize: 19,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white)),
+                                  const SizedBox(height: 6),
+                                  Text(ad.$2,
+                                      style: GoogleFonts.outfit(
+                                          fontSize: 13,
+                                          height: 1.3,
+                                          color: Colors.white.withOpacity(0.9))),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.18),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(ad.$4, color: Colors.white, size: 28),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
