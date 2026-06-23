@@ -20,6 +20,7 @@ import 'package:pyin_mal_app/screens/donate_screen.dart';
 import 'package:pyin_mal_app/screens/delivery_screen.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
+import 'package:pyin_mal_app/screens/sale_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
@@ -922,17 +923,29 @@ class _HomeTabState extends State<_HomeTab> {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('On Sale',
-                        style: GoogleFonts.rufina(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: ink)),
-                    Text('Shops with active discounts',
-                        style: GoogleFonts.outfit(fontSize: 11, color: muted)),
-                  ],
+                child: GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const SaleScreen())),
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text('On Sale',
+                              style: GoogleFonts.rufina(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: ink)),
+                          const SizedBox(width: 4),
+                          Icon(Icons.chevron_right_rounded,
+                              size: 20, color: muted),
+                        ],
+                      ),
+                      Text('Shops with active discounts',
+                          style: GoogleFonts.outfit(fontSize: 11, color: muted)),
+                    ],
+                  ),
                 ),
               ),
               // Countdown pill
@@ -969,9 +982,45 @@ class _HomeTabState extends State<_HomeTab> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
-              itemCount: saleItems.length,
+              itemCount: saleItems.length + 1,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (_, i) {
+                // Trailing "See all" card
+                if (i == saleItems.length) {
+                  return GestureDetector(
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const SaleScreen())),
+                    child: Container(
+                      width: 96,
+                      decoration: BoxDecoration(
+                        color: red.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: red.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: red.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.arrow_forward_rounded,
+                                color: red, size: 20),
+                          ),
+                          const SizedBox(height: 8),
+                          Text('See all',
+                              style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: red)),
+                        ],
+                      ),
+                    ),
+                  );
+                }
                 final p = saleItems[i];
                 final off = discounts[i % discounts.length];
                 return GestureDetector(
