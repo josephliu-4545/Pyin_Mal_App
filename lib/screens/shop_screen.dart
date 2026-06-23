@@ -9,7 +9,7 @@ import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/screens/cart_screen.dart';
-import 'package:pyin_mal_app/screens/checkout_screen.dart';
+import 'package:pyin_mal_app/screens/sale_screen.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -230,19 +230,11 @@ class _ShopScreenState extends State<ShopScreen> {
                       padding: const EdgeInsets.only(right: 10),
                       child: GestureDetector(
                         onTap: () {
-                          if (label == 'New in') {
-                            setState(() => _selectedCategory = label);
-                          } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CategoryProductsScreen(
-                                  category: label,
-                                  icon: icon,
-                                ),
-                              ),
-                            );
-                          }
+                          setState(() {
+                            // If they tap the already selected category, maybe reset to 'New in'?
+                            // Let's just set the selected category
+                            _selectedCategory = label;
+                          });
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -405,6 +397,16 @@ class _ShopScreenState extends State<ShopScreen> {
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
+            // SECTION 4: Flash Sale Banner (links to SaleScreen)
+            if (_selectedCategory == 'New in')
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  child: _buildShopSaleSection(context, isDark),
+                ),
+              ),
+            if (_selectedCategory == 'New in')
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
             // SECTION 5: Products Grid
             if (_loadingProducts)
@@ -418,7 +420,9 @@ class _ShopScreenState extends State<ShopScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'shop.all_products'.tr(),
+                  _selectedCategory == 'New in'
+                      ? 'shop.all_products'.tr()
+                      : '$_selectedCategory Products',
                   style: GoogleFonts.outfit(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -472,162 +476,284 @@ class _ShopScreenState extends State<ShopScreen> {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          ],
+        ),
+      ),
+    );
+  }
 
-            // SECTION 6: Flash Sale Section
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+  // ── Shop-screen sale section ──────────────────────────────────────────────
+  Widget _buildShopSaleSection(BuildContext context, bool isDark) {
+    const red = Color(0xFFE53935);
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+    final cardBg = isDark ? AppColors.darkWarm : Colors.white;
+
+    final all = ProductRepository.allProducts;
+    final saleItems = all.length > 6 ? all.sublist(0, 6) : all;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: red.withOpacity(isDark ? 0.25 : 0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: red.withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(Icons.local_fire_department_rounded, color: red, size: 19),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const SaleScreen())),
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text('Flash Sale',
+                              style: GoogleFonts.rufina(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: ink)),
+                          const SizedBox(width: 4),
+                          Icon(Icons.chevron_right_rounded, size: 20, color: muted),
+                        ],
+                      ),
+                      Text('Deals from shops across Pyin Mal',
+                          style: GoogleFonts.outfit(fontSize: 11, color: muted)),
+                    ],
+                  ),
+                ),
+              ),
+              // Countdown pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: red.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.local_fire_department_rounded, color: Colors.red, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'shop.flash_sale'.tr(),
+                    const Icon(Icons.timer_outlined, color: red, size: 13),
+                    const SizedBox(width: 4),
+                    Text('02:45:30',
+                        style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: red)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Horizontal sale product cards
+          SizedBox(
+            height: 212,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: saleItems.length + 1,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (_, i) {
+                // Trailing "See all" card
+                if (i == saleItems.length) {
+                  return GestureDetector(
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const SaleScreen())),
+                    child: Container(
+                      width: 96,
+                      decoration: BoxDecoration(
+                        color: red.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: red.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: red.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.arrow_forward_rounded, color: red, size: 20),
+                          ),
+                          const SizedBox(height: 8),
+                          Text('See all',
                               style: GoogleFonts.outfit(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? Colors.white : AppColors.inkBlack,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: red)),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final p = saleItems[i];
+                final off = saleDiscountFor(i);
+
+                // Compute original price
+                String originalPrice = '';
+                final match = RegExp(r'[\d,]+').firstMatch(p.price);
+                if (match != null) {
+                  final sale = int.tryParse(match.group(0)!.replaceAll(',', ''));
+                  if (sale != null) {
+                    final orig = (sale / (1 - off / 100)).round();
+                    final label = p.price.replaceFirst(RegExp(r'[\d,]+'), '').trim();
+                    final sep = orig.toString().replaceAllMapped(
+                        RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',');
+                    originalPrice = '$sep $label'.trim();
+                  }
+                }
+
+                return GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProductDetailScreen(
+                        productId: p.id,
+                        name: p.name,
+                        price: p.price,
+                        image: p.image,
+                        brand: p.brand,
+                        category: p.category,
+                        description: p.description,
+                        shopName: p.shopName,
+                        discount: off,
+                      ),
+                    ),
+                  ),
+                  child: Container(
+                    width: 134,
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                          color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Image + discount badge
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(15),
+                                topRight: Radius.circular(15),
+                              ),
+                              child: SizedBox(
+                                height: 110,
+                                width: double.infinity,
+                                child: CdnImage(p.image,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                        color: isDark
+                                            ? AppColors.darkBorder
+                                            : AppColors.creamAlt)),
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: red,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text('-$off%',
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white)),
                               ),
                             ),
                           ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.timer_outlined, color: Colors.red, size: 14),
-                              const SizedBox(width: 4),
-                              Text(
-                                '02:45:30',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.red,
-                                ),
+                              Text(p.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: ink)),
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  Icon(Icons.storefront_rounded, size: 10, color: muted),
+                                  const SizedBox(width: 3),
+                                  Expanded(
+                                    child: Text(p.shopName ?? p.brand,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.outfit(fontSize: 10, color: muted)),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 6),
+                              // Sale price
+                              Text(p.price,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: red)),
+                              // Original strikethrough price
+                              if (originalPrice.isNotEmpty)
+                                Text(originalPrice,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 11,
+                                        color: muted,
+                                        decoration: TextDecoration.lineThrough)),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    // Flash Sale Products (First 2)
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: _filteredProducts.take(2).map((product) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 12),
-                            child: Container(
-                              width: 120,
-                              decoration: BoxDecoration(
-                                color: isDark ? AppColors.darkWarm : Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
-                                    blurRadius: 8,
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Stack(
-                                    children: [
-                                      Container(
-                                        height: 100,
-                                        decoration: BoxDecoration(
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(12),
-                                            topRight: Radius.circular(12),
-                                          ),
-                                          color: isDark ? Colors.black12 : Colors.grey.withOpacity(0.1),
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(12),
-                                            topRight: Radius.circular(12),
-                                          ),
-                                          child: CdnImage(
-                                            product.image,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        top: 4,
-                                        right: 4,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.red,
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            '-30%',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(8),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          product.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: isDark ? Colors.white : AppColors.inkBlack,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          product.price,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 40)),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

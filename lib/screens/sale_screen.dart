@@ -8,6 +8,32 @@ import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 
+// ── Shared sale helpers (single source of truth for home + sale page) ─────────
+const saleDiscountPool = [30, 25, 40, 20, 35, 15, 50, 45];
+
+/// Deterministic discount for the product at [index] in the master list.
+int saleDiscountFor(int index) => saleDiscountPool[index % saleDiscountPool.length];
+
+/// The price string with thousands separators preserved, recomputed.
+String _formatPrice(int value, String label) {
+  final withSep = value
+      .toString()
+      .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',');
+  return '$withSep ${label.trim()}'.trim();
+}
+
+/// Reverse-computes the "original" (pre-discount) price from a sale price.
+/// e.g. sale 50,000 at 30% off -> original 71,429.
+String saleOriginalPrice(String salePrice, int discount) {
+  final match = RegExp(r'[\d,]+').firstMatch(salePrice);
+  if (match == null) return '';
+  final sale = int.tryParse(match.group(0)!.replaceAll(',', ''));
+  if (sale == null || discount <= 0) return '';
+  final original = (sale / (1 - discount / 100)).round();
+  final label = salePrice.replaceFirst(RegExp(r'[\d,]+'), '').trim();
+  return _formatPrice(original, label);
+}
+
 /// Full page listing sale items across all shops.
 /// Linked from the home "On Sale" section.
 class SaleScreen extends StatefulWidget {
@@ -18,10 +44,6 @@ class SaleScreen extends StatefulWidget {
 }
 
 class _SaleScreenState extends State<SaleScreen> {
-  // Deterministic per-product discount so it stays stable across rebuilds.
-  static const _discountPool = [30, 25, 40, 20, 35, 15, 50, 45];
-  int _discountFor(int index) => _discountPool[index % _discountPool.length];
-
   // Countdown
   Duration _remaining = const Duration(hours: 2, minutes: 45, seconds: 30);
   Timer? _timer;
@@ -203,43 +225,46 @@ class _SaleScreenState extends State<SaleScreen> {
 
             // ── Shop filter chips ───────────────────────────────────────────
             SliverToBoxAdapter(
-              child: SizedBox(
-                height: 38,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: shops.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (_, i) {
-                    final s = shops[i];
-                    final sel = _shopFilter == s;
-                    return GestureDetector(
-                      onTap: () => setState(() => _shopFilter = s),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: sel ? red : cardBg,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                              color: sel
-                                  ? red
-                                  : (isDark
-                                      ? AppColors.darkBorder
-                                      : AppColors.creamAlt)),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: SizedBox(
+                  height: 38,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: shops.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (_, i) {
+                      final s = shops[i];
+                      final sel = _shopFilter == s;
+                      return GestureDetector(
+                        onTap: () => setState(() => _shopFilter = s),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: sel ? red : cardBg,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: sel
+                                    ? red
+                                    : (isDark
+                                        ? AppColors.darkBorder
+                                        : AppColors.creamAlt)),
+                          ),
+                          child: Center(
+                            child: Text(s,
+                                style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: sel ? Colors.white : ink)),
+                          ),
                         ),
-                        child: Center(
-                          child: Text(s,
-                              style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: sel ? Colors.white : ink)),
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -271,7 +296,7 @@ class _SaleScreenState extends State<SaleScreen> {
                     final entry = visible[i];
                     return _SaleCard(
                       product: entry.$2,
-                      discount: _discountFor(entry.$1),
+                      discount: saleDiscountFor(entry.$1),
                       isDark: isDark,
                       cardBg: cardBg,
                       ink: ink,
@@ -337,6 +362,7 @@ class _SaleCard extends StatelessWidget {
             category: product.category,
             description: product.description,
             shopName: product.shopName,
+            discount: discount,
           ),
         ),
       ),

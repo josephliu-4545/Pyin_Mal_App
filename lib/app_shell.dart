@@ -978,7 +978,7 @@ class _HomeTabState extends State<_HomeTab> {
 
           // Horizontal product cards
           SizedBox(
-            height: 196,
+            height: 212,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
@@ -1036,6 +1036,7 @@ class _HomeTabState extends State<_HomeTab> {
                         category: p.category,
                         description: p.description,
                         shopName: p.shopName,
+                        discount: off,
                       ),
                     ),
                   ),
@@ -1119,19 +1120,35 @@ class _HomeTabState extends State<_HomeTab> {
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              // Sale price + original (strikethrough)
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
+                              // Sale price + original (strikethrough) — same layout as sale screen
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Flexible(
-                                    child: Text(p.price,
+                                  Text(p.price,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.outfit(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                          color: red)),
+                                  () {
+                                    final match = RegExp(r'[\d,]+').firstMatch(p.price);
+                                    if (match == null) return const SizedBox.shrink();
+                                    final sale = int.tryParse(match.group(0)!.replaceAll(',', ''));
+                                    if (sale == null) return const SizedBox.shrink();
+                                    final original = (sale / (1 - off / 100)).round();
+                                    final label = p.price.replaceFirst(RegExp(r'[\d,]+'), '').trim();
+                                    final withSep = original.toString().replaceAllMapped(
+                                        RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',');
+                                    final originalStr = '$withSep $label'.trim();
+                                    return Text(originalStr,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.outfit(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w800,
-                                            color: red)),
-                                  ),
+                                            fontSize: 11,
+                                            color: muted,
+                                            decoration: TextDecoration.lineThrough));
+                                  }(),
                                 ],
                               ),
                             ],

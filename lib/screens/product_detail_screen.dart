@@ -22,6 +22,9 @@ class ProductDetailScreen extends StatefulWidget {
   final String category;
   final String? description;
   final String? shopName;
+  /// When non-null, the product is on sale at this % discount and a
+  /// strikethrough original price is shown next to the sale price.
+  final int? discount;
 
   const ProductDetailScreen({
     super.key,
@@ -33,6 +36,7 @@ class ProductDetailScreen extends StatefulWidget {
     required this.category,
     this.description,
     this.shopName,
+    this.discount,
   });
 
   @override
@@ -546,7 +550,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 child: OutlinedButton.icon(
                                   onPressed: () => Navigator.push(context,
                                       MaterialPageRoute(
-                                          builder: (_) => const TryOnScreen())),
+                                          builder: (_) => TryOnScreen(
+                                            initialImageUrl: widget.image,
+                                            initialCategory: widget.category,
+                                          ))),
                                   icon: const Icon(
                                       Icons.face_retouching_natural_rounded,
                                       size: 16),
@@ -705,7 +712,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                             const SizedBox(height: 10),
 
-                            // Price row
+                            // Price row — strikethrough original only shown for sale items
                             Row(
                               children: [
                                 Text(
@@ -713,22 +720,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   style: GoogleFonts.outfit(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w800,
-                                    color: accent,
+                                    color: widget.discount != null
+                                        ? const Color(0xFFE53935)
+                                        : accent,
                                   ),
                                 ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  // Fake original price (strikethrough)
-                                  widget.price.replaceAll(RegExp(r'\d'), '0'),
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                    color: isDark
-                                        ? Colors.white30
-                                        : const Color(0xFFBBBBBB),
-                                    decoration: TextDecoration.lineThrough,
-                                  ),
-                                ),
+                                if (widget.discount != null) ...[  
+                                  const SizedBox(width: 10),
+                                  Builder(builder: (_) {
+                                    final d = widget.discount!;
+                                    final match = RegExp(r'[\d,]+').firstMatch(widget.price);
+                                    if (match == null) return const SizedBox.shrink();
+                                    final sale = int.tryParse(match.group(0)!.replaceAll(',', ''));
+                                    if (sale == null) return const SizedBox.shrink();
+                                    final original = (sale / (1 - d / 100)).round();
+                                    final label = widget.price.replaceFirst(RegExp(r'[\d,]+'), '').trim();
+                                    final withSep = original.toString().replaceAllMapped(
+                                        RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',');
+                                    return Text(
+                                      '$withSep $label'.trim(),
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                        color: isDark
+                                            ? Colors.white30
+                                            : const Color(0xFFBBBBBB),
+                                        decoration: TextDecoration.lineThrough,
+                                      ),
+                                    );
+                                  }),
+                                ],
                               ],
                             ),
                             const SizedBox(height: 10),

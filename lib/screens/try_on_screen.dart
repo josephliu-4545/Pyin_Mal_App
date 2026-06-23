@@ -1,12 +1,19 @@
 import 'dart:typed_data';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../services/nanobanana_api_service.dart';
+import '../core/constants/api_constants.dart';
 import '../main.dart'; // For AppColors
+
 class TryOnScreen extends StatefulWidget {
-  const TryOnScreen({super.key});
+  final String? initialImageUrl;
+  final String? initialCategory;
+
+  const TryOnScreen({super.key, this.initialImageUrl, this.initialCategory});
 
   @override
   State<TryOnScreen> createState() => _TryOnScreenState();
@@ -30,6 +37,43 @@ class _TryOnScreenState extends State<TryOnScreen> {
   String? _resultImageUrl;
 
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialImage();
+  }
+
+  Future<void> _loadInitialImage() async {
+    if (widget.initialImageUrl == null || widget.initialImageUrl!.isEmpty) return;
+    try {
+      String imageUrl = widget.initialImageUrl!;
+      if (!imageUrl.startsWith('http')) {
+        final String cdnPath = imageUrl.replaceFirst('assets/images/', '');
+        imageUrl = '${ApiConstants.cdnBaseUrl}$cdnPath';
+      }
+      
+      // Encode URL to handle spaces in filenames
+      final encodedUrl = Uri.encodeFull(imageUrl);
+      final request = await HttpClient().getUrl(Uri.parse(encodedUrl));
+      final response = await request.close();
+      final bytes = await consolidateHttpClientResponseBytes(response);
+      if (mounted) {
+        setState(() {
+          final cat = widget.initialCategory?.toLowerCase() ?? '';
+          if (cat.contains('pant') || cat.contains('skirt') || cat.contains('bottom') || cat.contains('short')) {
+            _pantsPhotoBytes = bytes;
+          } else if (cat.contains('shoe') || cat.contains('sneaker')) {
+            _shoesPhotoBytes = bytes;
+          } else {
+            _shirtPhotoBytes = bytes;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load initial image: $e');
+    }
+  }
 
   Future<void> _pickImage(
     void Function(XFile file, Uint8List bytes) onPicked,
