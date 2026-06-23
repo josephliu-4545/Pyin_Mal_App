@@ -53,6 +53,9 @@ dependencies:
   easy_localization: ^3.0.8
   flutter_overlay_window: ^0.5.0
   flutter_foreground_task: ^8.11.3
+  # AR Fitting Room packages
+  google_mlkit_pose_detection: ^0.14.1
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:
@@ -81,6 +84,7 @@ flutter:
     - assets/images/
     - assets/models/
     - assets/translations/
+    - assets/clothes/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -107,3 +111,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+dependency_overrides:
+  flutter_overlay_window:
+    path: packages/flutter_overlay_window
+

@@ -8,7 +8,9 @@ import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/services/size_recommendation_service.dart';
 import 'package:pyin_mal_app/models/body_measurements.dart';
+import 'package:pyin_mal_app/models/clothing_item.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
+import 'package:pyin_mal_app/screens/ar_fitting_room_screen.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -496,77 +498,120 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
 
-                    // ── 3. TRY ON + SHOP NOW buttons ─────────────────────────
+                    // ── 3. TRY IN AR + TRY ON + SHOP NOW buttons ────────────
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 22, 16, 0),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => Navigator.push(context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const TryOnScreen())),
-                              icon: const Icon(
-                                  Icons.face_retouching_natural_rounded,
-                                  size: 16),
-                              label: Text('product.try_on'.tr(),
-                                  style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13)),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 13),
-                                side: BorderSide(
-                                    color: isDark
-                                        ? Colors.white24
-                                        : const Color(0xFFCCCCCC),
-                                    width: 1.5),
-                                foregroundColor: isDark
-                                    ? Colors.white
-                                    : AppColors.inkBlack,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
+                          // ── Live AR try-on ──────────────────────────────────
+                          ElevatedButton.icon(
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ARFittingRoomScreen(
+                                  productId: widget.productId,
+                                  productName: widget.name,
+                                  productPrice: widget.price,
+                                  productImage: widget.image,
+                                  productBrand: widget.brand,
+                                  initialItem: mockClothingItems.first,
+                                ),
                               ),
+                            ),
+                            icon: const Icon(Icons.view_in_ar_rounded, size: 18),
+                            label: Text(
+                              'Try in AR',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              backgroundColor:
+                                  isDark ? AppColors.gold : AppColors.burgundy,
+                              foregroundColor:
+                                  isDark ? AppColors.charcoal : Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                CartService.instance.addToCart(CartItem(
-                                  productId: widget.productId,
-                                  name: widget.name,
-                                  price: widget.price,
-                                  image: widget.image,
-                                  brand: widget.brand,
-                                  size: _selectedSize,
-                                ));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Added to cart'),
-                                      duration: Duration(seconds: 2)),
-                                );
-                              },
-                              icon: const Icon(Icons.arrow_forward_rounded,
-                                  size: 16),
-                              label: Text('product.shop_now'.tr(),
-                                  style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13)),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 13),
-                                backgroundColor: isDark
-                                    ? Colors.white
-                                    : AppColors.inkBlack,
-                                foregroundColor: isDark
-                                    ? AppColors.charcoal
-                                    : Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
+                          const SizedBox(height: 10),
+                          // ── AI try-on + Shop Now row ────────────────────────
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => Navigator.push(context,
+                                      MaterialPageRoute(
+                                          builder: (_) => const TryOnScreen())),
+                                  icon: const Icon(
+                                      Icons.face_retouching_natural_rounded,
+                                      size: 16),
+                                  label: Text('product.try_on'.tr(),
+                                      style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13)),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 13),
+                                    side: BorderSide(
+                                        color: isDark
+                                            ? Colors.white24
+                                            : const Color(0xFFCCCCCC),
+                                        width: 1.5),
+                                    foregroundColor: isDark
+                                        ? Colors.white
+                                        : AppColors.inkBlack,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    CartService.instance.addToCart(CartItem(
+                                      productId: widget.productId,
+                                      name: widget.name,
+                                      price: widget.price,
+                                      image: widget.image,
+                                      brand: widget.brand,
+                                      size: _selectedSize,
+                                    ));
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(const SnackBar(
+                                      content: Text('Added to cart'),
+                                      duration: Duration(seconds: 2),
+                                    ));
+                                  },
+                                  icon: const Icon(Icons.arrow_forward_rounded,
+                                      size: 16),
+                                  label: Text('product.shop_now'.tr(),
+                                      style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13)),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 13),
+                                    backgroundColor: isDark
+                                        ? Colors.white
+                                        : AppColors.inkBlack,
+                                    foregroundColor: isDark
+                                        ? AppColors.charcoal
+                                        : Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

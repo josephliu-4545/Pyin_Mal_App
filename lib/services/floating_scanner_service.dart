@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
@@ -44,6 +45,7 @@ class _ScannerTaskHandler extends TaskHandler {
 class FloatingScannerService {
   static const _captureChannel = MethodChannel('pyin_mal/screen_capture');
   static bool _enabled = false;
+  static StreamSubscription? _overlaySubscription;
 
   static bool get isEnabled => _enabled;
 
@@ -65,8 +67,13 @@ class FloatingScannerService {
       ),
     );
 
-    // Listen for messages from the overlay engine (subscription kept alive by stream)
-    FlutterOverlayWindow.overlayListener.listen(_handleOverlayMessage);
+    // Must store subscription — discarding it allows GC to cancel it silently.
+    _overlaySubscription = FlutterOverlayWindow.overlayListener.listen(
+      (data) {
+        debugPrint('FloatingScannerService: overlay message received: $data');
+        _handleOverlayMessage(data);
+      },
+    );
   }
 
   // ── Enable / disable ──────────────────────────────────────────────────────
