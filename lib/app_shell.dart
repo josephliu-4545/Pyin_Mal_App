@@ -17,6 +17,7 @@ import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/profile_screen.dart';
 import 'package:pyin_mal_app/screens/scan_screen.dart';
 import 'package:pyin_mal_app/screens/donate_screen.dart';
+import 'package:pyin_mal_app/screens/delivery_screen.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 
@@ -77,7 +78,7 @@ class _MainShellState extends State<MainShell> {
           const ShopScreen(),
           const HaircutScreen(),
           const FavoritesScreen(),
-          const ProfileScreen(),
+          const DeliveryScreen(),
         ],
       ),
       floatingActionButton: Padding(
@@ -111,7 +112,7 @@ class _GlassNav extends StatelessWidget {
     (icon: Icons.store_rounded,       outline: Icons.store_outlined,             label: 'nav.shop'),
     (icon: Icons.content_cut_rounded, outline: Icons.content_cut_outlined,       label: 'nav.hair'),
     (icon: Icons.favorite_rounded,    outline: Icons.favorite_outline_rounded,   label: 'nav.saved'),
-    (icon: Icons.person_rounded,      outline: Icons.person_outline_rounded,     label: 'nav.profile'),
+    (icon: Icons.local_shipping_rounded, outline: Icons.local_shipping_outlined, label: 'nav.delivery'),
   ];
 
   @override
@@ -212,19 +213,30 @@ class _HomeTabState extends State<_HomeTab> {
         [Color(0xFF2E6B4F), Color(0xFF4FA37A)], Icons.volunteer_activism_rounded),
   ];
 
-  // Bordered feature shortcuts (third row)
-  late final List<(String, IconData, VoidCallback)> _quickFeatures = [
-    ('Try-On', Icons.checkroom_rounded,
+  // Bordered feature shortcuts — "For You" tools
+  late final List<(String, IconData, VoidCallback)> _forYouFeatures = [
+    ('AI Try-On', Icons.checkroom_rounded,
         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TryOnScreen()))),
+    ('AR Try-On', Icons.view_in_ar_rounded,
+        () => _comingSoon('AR Try-On & 3D Models')),
     ('Haircut', Icons.content_cut_rounded,
         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()))),
-    ('Shop', Icons.storefront_rounded, () => widget.onTabRequested?.call(1)),
-    ('Saved', Icons.favorite_rounded, () => widget.onTabRequested?.call(3)),
     ('Scan', Icons.document_scanner_rounded,
         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanScreen()))),
-    ('AI Chat', Icons.smart_toy_rounded,
-        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiChatScreen()))),
+    ('Voice', Icons.mic_rounded,
+        () => _showVoiceAssistantSheet(
+            context, Theme.of(context).brightness == Brightness.dark)),
   ];
+
+  // Bordered feature shortcuts — "Services" tools
+  late final List<(String, IconData, VoidCallback)> _servicesFeatures = [
+    ('Donate', Icons.volunteer_activism_rounded,
+        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DonateScreen()))),
+    ('Resell', Icons.sell_rounded, () => _comingSoon('Resell your clothes')),
+  ];
+
+  List<(String, IconData, VoidCallback)> get _quickFeatures =>
+      _homeTab == 0 ? _forYouFeatures : _servicesFeatures;
 
   @override
   void initState() {
@@ -346,11 +358,12 @@ class _HomeTabState extends State<_HomeTab> {
                 ),
               ),
             ),
-            // Profile Avatar - Removed from top nav since we have a bottom tab
+            // Profile Avatar — opens Profile (no longer a bottom tab)
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: GestureDetector(
-                onTap: () => widget.onTabRequested?.call(4),
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ProfileScreen())),
                 child: Container(
                   width: 40,
                   height: 40,
@@ -388,12 +401,12 @@ class _HomeTabState extends State<_HomeTab> {
                 _buildHomeTabs(isDark),
                 const SizedBox(height: 18),
 
-                // ── Row 2: Sliding advertisement ──────────────────────────
-                _buildAdCarousel(isDark),
+                // ── Row 2: Bordered scrollable features ───────────────────
+                _buildQuickFeatureRow(isDark),
                 const SizedBox(height: 20),
 
-                // ── Row 3: Bordered scrollable features ───────────────────
-                _buildQuickFeatureRow(isDark),
+                // ── Row 3: Sliding advertisement ──────────────────────────
+                _buildAdCarousel(isDark),
                 const SizedBox(height: 24),
 
                 // ── Points & Lucky Draw ────────────────────────────────────
@@ -446,7 +459,7 @@ class _HomeTabState extends State<_HomeTab> {
     final accent = isDark ? AppColors.gold : AppColors.burgundy;
     final ink = isDark ? Colors.white : AppColors.inkBlack;
     final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
-    const tabs = ['For You', 'My Closet'];
+    const tabs = ['For You', 'Services'];
 
     return Row(
       children: List.generate(tabs.length, (i) {

@@ -4,7 +4,8 @@
     "shop": "Shop",
     "hair": "Hair",
     "saved": "Saved",
-    "profile": "Profile"
+    "profile": "Profile",
+    "delivery": "Delivery"
   },
   "greeting": {
     "morning": "good morning,",
