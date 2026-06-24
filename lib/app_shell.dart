@@ -21,6 +21,7 @@ import 'package:pyin_mal_app/screens/delivery_screen.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/screens/sale_screen.dart';
+import 'package:pyin_mal_app/screens/resell_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
@@ -240,7 +241,9 @@ class _HomeTabState extends State<_HomeTab> {
   late final List<(String, IconData, VoidCallback)> _servicesFeatures = [
     ('Donate', Icons.volunteer_activism_rounded,
         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DonateScreen()))),
-    ('Resell', Icons.sell_rounded, () => _comingSoon('Resell your clothes')),
+    ('Resell', Icons.sell_rounded,
+        () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const ResellScreen()))),
   ];
 
   List<(String, IconData, VoidCallback)> get _quickFeatures =>
@@ -423,6 +426,10 @@ class _HomeTabState extends State<_HomeTab> {
 
                 // ── On Sale ────────────────────────────────────────────────
                 _buildSaleSection(isDark),
+                const SizedBox(height: 24),
+
+                // ── Resell ─────────────────────────────────────────────────
+                _buildResellSection(isDark),
                 const SizedBox(height: 28),
 
                 // ── AI Styling Tools ───────────────────────────────────────
@@ -880,8 +887,251 @@ class _HomeTabState extends State<_HomeTab> {
 
   // ── Outfit Suggestions Card ────────────────────────────────────────────────
   // ── On Sale section (shops with active discounts) ─────────────────────────
+  // ── Resell section (community pre-loved listings) ─────────────────────────
+  Widget _buildResellSection(bool isDark) {
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+    final preview = resellPosts.take(6).toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(Icons.recycling_rounded, color: accent, size: 19),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const ResellScreen())),
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text('Resell',
+                              style: GoogleFonts.rufina(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: ink)),
+                          const SizedBox(width: 4),
+                          Icon(Icons.chevron_right_rounded,
+                              size: 20, color: muted),
+                        ],
+                      ),
+                      Text('Pre-loved fashion from the community',
+                          style: GoogleFonts.outfit(fontSize: 11, color: muted)),
+                    ],
+                  ),
+                ),
+              ),
+              // Sell yours chip
+              GestureDetector(
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ResellScreen())),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_rounded, color: accent, size: 14),
+                      const SizedBox(width: 3),
+                      Text('Sell',
+                          style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: accent)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Horizontal preview cards
+          SizedBox(
+            height: 196,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: preview.length + 1,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (_, i) {
+                if (i == preview.length) {
+                  return GestureDetector(
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const ResellScreen())),
+                    child: Container(
+                      width: 96,
+                      decoration: BoxDecoration(
+                        color: accent.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: accent.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: accent.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.arrow_forward_rounded,
+                                color: accent, size: 20),
+                          ),
+                          const SizedBox(height: 8),
+                          Text('See all',
+                              style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: accent)),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                final post = preview[i];
+                final cc = conditionColor(post.condition);
+                return GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const ResellScreen())),
+                  child: Container(
+                    width: 134,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.charcoal : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : AppColors.creamAlt),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(15),
+                                topRight: Radius.circular(15),
+                              ),
+                              child: SizedBox(
+                                height: 110,
+                                width: double.infinity,
+                                child: post.imageBytes != null
+                                    ? Image.memory(post.imageBytes!,
+                                        fit: BoxFit.cover)
+                                    : CdnImage(post.image,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                            color: isDark
+                                                ? AppColors.darkBorder
+                                                : AppColors.creamAlt)),
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: cc,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(post.condition,
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(post.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: ink)),
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  Icon(Icons.person_rounded,
+                                      size: 10, color: muted),
+                                  const SizedBox(width: 3),
+                                  Expanded(
+                                    child: Text(post.seller,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.outfit(
+                                            fontSize: 10, color: muted)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(post.price,
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                      color: accent)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSaleSection(bool isDark) {
     const red = Color(0xFFE53935);
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
     final ink = isDark ? Colors.white : AppColors.inkBlack;
     final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
 
@@ -896,7 +1146,7 @@ class _HomeTabState extends State<_HomeTab> {
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkWarm : AppColors.creamCard,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: red.withOpacity(isDark ? 0.25 : 0.18)),
+        border: Border.all(color: accent.withOpacity(isDark ? 0.25 : 0.18)),
         boxShadow: [
           BoxShadow(
             color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
@@ -918,7 +1168,7 @@ class _HomeTabState extends State<_HomeTab> {
                   color: red.withOpacity(0.14),
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: const Icon(Icons.local_fire_department_rounded,
+                child: Icon(Icons.local_fire_department_rounded,
                     color: red, size: 19),
               ),
               const SizedBox(width: 10),
@@ -959,7 +1209,7 @@ class _HomeTabState extends State<_HomeTab> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.timer_outlined, color: red, size: 13),
+                    Icon(Icons.timer_outlined, color: red, size: 13),
                     const SizedBox(width: 4),
                     Text('02:45:30',
                         style: GoogleFonts.outfit(
@@ -1007,7 +1257,7 @@ class _HomeTabState extends State<_HomeTab> {
                               color: red.withOpacity(0.15),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.arrow_forward_rounded,
+                            child: Icon(Icons.arrow_forward_rounded,
                                 color: red, size: 20),
                           ),
                           const SizedBox(height: 8),
