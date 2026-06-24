@@ -14,6 +14,7 @@ import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.io.ByteArrayOutputStream
 
@@ -47,6 +48,7 @@ class ScreenCaptureService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d("PyinMal", "ScreenCaptureService.onStartCommand action=${intent?.action}")
         when (intent?.action) {
             ACTION_START -> {
                 ensureNotificationChannel()
@@ -64,20 +66,32 @@ class ScreenCaptureService : Service() {
                     startForeground(NOTIF_ID, notif)
                 }
 
-                val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, -1)
+                // RESULT_OK = -1, RESULT_CANCELED = 0 in Android Activity constants.
+                // Use 0 as default so we can distinguish "no value" from RESULT_OK (-1).
+                val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
                 @Suppress("DEPRECATION")
                 val data = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                     intent.getParcelableExtra(EXTRA_DATA, Intent::class.java)
                 else
                     intent.getParcelableExtra(EXTRA_DATA)
 
-                if (resultCode != -1 && data != null) {
-                    val mgr = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                    mediaProjection = mgr.getMediaProjection(resultCode, data)
-                    setupVirtualDisplay()
-                    instance = this
-                    ScreenCaptureChannel.onGranted()
+                if (resultCode == -1 && data != null) {
+                    Log.d("PyinMal", "ScreenCaptureService: starting projection resultCode=$resultCode")
+                    try {
+                        val mgr = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                        mediaProjection = mgr.getMediaProjection(resultCode, data)
+                        Log.d("PyinMal", "ScreenCaptureService: mediaProjection=$mediaProjection")
+                        setupVirtualDisplay()
+                        Log.d("PyinMal", "ScreenCaptureService: virtualDisplay set up, calling onGranted")
+                        instance = this
+                        ScreenCaptureChannel.onGranted()
+                    } catch (e: Exception) {
+                        Log.e("PyinMal", "ScreenCaptureService: exception during start: ${e.message}", e)
+                        ScreenCaptureChannel.onDenied()
+                        stopSelf()
+                    }
                 } else {
+                    Log.d("PyinMal", "ScreenCaptureService: missing resultCode or data, calling onDenied")
                     ScreenCaptureChannel.onDenied()
                     stopSelf()
                 }
@@ -155,6 +169,7 @@ class ScreenCaptureService : Service() {
     }
 
     override fun onDestroy() {
+        Log.d("PyinMal", "ScreenCaptureService.onDestroy")
         tearDown()
         super.onDestroy()
     }

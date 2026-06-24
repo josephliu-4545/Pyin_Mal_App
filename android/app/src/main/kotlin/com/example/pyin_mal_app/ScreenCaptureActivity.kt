@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
+import android.util.Log
 
 /**
  * Transparent activity whose only job is to show the Android MediaProjection
@@ -28,6 +29,7 @@ class ScreenCaptureActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_PROJECTION) {
+            Log.d("PyinMal", "ScreenCaptureActivity.onActivityResult resultCode=$resultCode")
             if (resultCode == RESULT_OK && data != null) {
                 // Start the foreground service that will own the MediaProjection
                 val svcIntent = Intent(this, ScreenCaptureService::class.java).apply {

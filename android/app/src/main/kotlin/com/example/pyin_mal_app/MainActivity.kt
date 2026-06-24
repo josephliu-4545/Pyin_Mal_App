@@ -21,10 +21,31 @@ class MainActivity : FlutterActivity() {
 
                     // Step 1: request MediaProjection consent → launches ScreenCaptureActivity
                     "requestProjection" -> {
+                        android.util.Log.d("PyinMal", "requestProjection handler: instance=${ScreenCaptureService.instance}")
+                        // If the capture service is already running, skip the dialog.
+                        if (ScreenCaptureService.instance != null) {
+                            android.util.Log.d("PyinMal", "requestProjection: already running, returning true")
+                            result.success(true)
+                            return@setMethodCallHandler
+                        }
+                        // Ignore if a request is already in-flight (e.g. double-tap).
+                        if (ScreenCaptureChannel.hasPending()) {
+                            android.util.Log.d("PyinMal", "requestProjection: already pending, ignoring")
+                            return@setMethodCallHandler
+                        }
                         ScreenCaptureChannel.setPending(result)
-                        val intent = Intent(applicationContext, ScreenCaptureActivity::class.java)
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        startActivity(intent)
+                        // Android 12+: createScreenCaptureIntent() requires the app to be in
+                        // the foreground. Bring MainActivity to front first, then start
+                        // ScreenCaptureActivity after a brief delay so the window is visible.
+                        val mainIntent = Intent(applicationContext, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        startActivity(mainIntent)
+                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                            val captureIntent = Intent(applicationContext, ScreenCaptureActivity::class.java)
+                            captureIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            startActivity(captureIntent)
+                        }, 400)
                         // result will be delivered by ScreenCaptureChannel.onGranted/onDenied
                     }
 

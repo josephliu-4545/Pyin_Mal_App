@@ -131,6 +131,7 @@ class _OverlayRootState extends State<_OverlayRoot> {
     if (!_projectionReady) {
       // Ask main app to show the MediaProjection consent dialog.
       // After the user approves, _handleMessage will auto-proceed to crop.
+      if (_waitingForProjection) return; // already in-flight, ignore double-tap
       _waitingForProjection = true;
       debugPrint('overlayMain: sending requestProjection');
       // Fire-and-forget: OverlayService never calls reply(), so awaiting hangs.
