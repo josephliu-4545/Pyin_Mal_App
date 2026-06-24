@@ -100,12 +100,12 @@ class FloatingScannerService {
       debugPrint('FloatingScannerService: startService error (may be already running): $e');
     }
 
-    // Show the overlay FAB (80×80 dp, right edge, draggable)
+    // Show the overlay FAB (96×96 dp, right edge, draggable anywhere)
     try {
       await FlutterOverlayWindow.showOverlay(
-        height:          80,
-        width:           80,
-        alignment:       OverlayAlignment.center,
+        height:          96,
+        width:           96,
+        alignment:       OverlayAlignment.centerRight,
         flag:            OverlayFlag.focusPointer,
         overlayTitle:    'ta chat nhate Scanner',
         overlayContent:  'ta chat nhate Scanner is active — tap to scan',

@@ -217,24 +217,25 @@ class _FabWidget extends StatelessWidget {
     onTap: onTap,
     behavior: HitTestBehavior.opaque,
     child: Container(
-      width: 80, height: 80,
-      color: Colors.red,
+      width: 96, height: 96,
+      color: Colors.transparent,
       child: Center(
         child: Container(
-          width: 60, height: 60,
+          width: 76, height: 76,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
-              colors: [Color(0xFF8B1A2F), Color(0xFFC9A96E)],
+              colors: [Color(0xFF4F8FF7), Color(0xFF2C5FD0)],
               begin: Alignment.topLeft, end: Alignment.bottomRight,
             ),
+            border: Border.all(color: Colors.white.withOpacity(0.85), width: 2.5),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.45),
-                  blurRadius: 12, offset: const Offset(0, 4)),
+              BoxShadow(color: const Color(0xFF2C5FD0).withOpacity(0.5),
+                  blurRadius: 16, offset: const Offset(0, 5)),
             ],
           ),
           child: const Icon(Icons.document_scanner_rounded,
-              color: Colors.white, size: 28),
+              color: Colors.white, size: 34),
         ),
       ),
     ),
