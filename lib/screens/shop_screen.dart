@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -5,6 +6,7 @@ import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/screens/category_products_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
+import 'package:pyin_mal_app/widgets/cart_bar.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
@@ -12,7 +14,10 @@ import 'package:pyin_mal_app/screens/cart_screen.dart';
 import 'package:pyin_mal_app/screens/sale_screen.dart';
 
 class ShopScreen extends StatefulWidget {
-  const ShopScreen({super.key});
+  /// When false, the screen does not render its own cart bar — used when the
+  /// shell provides a shared one (avoids showing two bars on the shop tab).
+  final bool showCartBar;
+  const ShopScreen({super.key, this.showCartBar = true});
 
   @override
   State<ShopScreen> createState() => _ShopScreenState();
@@ -40,10 +45,34 @@ class _ShopScreenState extends State<ShopScreen> {
   String _selectedCategory = 'New in';
   bool _loadingProducts = false;
 
+  // ── Flash-sale countdown ──────────────────────────────────────────────────
+  Timer? _saleTimer;
+  late DateTime _saleEndsAt;
+  Duration _saleRemaining = const Duration(hours: 2, minutes: 45, seconds: 30);
+
   @override
   void initState() {
     super.initState();
     _loadProducts();
+
+    // Live flash-sale countdown that ticks every second and loops when it ends.
+    _saleEndsAt = DateTime.now().add(_saleRemaining);
+    _saleTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      var remaining = _saleEndsAt.difference(DateTime.now());
+      if (remaining.isNegative) {
+        _saleEndsAt = DateTime.now().add(const Duration(hours: 3));
+        remaining = _saleEndsAt.difference(DateTime.now());
+      }
+      setState(() => _saleRemaining = remaining);
+    });
+  }
+
+  String _fmtDuration(Duration d) {
+    final h = d.inHours.toString().padLeft(2, '0');
+    final m = (d.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$h:$m:$s';
   }
 
   Future<void> _loadProducts() async {
@@ -74,6 +103,7 @@ class _ShopScreenState extends State<ShopScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _saleTimer?.cancel();
     super.dispose();
   }
 
@@ -87,6 +117,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
+      bottomNavigationBar: widget.showCartBar ? const CartBar() : null,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -132,7 +163,7 @@ class _ShopScreenState extends State<ShopScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Camera/Scan Icon Button
+                    // Scan Icon Button
                     Container(
                       width: 48,
                       height: 48,
@@ -141,7 +172,7 @@ class _ShopScreenState extends State<ShopScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: Icon(Icons.camera_alt_rounded, color: accent),
+                        icon: Icon(Icons.document_scanner_rounded, color: accent),
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('shop.camera_coming_soon'.tr())),
@@ -486,6 +517,7 @@ class _ShopScreenState extends State<ShopScreen> {
   // ── Shop-screen sale section ──────────────────────────────────────────────
   Widget _buildShopSaleSection(BuildContext context, bool isDark) {
     const red = Color(0xFFE53935);
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
     final ink = isDark ? Colors.white : AppColors.inkBlack;
     final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
     final cardBg = isDark ? AppColors.darkWarm : Colors.white;
@@ -499,7 +531,7 @@ class _ShopScreenState extends State<ShopScreen> {
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkWarm : AppColors.creamCard,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: red.withOpacity(isDark ? 0.25 : 0.18)),
+        border: Border.all(color: accent.withOpacity(isDark ? 0.25 : 0.18)),
         boxShadow: [
           BoxShadow(
             color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
@@ -561,11 +593,12 @@ class _ShopScreenState extends State<ShopScreen> {
                   children: [
                     const Icon(Icons.timer_outlined, color: red, size: 13),
                     const SizedBox(width: 4),
-                    Text('02:45:30',
+                    Text(_fmtDuration(_saleRemaining),
                         style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: red)),
+                            color: red,
+                            fontFeatures: const [FontFeature.tabularFigures()])),
                   ],
                 ),
               ),

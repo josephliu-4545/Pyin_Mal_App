@@ -6,6 +6,7 @@ import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
+import 'package:pyin_mal_app/widgets/cart_bar.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 
 // ── Shared sale helpers (single source of truth for home + sale page) ─────────
@@ -106,6 +107,7 @@ class _SaleScreenState extends State<SaleScreen> {
 
     return Scaffold(
       backgroundColor: bg,
+      bottomNavigationBar: const SafeArea(top: false, child: CartBar()),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [

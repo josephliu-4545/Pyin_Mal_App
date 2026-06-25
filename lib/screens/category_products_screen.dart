@@ -4,6 +4,7 @@ import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
+import 'package:pyin_mal_app/widgets/cart_bar.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 
@@ -45,6 +46,7 @@ class CategoryProductsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: bgColor,
+      bottomNavigationBar: const SafeArea(top: false, child: CartBar()),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [

@@ -7,6 +7,7 @@ class CartItem {
   final String image;
   final String brand;
   final String size;
+  final String color;
   int quantity;
 
   CartItem({
@@ -16,6 +17,7 @@ class CartItem {
     required this.image,
     required this.brand,
     required this.size,
+    this.color = '',
     this.quantity = 1,
   });
 
@@ -46,8 +48,11 @@ class CartService extends ChangeNotifier {
   }
 
   void addToCart(CartItem newItem) {
-    // Check if we already have this product + size in cart
-    final existingIndex = _items.indexWhere((item) => item.productId == newItem.productId && item.size == newItem.size);
+    // Check if we already have this product + size + color in cart
+    final existingIndex = _items.indexWhere((item) =>
+        item.productId == newItem.productId &&
+        item.size == newItem.size &&
+        item.color == newItem.color);
     
     if (existingIndex >= 0) {
       _items[existingIndex].quantity += newItem.quantity;

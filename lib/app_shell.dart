@@ -24,6 +24,7 @@ import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/screens/sale_screen.dart';
 import 'package:pyin_mal_app/screens/resell_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
+import 'package:pyin_mal_app/widgets/cart_bar.dart';
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
 class MainShell extends StatefulWidget {
@@ -79,7 +80,8 @@ class _MainShellState extends State<MainShell> {
         index: _currentIndex,
         children: [
           _HomeTab(onTabRequested: _switchTab),
-          const ShopScreen(),
+          // Shop tab relies on the shell-level cart bar (avoids a double bar).
+          const ShopScreen(showCartBar: false),
           const HaircutScreen(),
           const FavoritesScreen(),
           const DeliveryScreen(),
@@ -95,10 +97,17 @@ class _MainShellState extends State<MainShell> {
           child: Icon(Icons.auto_awesome_rounded, color: isDark ? AppColors.charcoal : Colors.white),
         ),
       ),
-      bottomNavigationBar: _GlassNav(
-        currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
-        isDark: isDark,
+      // Cart bar stacked directly above the glass nav so both stay visible.
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CartBar(),
+          _GlassNav(
+            currentIndex: _currentIndex,
+            onTap: (i) => setState(() => _currentIndex = i),
+            isDark: isDark,
+          ),
+        ],
       ),
     );
   }

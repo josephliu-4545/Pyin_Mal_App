@@ -192,7 +192,7 @@ class _CartItemTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Size: ${item.size} • ${item.price}',
+                  '${item.color.isNotEmpty ? '${item.color} • ' : ''}Size: ${item.size} • ${item.price}',
                   style: GoogleFonts.outfit(fontSize: 13, color: isDark ? AppColors.paleText : AppColors.inkGrey),
                 ),
                 const SizedBox(height: 8),
