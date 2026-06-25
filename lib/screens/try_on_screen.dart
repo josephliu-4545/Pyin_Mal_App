@@ -8,6 +8,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../services/nanobanana_api_service.dart';
 import '../core/constants/api_constants.dart';
 import '../main.dart'; // For AppColors
+import '../services/try_on_service.dart';
 
 class TryOnScreen extends StatefulWidget {
   final String? initialImageUrl;
@@ -21,22 +22,33 @@ class TryOnScreen extends StatefulWidget {
 
 class _TryOnScreenState extends State<TryOnScreen> {
   bool _isLoading = false;
-
-  XFile? _userPhoto;
-  Uint8List? _userPhotoBytes;
-
-  XFile? _shirtPhoto;
-  Uint8List? _shirtPhotoBytes;
-
-  XFile? _pantsPhoto;
-  Uint8List? _pantsPhotoBytes;
-
-  XFile? _shoesPhoto;
-  Uint8List? _shoesPhotoBytes;
-
   String? _resultImageUrl;
 
   final ImagePicker _picker = ImagePicker();
+
+  XFile? get _userPhoto => TryOnService.instance.userPhoto;
+  set _userPhoto(XFile? val) => TryOnService.instance.userPhoto = val;
+
+  Uint8List? get _userPhotoBytes => TryOnService.instance.userPhotoBytes;
+  set _userPhotoBytes(Uint8List? val) => TryOnService.instance.userPhotoBytes = val;
+
+  XFile? get _shirtPhoto => TryOnService.instance.shirtPhoto;
+  set _shirtPhoto(XFile? val) => TryOnService.instance.shirtPhoto = val;
+
+  Uint8List? get _shirtPhotoBytes => TryOnService.instance.shirtPhotoBytes;
+  set _shirtPhotoBytes(Uint8List? val) => TryOnService.instance.shirtPhotoBytes = val;
+
+  XFile? get _pantsPhoto => TryOnService.instance.pantsPhoto;
+  set _pantsPhoto(XFile? val) => TryOnService.instance.pantsPhoto = val;
+
+  Uint8List? get _pantsPhotoBytes => TryOnService.instance.pantsPhotoBytes;
+  set _pantsPhotoBytes(Uint8List? val) => TryOnService.instance.pantsPhotoBytes = val;
+
+  XFile? get _shoesPhoto => TryOnService.instance.shoesPhoto;
+  set _shoesPhoto(XFile? val) => TryOnService.instance.shoesPhoto = val;
+
+  Uint8List? get _shoesPhotoBytes => TryOnService.instance.shoesPhotoBytes;
+  set _shoesPhotoBytes(Uint8List? val) => TryOnService.instance.shoesPhotoBytes = val;
 
   @override
   void initState() {
@@ -61,12 +73,16 @@ class _TryOnScreenState extends State<TryOnScreen> {
       if (mounted) {
         setState(() {
           final cat = widget.initialCategory?.toLowerCase() ?? '';
+          final newFile = XFile.fromData(bytes, name: 'downloaded.jpg');
           if (cat.contains('pant') || cat.contains('skirt') || cat.contains('bottom') || cat.contains('short')) {
             _pantsPhotoBytes = bytes;
+            _pantsPhoto = newFile;
           } else if (cat.contains('shoe') || cat.contains('sneaker')) {
             _shoesPhotoBytes = bytes;
+            _shoesPhoto = newFile;
           } else {
             _shirtPhotoBytes = bytes;
+            _shirtPhoto = newFile;
           }
         });
       }
@@ -146,14 +162,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
 
   void _reset() {
     setState(() {
-      _userPhoto = null;
-      _userPhotoBytes = null;
-      _shirtPhoto = null;
-      _shirtPhotoBytes = null;
-      _pantsPhoto = null;
-      _pantsPhotoBytes = null;
-      _shoesPhoto = null;
-      _shoesPhotoBytes = null;
+      TryOnService.instance.clear();
       _resultImageUrl = null;
     });
   }

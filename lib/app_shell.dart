@@ -20,6 +20,7 @@ import 'package:pyin_mal_app/screens/donate_screen.dart';
 import 'package:pyin_mal_app/screens/delivery_screen.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
+import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/screens/sale_screen.dart';
 import 'package:pyin_mal_app/screens/resell_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
@@ -207,20 +208,43 @@ class _HomeTabState extends State<_HomeTab> {
   Timer? _adTimer;
   int _adPage = 0;
 
-  // (title, subtitle, gradient, icon, imageAsset)
+  // ── Flash-sale countdown ──────────────────────────────────────────────────
+  Timer? _saleTimer;
+  late DateTime _saleEndsAt;
+  Duration _saleRemaining = const Duration(hours: 2, minutes: 45, seconds: 30);
+
+  // (title, subtitle, gradient, icon, imageAsset, badge, cta)
   // Drop matching images in assets/images/ to show them; until then the
   // gradient shows as a graceful fallback. (Future: swap asset for a URL.)
-  static const _ads = <(String, String, List<Color>, IconData, String)>[
+  static const _ads = <(String, String, List<Color>, IconData, String, String, String)>[
     ('New season drop', 'Up to 40% off select styles',
         [Color(0xFF6B2737), Color(0xFFB0293F)], Icons.local_offer_rounded,
-        'assets/images/ad_sale.jpg'),
+        'assets/images/ad_sale.jpg', 'HOT DEAL', 'Shop now'),
     ('AI styling, free', 'Get outfit ideas tailored to you',
         [Color(0xFF1F3A5F), Color(0xFF3D6CA8)], Icons.auto_awesome_rounded,
-        'assets/images/ad_ai.jpg'),
+        'assets/images/ad_ai.jpg', 'NEW', 'Try now'),
     ('Donate & earn', 'Give clothes, earn reward points',
         [Color(0xFF2E6B4F), Color(0xFF4FA37A)], Icons.volunteer_activism_rounded,
-        'assets/images/ad_donate.jpg'),
+        'assets/images/ad_donate.jpg', 'REWARDS', 'Donate'),
   ];
+
+  // Where each promo banner navigates when tapped (index-aligned with _ads).
+  void _onAdTap(int i) {
+    switch (i) {
+      case 0:
+        Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const SaleScreen()));
+        break;
+      case 1:
+        Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const AiChatScreen()));
+        break;
+      case 2:
+        Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const DonateScreen()));
+        break;
+    }
+  }
 
   // Bordered feature shortcuts — "For You" tools
   late final List<(String, IconData, VoidCallback)> _forYouFeatures = [
@@ -261,11 +285,32 @@ class _HomeTabState extends State<_HomeTab> {
         curve: Curves.easeOutCubic,
       );
     });
+
+    // Live flash-sale countdown that ticks every second and loops when it ends.
+    _saleEndsAt = DateTime.now().add(_saleRemaining);
+    _saleTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      var remaining = _saleEndsAt.difference(DateTime.now());
+      if (remaining.isNegative) {
+        // Sale window elapsed — restart a fresh 3-hour window.
+        _saleEndsAt = DateTime.now().add(const Duration(hours: 3));
+        remaining = _saleEndsAt.difference(DateTime.now());
+      }
+      setState(() => _saleRemaining = remaining);
+    });
+  }
+
+  String _fmtDuration(Duration d) {
+    final h = d.inHours.toString().padLeft(2, '0');
+    final m = (d.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$h:$m:$s';
   }
 
   @override
   void dispose() {
     _adTimer?.cancel();
+    _saleTimer?.cancel();
     _adController.dispose();
     super.dispose();
   }
@@ -513,96 +558,167 @@ class _HomeTabState extends State<_HomeTab> {
     return Column(
       children: [
         SizedBox(
-          height: 130,
+          height: 158,
           child: PageView.builder(
             controller: _adController,
             itemCount: _ads.length,
             onPageChanged: (i) => setState(() => _adPage = i),
             itemBuilder: (_, i) {
               final ad = _ads[i];
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: ad.$3.first.withOpacity(0.35),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Gradient base (fallback + tint behind the image)
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: ad.$3,
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+              return GestureDetector(
+                onTap: () => _onAdTap(i),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: ad.$3.first.withOpacity(0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Gradient base (fallback + tint behind the image)
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: ad.$3,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                           ),
                         ),
-                      ),
-                      // Optional banner image (sale / announcement)
-                      Image.asset(
-                        ad.$5,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const SizedBox(),
-                      ),
-                      // Dark scrim so text stays readable over any image
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Colors.black.withOpacity(0.55),
-                              Colors.black.withOpacity(0.15),
+                        // Optional banner image (sale / announcement)
+                        Image.asset(
+                          ad.$5,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox(),
+                        ),
+                        // Decorative translucent circles (promo-banner feel)
+                        Positioned(
+                          top: -28,
+                          right: -10,
+                          child: Container(
+                            width: 90,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.08),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: -34,
+                          right: 40,
+                          child: Container(
+                            width: 70,
+                            height: 70,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.06),
+                            ),
+                          ),
+                        ),
+                        // Dark scrim so text stays readable over any image
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                Colors.black.withOpacity(0.55),
+                                Colors.black.withOpacity(0.10),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Content
+                        Padding(
+                          padding: const EdgeInsets.all(18),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Badge tag (e.g. HOT DEAL / NEW / REWARDS)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.22),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(ad.$6,
+                                          style: GoogleFonts.outfit(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 1,
+                                              color: Colors.white)),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(ad.$1,
+                                        style: GoogleFonts.rufina(
+                                            fontSize: 19,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white)),
+                                    const SizedBox(height: 4),
+                                    Text(ad.$2,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.outfit(
+                                            fontSize: 12,
+                                            height: 1.3,
+                                            color:
+                                                Colors.white.withOpacity(0.9))),
+                                    const SizedBox(height: 10),
+                                    // Call-to-action button
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 7),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(ad.$7,
+                                              style: GoogleFonts.outfit(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: ad.$3.last)),
+                                          const SizedBox(width: 4),
+                                          Icon(Icons.arrow_forward_rounded,
+                                              size: 13, color: ad.$3.last),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: 54,
+                                height: 54,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.18),
+                                  shape: BoxShape.circle,
+                                ),
+                                child:
+                                    Icon(ad.$4, color: Colors.white, size: 26),
+                              ),
                             ],
                           ),
                         ),
-                      ),
-                      // Content
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(ad.$1,
-                                      style: GoogleFonts.rufina(
-                                          fontSize: 19,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white)),
-                                  const SizedBox(height: 6),
-                                  Text(ad.$2,
-                                      style: GoogleFonts.outfit(
-                                          fontSize: 13,
-                                          height: 1.3,
-                                          color: Colors.white.withOpacity(0.9))),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.18),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(ad.$4, color: Colors.white, size: 28),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -704,38 +820,100 @@ class _HomeTabState extends State<_HomeTab> {
       greeting = 'greeting.evening'.tr();
     }
     
-    final days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-    final months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    // Time-of-day emoji to accompany the greeting badge.
+    final greetEmoji = hour < 12 ? '☀️' : (hour < 17 ? '🌤️' : '🌙');
+
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     final dateStr = '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
 
-    return Column(
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          greeting,
-          style: GoogleFonts.rufina(
-            fontSize: 18,
-            fontStyle: FontStyle.italic,
-            color: isDark ? AppColors.paleText : AppColors.inkGrey,
-            height: 1.2,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Greeting badge — soft accent pill with the time-of-day emoji.
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Text(
+                  '$greetEmoji  $greeting',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: accent,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Name with a subtle accent underline accent.
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Hein',
+                      style: GoogleFonts.rufina(
+                        fontSize: 38,
+                        fontWeight: FontWeight.bold,
+                        color: ink,
+                        height: 1.1,
+                      ),
+                    ),
+                    TextSpan(
+                      text: ' .',
+                      style: GoogleFonts.rufina(
+                        fontSize: 38,
+                        fontWeight: FontWeight.bold,
+                        color: accent,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        Text(
-          'Hein',
-          style: GoogleFonts.rufina(
-            fontSize: 42,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : AppColors.inkBlack,
-            height: 1.1,
+        // Date chip on the right.
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          dateStr,
-          style: GoogleFonts.outfit(
-            fontSize: 14,
-            color: isDark ? AppColors.paleText : AppColors.inkGrey,
-            letterSpacing: 1.5,
+          child: Column(
+            children: [
+              Text(
+                '${now.day}',
+                style: GoogleFonts.rufina(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: ink,
+                  height: 1.0,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                dateStr.split(',').first.toUpperCase(),
+                style: GoogleFonts.outfit(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: muted,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -1211,7 +1389,7 @@ class _HomeTabState extends State<_HomeTab> {
                   children: [
                     Icon(Icons.timer_outlined, color: red, size: 13),
                     const SizedBox(width: 4),
-                    Text('02:45:30',
+                    Text(_fmtDuration(_saleRemaining),
                         style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -1550,62 +1728,7 @@ class _HomeTabState extends State<_HomeTab> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.charcoal : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Text(
-              'search.title'.tr(),
-              style: GoogleFonts.rufina(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppColors.inkBlack,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              height: 52,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'search.hint'.tr(),
-                  hintStyle: GoogleFonts.outfit(
-                    color: isDark ? AppColors.paleText : AppColors.inkGrey,
-                    fontSize: 14,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: isDark ? AppColors.paleText : AppColors.inkGrey,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                ),
-                style: GoogleFonts.outfit(
-                  color: isDark ? Colors.white : AppColors.inkBlack,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'search.coming_soon'.tr(),
-              style: GoogleFonts.outfit(
-                fontSize: 13,
-                color: isDark ? AppColors.paleText : AppColors.inkGrey,
-              ),
-            ),
-          ],
-        ),
-      ),
+      builder: (sheetContext) => _ProductSearchSheet(isDark: isDark),
     );
   }
 
@@ -2397,4 +2520,234 @@ class _WardrobeSlide {
   final String imagePath;
   final List<Color> gradient;
   const _WardrobeSlide({required this.title, required this.sub, required this.imagePath, required this.gradient});
+}
+
+// ── Functional product search sheet ─────────────────────────────────────────
+class _ProductSearchSheet extends StatefulWidget {
+  final bool isDark;
+  const _ProductSearchSheet({required this.isDark});
+
+  @override
+  State<_ProductSearchSheet> createState() => _ProductSearchSheetState();
+}
+
+class _ProductSearchSheetState extends State<_ProductSearchSheet> {
+  final TextEditingController _controller = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  List<Product> get _results {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    return ProductRepository.allProducts.where((p) {
+      return p.name.toLowerCase().contains(q) ||
+          p.brand.toLowerCase().contains(q) ||
+          p.category.toLowerCase().contains(q) ||
+          (p.shopName ?? '').toLowerCase().contains(q) ||
+          p.tags.any((t) => t.toLowerCase().contains(q));
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    final results = _results;
+    final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: viewInsets),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.82,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.charcoal : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+        child: Column(
+          children: [
+            // Drag handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: muted.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Search field
+            Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: TextField(
+                controller: _controller,
+                autofocus: true,
+                textInputAction: TextInputAction.search,
+                onChanged: (v) => setState(() => _query = v),
+                decoration: InputDecoration(
+                  hintText: 'search.hint'.tr(),
+                  hintStyle: GoogleFonts.outfit(color: muted, fontSize: 14),
+                  prefixIcon: Icon(Icons.search_rounded, color: muted),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: Icon(Icons.close_rounded, color: muted, size: 20),
+                          onPressed: () {
+                            _controller.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                  border: InputBorder.none,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+                style: GoogleFonts.outfit(color: ink, fontSize: 14),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Result count / hint
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _query.trim().isEmpty
+                    ? 'search.title'.tr()
+                    : '${results.length} result${results.length == 1 ? '' : 's'}',
+                style: GoogleFonts.outfit(
+                    fontSize: 12, fontWeight: FontWeight.w600, color: muted),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Results
+            Expanded(
+              child: _query.trim().isEmpty
+                  ? _emptyState(Icons.search_rounded,
+                      'Search for clothes, shops or styles', muted)
+                  : results.isEmpty
+                      ? _emptyState(Icons.sentiment_dissatisfied_rounded,
+                          'No products match "$_query"', muted)
+                      : ListView.separated(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          itemCount: results.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (_, i) {
+                            final p = results[i];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ProductDetailScreen(
+                                      productId: p.id,
+                                      name: p.name,
+                                      price: p.price,
+                                      image: p.image,
+                                      brand: p.brand,
+                                      category: p.category,
+                                      description: p.description,
+                                      shopName: p.shopName,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppColors.darkWarm
+                                      : AppColors.creamCard,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: isDark
+                                          ? AppColors.darkBorder
+                                          : AppColors.creamAlt),
+                                ),
+                                child: Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: SizedBox(
+                                        width: 56,
+                                        height: 56,
+                                        child: CdnImage(p.image,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                Container(
+                                                    color: isDark
+                                                        ? AppColors.darkBorder
+                                                        : AppColors.creamAlt,
+                                                    child: Icon(
+                                                        Icons.checkroom_rounded,
+                                                        color: muted,
+                                                        size: 22))),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(p.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.outfit(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: ink)),
+                                          const SizedBox(height: 3),
+                                          Text(p.shopName ?? p.brand,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.outfit(
+                                                  fontSize: 11, color: muted)),
+                                          const SizedBox(height: 4),
+                                          Text(p.price,
+                                              style: GoogleFonts.outfit(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: accent)),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(Icons.chevron_right_rounded,
+                                        color: muted),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState(IconData icon, String message, Color muted) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 48, color: muted.withOpacity(0.5)),
+          const SizedBox(height: 12),
+          Text(message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(fontSize: 14, color: muted)),
+        ],
+      ),
+    );
+  }
 }
