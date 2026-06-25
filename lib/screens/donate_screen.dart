@@ -1,28 +1,258 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:pyin_mal_app/main.dart';
 
 class Shelter {
   final String name;
   final String address;
-  final String distance;
+  final String city; // 'Yangon' or 'Mandalay'
   final IconData icon;
   final List<String> needs;
   final String hours;
   final bool pickup;
   final double urgency; // 0..1 — how urgently they need donations
+  final String about;
 
   const Shelter({
     required this.name,
     required this.address,
-    required this.distance,
+    required this.city,
     required this.icon,
     required this.needs,
     required this.hours,
     required this.pickup,
     required this.urgency,
+    required this.about,
   });
+
+  /// Search string Google Maps can resolve to the real place.
+  String get mapsQuery => '$name, $address, $city, Myanmar';
+}
+
+// ── Open Google Maps directions to a shelter ──────────────────────────────────
+Future<void> _launchDirections(BuildContext context, Shelter s) async {
+  final q = Uri.encodeComponent(s.mapsQuery);
+  final dir =
+      Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$q');
+  final search =
+      Uri.parse('https://www.google.com/maps/search/?api=1&query=$q');
+  try {
+    final ok = await launchUrl(dir, mode: LaunchMode.externalApplication);
+    if (!ok) await launchUrl(search, mode: LaunchMode.externalApplication);
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open Google Maps')),
+      );
+    }
+  }
+}
+
+// ── Shelter "About" detail sheet ──────────────────────────────────────────────
+void _showShelterDetails(
+    BuildContext context, Shelter s, bool isDark, Color accent) {
+  final ink = isDark ? Colors.white : AppColors.inkBlack;
+  final muted = isDark ? Colors.white60 : const Color(0xFF888888);
+  final sheetBg = isDark ? AppColors.charcoal : Colors.white;
+  final urgent = s.urgency >= 0.7;
+
+  Widget infoRow(IconData icon, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 16, color: accent),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(text,
+                  style: GoogleFonts.outfit(
+                      fontSize: 13, height: 1.4, color: ink)),
+            ),
+          ],
+        ),
+      );
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetCtx) => Container(
+      constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(sheetCtx).size.height * 0.85),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: muted.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              // Header
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(s.icon, color: accent, size: 27),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(s.name,
+                            style: GoogleFonts.rufina(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: ink)),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: accent.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.location_on_rounded,
+                                      size: 12, color: accent),
+                                  const SizedBox(width: 3),
+                                  Text(s.city,
+                                      style: GoogleFonts.outfit(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: accent)),
+                                ],
+                              ),
+                            ),
+                            if (urgent) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE53935)
+                                      .withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text('donate.urgent'.tr(),
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFFE53935))),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              // About
+              Text('About',
+                  style: GoogleFonts.outfit(
+                      fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
+              const SizedBox(height: 6),
+              Text(s.about,
+                  style: GoogleFonts.outfit(
+                      fontSize: 13, height: 1.5, color: muted)),
+              const SizedBox(height: 18),
+              // Info
+              infoRow(Icons.place_outlined, '${s.address}, ${s.city}'),
+              infoRow(Icons.schedule_rounded, s.hours),
+              infoRow(
+                  s.pickup
+                      ? Icons.local_shipping_outlined
+                      : Icons.volunteer_activism_outlined,
+                  s.pickup
+                      ? 'Pickup available for donations'
+                      : 'Drop-off donations welcome'),
+              const SizedBox(height: 6),
+              // Needs
+              Text('donate.currently_needs'.tr(),
+                  style: GoogleFonts.outfit(
+                      fontSize: 12, fontWeight: FontWeight.w700, color: ink)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 7,
+                runSpacing: 7,
+                children: s.needs
+                    .map((n) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: accent.withOpacity(0.10),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(n,
+                              style: GoogleFonts.outfit(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: accent)),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Hours and current needs are indicative — please contact the centre to confirm before visiting.',
+                style: GoogleFonts.outfit(
+                    fontSize: 11, fontStyle: FontStyle.italic, color: muted),
+              ),
+              const SizedBox(height: 20),
+              // Directions button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () => _launchDirections(sheetCtx, s),
+                  icon: const Icon(Icons.directions_rounded, size: 18),
+                  label: Text('donate.directions'.tr(),
+                      style: GoogleFonts.outfit(
+                          fontSize: 15, fontWeight: FontWeight.w700)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor:
+                        isDark ? AppColors.charcoal : Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class DonateScreen extends StatefulWidget {
@@ -34,56 +264,76 @@ class DonateScreen extends StatefulWidget {
 
 class _DonateScreenState extends State<DonateScreen>
     with TickerProviderStateMixin {
+  // Real, well-known charitable organisations in Yangon and Mandalay.
+  // The Directions button resolves each place by name via Google Maps.
   static const _shelters = <Shelter>[
     Shelter(
-      name: 'Hope Shelter',
-      address: 'No. 24, Pyay Road, Sanchaung',
-      distance: '1.2 km',
-      icon: Icons.home_rounded,
-      needs: ['Jackets', 'Hoodies', 'Blankets'],
-      hours: 'Open today · 9:00 AM – 6:00 PM',
-      pickup: true,
-      urgency: 0.9,
-    ),
-    Shelter(
-      name: 'New Life Center',
-      address: 'Bo Aung Kyaw St, Kyauktada',
-      distance: '2.8 km',
-      icon: Icons.apartment_rounded,
-      needs: ['Children\'s wear', 'Shoes', 'T-Shirts'],
-      hours: 'Open today · 8:00 AM – 5:00 PM',
+      name: 'Hninzigon Home for the Aged',
+      address: 'Kabar Aye Pagoda Rd, Bahan Tsp',
+      city: 'Yangon',
+      icon: Icons.elderly_rounded,
+      needs: ['Warm clothes', 'Blankets', 'Longyi'],
+      hours: 'Open daily · 9:00 AM – 5:00 PM',
       pickup: false,
-      urgency: 0.6,
+      urgency: 0.7,
+      about:
+          'One of Myanmar\'s oldest and largest charitable homes for the elderly, '
+          'caring for hundreds of residents in Bahan Township. Donations of '
+          'clothing, blankets and daily essentials are always welcome.',
     ),
     Shelter(
-      name: 'Sunrise Home',
-      address: 'Insein Road, Hlaing Township',
-      distance: '4.1 km',
-      icon: Icons.wb_sunny_rounded,
-      needs: ['Warm clothes', 'Sweaters'],
-      hours: 'Open today · 10:00 AM – 7:00 PM',
-      pickup: true,
-      urgency: 0.45,
-    ),
-    Shelter(
-      name: 'Safe Haven',
-      address: 'Kabar Aye Pagoda Rd, Yankin',
-      distance: '5.6 km',
-      icon: Icons.shield_rounded,
+      name: 'Free Funeral Service Society',
+      address: 'Thaketa Township',
+      city: 'Yangon',
+      icon: Icons.volunteer_activism_rounded,
       needs: ['Any clean clothes', 'Footwear'],
-      hours: 'Closes 8:00 PM',
+      hours: 'Open daily · 9:00 AM – 4:00 PM',
       pickup: false,
-      urgency: 0.75,
+      urgency: 0.5,
+      about:
+          'Founded by actor Kyaw Thu, the FFSS provides free funeral services and '
+          'also runs a free clinic, library and education programs for people in need.',
     ),
     Shelter(
-      name: 'Metta Care Center',
-      address: 'University Ave, Bahan',
-      distance: '6.3 km',
-      icon: Icons.favorite_rounded,
-      needs: ['Men\'s wear', 'Jackets', 'Bags'],
+      name: 'Thabarwa Centre',
+      address: 'Thanlyin',
+      city: 'Yangon',
+      icon: Icons.spa_rounded,
+      needs: ['Clothes', 'Blankets', 'Medical supplies'],
       hours: 'Open 24 hours',
       pickup: true,
+      urgency: 0.85,
+      about:
+          'A large community centre founded by Sayadaw U Ottamasara that shelters '
+          'thousands of sick, elderly and homeless people. It relies entirely on '
+          'donations and volunteers.',
+    ),
+    Shelter(
+      name: 'Phaung Daw Oo Monastic Education School',
+      address: 'Pyigyitagon Township',
+      city: 'Mandalay',
+      icon: Icons.school_rounded,
+      needs: ['Children\'s wear', 'Shoes', 'Stationery'],
+      hours: 'Mon – Fri · 8:00 AM – 4:00 PM',
+      pickup: false,
+      urgency: 0.6,
+      about:
+          'A renowned monastic school providing free education to thousands of '
+          'underprivileged children in Mandalay. It welcomes donations of clothing, '
+          'school supplies and food.',
+    ),
+    Shelter(
+      name: 'Aung Myae Oo Monastic Free Education School',
+      address: 'Sagaing (near Mandalay)',
+      city: 'Mandalay',
+      icon: Icons.menu_book_rounded,
+      needs: ['Uniforms', 'Warm clothes', 'Books'],
+      hours: 'Mon – Fri · 8:00 AM – 4:00 PM',
+      pickup: false,
       urgency: 0.55,
+      about:
+          'A large free monastic school near Mandalay educating thousands of '
+          'children from poor families, supported entirely by public donations.',
     ),
   ];
 
@@ -210,7 +460,7 @@ class _DonateScreenState extends State<DonateScreen>
                             Icon(Icons.location_on_rounded,
                                 size: 13, color: accent),
                             const SizedBox(width: 3),
-                            Text('donate.yangon'.tr(),
+                            Text('Yangon · Mandalay',
                                 style: GoogleFonts.outfit(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -486,6 +736,7 @@ class _ShelterCardState extends State<_ShelterCard> {
         onTapDown: (_) => setState(() => _pressed = true),
         onTapUp: (_) => setState(() => _pressed = false),
         onTapCancel: () => setState(() => _pressed = false),
+        onTap: () => _showShelterDetails(context, s, isDark, accent),
         child: Container(
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.all(16),
@@ -559,7 +810,7 @@ class _ShelterCardState extends State<_ShelterCard> {
                                       fontSize: 12, color: muted)),
                             ),
                             const SizedBox(width: 6),
-                            Text(s.distance,
+                            Text(s.city,
                                 style: GoogleFonts.outfit(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -616,7 +867,7 @@ class _ShelterCardState extends State<_ShelterCard> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _confirm('${'donate.directions_to'.tr()} '),
+                      onPressed: () => _launchDirections(context, s),
                       icon: const Icon(Icons.directions_rounded, size: 15),
                       label: Text('donate.directions'.tr(),
                           style: GoogleFonts.outfit(

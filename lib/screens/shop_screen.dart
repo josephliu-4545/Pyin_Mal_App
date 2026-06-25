@@ -7,6 +7,7 @@ import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/screens/category_products_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/widgets/cart_bar.dart';
+import 'package:pyin_mal_app/widgets/product_search_sheet.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
@@ -142,6 +143,8 @@ class _ShopScreenState extends State<ShopScreen> {
                         ),
                         child: TextField(
                           controller: _searchController,
+                          readOnly: true,
+                          onTap: () => showProductSearch(context, isDark),
                           decoration: InputDecoration(
                             hintText: 'shop.search_hint'.tr(),
                             hintStyle: GoogleFonts.outfit(
