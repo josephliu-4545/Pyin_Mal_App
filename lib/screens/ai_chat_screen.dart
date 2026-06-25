@@ -8,6 +8,7 @@ import 'package:pyin_mal_app/services/gemini_service.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class AiChatScreen extends StatefulWidget {
   const AiChatScreen({super.key});
@@ -20,6 +21,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final GeminiService _geminiService = GeminiService();
+  final stt.SpeechToText _speechToText = stt.SpeechToText();
+  bool _speechEnabled = false;
+  bool _isListening = false;
+  bool _autoSend = true;
+  String _currentLocaleId = 'my-MM';
 
   final List<AiMessage> _messages = [
     AiMessage(
@@ -29,6 +35,56 @@ class _AiChatScreenState extends State<AiChatScreen> {
   ];
   
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSpeech();
+  }
+
+  void _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize(
+      onStatus: (status) {
+        if (status == 'done' || status == 'notListening') {
+          setState(() {
+            _isListening = false;
+          });
+          if (_autoSend && _textController.text.trim().isNotEmpty) {
+            _sendMessage();
+          }
+        }
+      },
+      onError: (errorNotification) {
+        setState(() {
+          _isListening = false;
+        });
+      },
+    );
+    setState(() {});
+  }
+
+  void _startListening() async {
+    FocusScope.of(context).unfocus(); // Unfocus keyboard
+    _textController.clear();
+    await _speechToText.listen(
+      onResult: (result) {
+        setState(() {
+          _textController.text = result.recognizedWords;
+        });
+      },
+      localeId: _currentLocaleId,
+    );
+    setState(() {
+      _isListening = true;
+    });
+  }
+
+  void _stopListening() async {
+    await _speechToText.stop();
+    setState(() {
+      _isListening = false;
+    });
+  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -295,48 +351,104 @@ class _AiChatScreenState extends State<AiChatScreen> {
           ),
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: TextField(
-                controller: _textController,
-                style: GoogleFonts.outfit(
-                  color: isDark ? Colors.white : AppColors.inkBlack,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'ai_chat.ask_advice'.tr(),
-                  hintStyle: GoogleFonts.outfit(
-                    color: isDark ? AppColors.paleText : AppColors.inkGrey,
+          if (_speechEnabled)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text('Auto-send', style: GoogleFonts.outfit(color: isDark ? Colors.white70 : AppColors.inkGrey, fontSize: 12)),
+                      Switch(
+                        value: _autoSend,
+                        onChanged: (val) => setState(() => _autoSend = val),
+                        activeColor: accent,
+                      ),
+                    ],
                   ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => setState(() => _currentLocaleId = 'en-US'),
+                        child: Text('EN', style: GoogleFonts.outfit(color: _currentLocaleId == 'en-US' ? accent : (isDark ? Colors.white70 : AppColors.inkGrey), fontSize: 12, fontWeight: _currentLocaleId == 'en-US' ? FontWeight.bold : FontWeight.normal)),
+                      ),
+                      const SizedBox(width: 8),
+                      Text('|', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12)),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => setState(() => _currentLocaleId = 'my-MM'),
+                        child: Text('MM', style: GoogleFonts.outfit(color: _currentLocaleId == 'my-MM' ? accent : (isDark ? Colors.white70 : AppColors.inkGrey), fontSize: 12, fontWeight: _currentLocaleId == 'my-MM' ? FontWeight.bold : FontWeight.normal)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: TextField(
+                    controller: _textController,
+                    style: GoogleFonts.outfit(
+                      color: isDark ? Colors.white : AppColors.inkBlack,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'ai_chat.ask_advice'.tr(),
+                      hintStyle: GoogleFonts.outfit(
+                        color: isDark ? AppColors.paleText : AppColors.inkGrey,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
                 ),
-                onSubmitted: (_) => _sendMessage(),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: _sendMessage,
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: accent,
-                shape: BoxShape.circle,
+              const SizedBox(width: 8),
+              if (_speechEnabled)
+                GestureDetector(
+                  onTap: _isListening ? _stopListening : _startListening,
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: _isListening ? Colors.red : (isDark ? AppColors.darkWarm : AppColors.creamAlt),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _isListening ? Icons.mic : Icons.mic_none,
+                      color: _isListening ? Colors.white : (isDark ? Colors.white : AppColors.inkBlack),
+                      size: 24,
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _sendMessage,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: accent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.send_rounded,
+                    color: isDark ? AppColors.charcoal : Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
-              child: Icon(
-                Icons.send_rounded,
-                color: isDark ? AppColors.charcoal : Colors.white,
-                size: 20,
-              ),
-            ),
+            ],
           ),
         ],
       ),

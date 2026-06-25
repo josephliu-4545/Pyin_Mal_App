@@ -103,12 +103,12 @@ class FloatingScannerService {
     // Show the overlay FAB (96×96 dp, right edge, draggable anywhere)
     try {
       await FlutterOverlayWindow.showOverlay(
-        height:          96,
-        width:           96,
+        height:          90,
+        width:           90,
         alignment:       OverlayAlignment.centerRight,
         flag:            OverlayFlag.focusPointer,
-        overlayTitle:    'ta chat nhate Scanner',
-        overlayContent:  'ta chat nhate Scanner is active — tap to scan',
+        overlayTitle:    'Pyin Mal Scanner',
+        overlayContent:  'Pyin Mal Scanner is active — tap to scan',
         enableDrag:      true,
         positionGravity: PositionGravity.auto,
       );

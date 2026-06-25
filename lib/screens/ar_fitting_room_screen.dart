@@ -76,6 +76,7 @@ class _ARFittingRoomScreenState extends State<ARFittingRoomScreen>
   bool _permissionDenied = false;
   bool _isSaving = false;
 
+  CameraLensDirection _currentLensDirection = CameraLensDirection.front;
   PoseResult? _poseResult;
 
   // Selected clothing
@@ -138,9 +139,9 @@ class _ARFittingRoomScreenState extends State<ARFittingRoomScreen>
       return;
     }
 
-    // Prefer front camera for selfie try-on; fall back to back
+    // Get the camera matching the current selected direction
     final camera = cameras.firstWhere(
-      (c) => c.lensDirection == CameraLensDirection.front,
+      (c) => c.lensDirection == _currentLensDirection,
       orElse: () => cameras.first,
     );
     final isFront = camera.lensDirection == CameraLensDirection.front;
@@ -210,6 +211,23 @@ class _ARFittingRoomScreenState extends State<ARFittingRoomScreen>
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────
+
+  Future<void> _flipCamera() async {
+    if (_camCtrl == null || _useMockPose) return;
+
+    setState(() {
+      _cameraReady = false;
+      _currentLensDirection = _currentLensDirection == CameraLensDirection.front
+          ? CameraLensDirection.back
+          : CameraLensDirection.front;
+    });
+
+    await _camCtrl?.stopImageStream().catchError((_) {});
+    await _camCtrl?.dispose();
+    _camCtrl = null;
+
+    await _startCamera();
+  }
 
   Future<void> _saveScreenshot() async {
     if (_isSaving) return;
@@ -380,15 +398,24 @@ class _ARFittingRoomScreenState extends State<ARFittingRoomScreen>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // ── 1. Camera preview (or mock dark background) ────────────────
-          _buildCameraPreview(),
-
-          // ── 2. Clothing overlay (positioned over body) ─────────────────
-          ClothingOverlay(
-            pose: _poseResult,
-            assetPath: _selectedItem.assetPath,
-            tintColor:
-                _selectedColor?.color ?? Colors.transparent,
+          // ── 1. Camera + Overlay (perfectly aligned aspect ratio) ───────
+          Center(
+            child: AspectRatio(
+              aspectRatio: _useMockPose || _camCtrl == null
+                  ? 9 / 16 // default fallback portrait ratio
+                  : 1 / _camCtrl!.value.aspectRatio, // portrait camera ratio
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildCameraPreview(),
+                  ClothingOverlay(
+                    pose: _poseResult,
+                    assetPath: _selectedItem.assetPath,
+                    tintColor: _selectedColor?.color ?? Colors.transparent,
+                  ),
+                ],
+              ),
+            ),
           ),
 
           // ── 3. Body-not-detected instruction ──────────────────────────
@@ -416,9 +443,8 @@ class _ARFittingRoomScreenState extends State<ARFittingRoomScreen>
       // Mock mode: show animated gradient background to simulate camera
       return _buildMockBackground();
     }
-    return SizedBox.expand(
-      child: CameraPreview(_camCtrl!),
-    );
+    // CameraPreview will automatically fill the AspectRatio we provided above.
+    return CameraPreview(_camCtrl!);
   }
 
   Widget _buildMockBackground() {
@@ -549,12 +575,24 @@ class _ARFittingRoomScreenState extends State<ARFittingRoomScreen>
                 ),
               ),
 
-              // Save / screenshot button
-              _TopBarButton(
-                icon: _isSaving
-                    ? Icons.hourglass_empty_rounded
-                    : Icons.camera_alt_rounded,
-                onTap: _saveScreenshot,
+              // Flip camera & Save buttons
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!_useMockPose) ...[
+                    _TopBarButton(
+                      icon: Icons.flip_camera_ios_rounded,
+                      onTap: _flipCamera,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  _TopBarButton(
+                    icon: _isSaving
+                        ? Icons.hourglass_empty_rounded
+                        : Icons.camera_alt_rounded,
+                    onTap: _saveScreenshot,
+                  ),
+                ],
               ),
             ],
           ),

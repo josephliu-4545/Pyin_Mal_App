@@ -122,14 +122,19 @@ class PoseDetectionService {
 
       final pose = poses.first;
 
+      final isPortrait = rotation == InputImageRotation.rotation90deg || 
+                         rotation == InputImageRotation.rotation270deg;
+      final double rotatedWidth = isPortrait ? image.height.toDouble() : image.width.toDouble();
+      final double rotatedHeight = isPortrait ? image.width.toDouble() : image.height.toDouble();
+
       // Helper: convert one MLKit landmark to our ARLandmark in normalized coords
       ARLandmark? toLandmark(PoseLandmarkType type) {
         final lm = pose.landmarks[type];
         if (lm == null) return null;
 
-        // MLKit gives pixel coordinates within the input image
-        double nx = lm.x / image.width;
-        double ny = lm.y / image.height;
+        // MLKit gives pixel coordinates translated to the rotated image
+        double nx = lm.x / rotatedWidth;
+        double ny = lm.y / rotatedHeight;
 
         // Mirror X for front-facing camera
         if (isFrontCamera) nx = 1.0 - nx;
