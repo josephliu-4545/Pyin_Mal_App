@@ -54,15 +54,16 @@ class FloatingScannerService {
   static void initialize() {
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
-        channelId:          'pyin_mal_scanner',
-        channelName:        'ta chat nhate Scanner',
+        channelId: 'pyin_mal_scanner',
+        channelName: 'ta chat nhate Scanner',
         channelDescription: 'ta chat nhate Scanner is active — tap to scan',
-        onlyAlertOnce:      true,
-        playSound:          false,
+        onlyAlertOnce: true,
+        playSound: false,
       ),
-      iosNotificationOptions: const IOSNotificationOptions(showNotification: false),
+      iosNotificationOptions:
+          const IOSNotificationOptions(showNotification: false),
       foregroundTaskOptions: ForegroundTaskOptions(
-        eventAction:   ForegroundTaskEventAction.nothing(),
+        eventAction: ForegroundTaskEventAction.nothing(),
         autoRunOnBoot: true,
       ),
     );
@@ -89,27 +90,28 @@ class FloatingScannerService {
     // Start foreground service (ignore if already running)
     try {
       final result = await FlutterForegroundTask.startService(
-        serviceId:         1,
+        serviceId: 1,
         notificationTitle: 'ta chat nhate Scanner',
-        notificationText:  'ta chat nhate Scanner is active — tap to scan',
-        callback:          _foregroundTaskCallback,
+        notificationText: 'ta chat nhate Scanner is active — tap to scan',
+        callback: _foregroundTaskCallback,
       );
       debugPrint('FloatingScannerService: startService result = $result');
     } catch (e) {
       // ServiceAlreadyStartedException is fine — service is running
-      debugPrint('FloatingScannerService: startService error (may be already running): $e');
+      debugPrint(
+          'FloatingScannerService: startService error (may be already running): $e');
     }
 
     // Show the overlay FAB (96×96 dp, right edge, draggable anywhere)
     try {
       await FlutterOverlayWindow.showOverlay(
-        height:          90,
-        width:           90,
-        alignment:       OverlayAlignment.centerRight,
-        flag:            OverlayFlag.focusPointer,
-        overlayTitle:    'Pyin Mal Scanner',
-        overlayContent:  'Pyin Mal Scanner is active — tap to scan',
-        enableDrag:      true,
+        height: 96,
+        width: 96,
+        alignment: OverlayAlignment.centerRight,
+        flag: OverlayFlag.focusPointer,
+        overlayTitle: 'ta chat nhate Scanner',
+        overlayContent: 'ta chat nhate Scanner is active — tap to scan',
+        enableDrag: true,
         positionGravity: PositionGravity.auto,
       );
       debugPrint('FloatingScannerService: showOverlay called');
@@ -148,7 +150,6 @@ class FloatingScannerService {
         : raw as Map<String, dynamic>;
 
     switch (msg['action'] as String?) {
-
       case 'requestProjection':
         bool granted = false;
         try {
@@ -176,7 +177,9 @@ class FloatingScannerService {
         // Store for the main app to navigate to when it comes to foreground
         pendingOverlayProduct.value = Map<String, dynamic>.from(msg);
         // Bring main app to foreground via native channel
-        try { await _captureChannel.invokeMethod('launchApp'); } catch (_) {}
+        try {
+          await _captureChannel.invokeMethod('launchApp');
+        } catch (_) {}
         break;
     }
   }
@@ -184,17 +187,23 @@ class FloatingScannerService {
   // ── Capture + identify ────────────────────────────────────────────────────
 
   static Future<void> _captureAndIdentify({
-    required int x, required int y, required int w, required int h,
+    required int x,
+    required int y,
+    required int w,
+    required int h,
   }) async {
     // Notify overlay that capture + AI call is in progress
     await FlutterOverlayWindow.shareData(jsonEncode({'action': 'scanning'}));
 
     try {
       // 1 — capture region via native
-      final bytes = await _captureChannel
-          .invokeMethod<Uint8List>('captureRegion',
-              {'x': x, 'y': y, 'w': w, 'h': h})
-          .timeout(const Duration(seconds: 15));
+      final bytes = await _captureChannel.invokeMethod<Uint8List>(
+          'captureRegion', {
+        'x': x,
+        'y': y,
+        'w': w,
+        'h': h
+      }).timeout(const Duration(seconds: 15));
 
       if (bytes == null || bytes.isEmpty) {
         await _sendError('Screen capture failed.');
@@ -211,16 +220,18 @@ class FloatingScannerService {
       } else {
         await FlutterOverlayWindow.shareData(jsonEncode({
           'action': 'showResults',
-          'products': products.map((p) => {
-            'id':          p.id,
-            'name':        p.name,
-            'price':       p.price,
-            'image':       p.image,
-            'brand':       p.brand,
-            'category':    p.category,
-            'description': p.description,
-            'shopName':    p.shopName,
-          }).toList(),
+          'products': products
+              .map((p) => {
+                    'id': p.id,
+                    'name': p.name,
+                    'price': p.price,
+                    'image': p.image,
+                    'brand': p.brand,
+                    'category': p.category,
+                    'description': p.description,
+                    'shopName': p.shopName,
+                  })
+              .toList(),
         }));
       }
     } catch (e) {
