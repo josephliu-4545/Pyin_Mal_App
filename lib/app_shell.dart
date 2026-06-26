@@ -27,6 +27,8 @@ import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 import 'package:pyin_mal_app/widgets/cart_bar.dart';
 import 'package:pyin_mal_app/widgets/product_search_sheet.dart';
 import 'package:pyin_mal_app/widgets/shop_showcase.dart';
+import 'package:pyin_mal_app/core/constants/shop_constants.dart';
+import 'package:pyin_mal_app/screens/shop_products_screen.dart';
 
 /// Foodpanda-style brand pink used for the bottom nav + home tabs accent.
 const Color kBrandPink = Color(0xFFD70F64);
@@ -227,10 +229,8 @@ class _HomeTabState extends State<_HomeTab> {
   late DateTime _saleEndsAt;
   Duration _saleRemaining = const Duration(hours: 2, minutes: 45, seconds: 30);
 
-  // (title, subtitle, gradient, icon, imageAsset, badge, cta)
-  // Drop matching images in assets/images/ to show them; until then the
-  // gradient shows as a graceful fallback. (Future: swap asset for a URL.)
-  static const _ads = <(String, String, List<Color>, IconData, String, String, String)>[
+  // Static promo slides — always shown
+  static const _staticAds = <(String, String, List<Color>, IconData, String, String, String)>[
     ('New season drop', 'Up to 40% off select styles',
         [Color(0xFF6B2737), Color(0xFFB0293F)], Icons.local_offer_rounded,
         'assets/images/ad_sale.jpg', 'HOT DEAL', 'Shop now'),
@@ -241,6 +241,9 @@ class _HomeTabState extends State<_HomeTab> {
         [Color(0xFF2E6B4F), Color(0xFF4FA37A)], Icons.volunteer_activism_rounded,
         'assets/images/ad_donate.jpg', 'REWARDS', 'Donate'),
   ];
+
+  // Shop slides — shops that have uploaded cover.jpg
+  List<ShopInfo> _shopAdSlides = [];
 
   // Where each promo banner navigates when tapped (index-aligned with _ads).
   static Future<bool> _assetExists(String path) async {
@@ -293,12 +296,18 @@ class _HomeTabState extends State<_HomeTab> {
   List<(String, IconData, VoidCallback)> get _quickFeatures =>
       _homeTab == 0 ? _forYouFeatures : _servicesFeatures;
 
+  List<ShopInfo> get _effectiveShopSlides =>
+      _shopAdSlides.isNotEmpty ? _shopAdSlides : ShopConstants.shops;
+
+  int get _totalAdCount => _staticAds.length + _effectiveShopSlides.length;
+
   @override
   void initState() {
     super.initState();
+    _loadShopAdSlides();
     _adTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (!_adController.hasClients) return;
-      _adPage = (_adPage + 1) % _ads.length;
+      _adPage = (_adPage + 1) % _totalAdCount;
       _adController.animateToPage(
         _adPage,
         duration: const Duration(milliseconds: 450),
@@ -318,6 +327,15 @@ class _HomeTabState extends State<_HomeTab> {
       }
       setState(() => _saleRemaining = remaining);
     });
+  }
+
+  Future<void> _loadShopAdSlides() async {
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    final assets = manifest.listAssets();
+    final shops = ShopConstants.shops
+        .where((s) => assets.contains(s.bannerAsset))
+        .toList();
+    if (mounted) setState(() => _shopAdSlides = shops);
   }
 
   String _fmtDuration(Duration d) {
@@ -581,10 +599,15 @@ class _HomeTabState extends State<_HomeTab> {
           height: 158,
           child: PageView.builder(
             controller: _adController,
-            itemCount: _ads.length,
+            itemCount: _totalAdCount,
             onPageChanged: (i) => setState(() => _adPage = i),
             itemBuilder: (_, i) {
-              final ad = _ads[i];
+              // Shop slides come after static slides
+              if (i >= _staticAds.length) {
+                final shop = _effectiveShopSlides[i - _staticAds.length];
+                return _buildShopAdSlide(shop);
+              }
+              final ad = _staticAds[i];
               return GestureDetector(
                 onTap: () => _onAdTap(i),
                 child: Container(
@@ -756,7 +779,7 @@ class _HomeTabState extends State<_HomeTab> {
         // Dots
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_ads.length, (i) {
+          children: List.generate(_totalAdCount, (i) {
             final sel = _adPage == i;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 220),
@@ -775,6 +798,96 @@ class _HomeTabState extends State<_HomeTab> {
           }),
         ),
       ],
+    );
+  }
+
+  Widget _buildShopAdSlide(ShopInfo shop) {
+    return GestureDetector(
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => ShopProductsScreen(shopName: shop.name))),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.25),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(shop.bannerAsset, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF2A1A0E), Color(0xFF5C3317)],
+                      ),
+                    ),
+                  )),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.6)],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 20, right: 70, bottom: 0, top: 0,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text('SHOP SPOTLIGHT',
+                          style: GoogleFonts.outfit(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 1.2)),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(shop.name,
+                        style: GoogleFonts.rufina(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
+                    const SizedBox(height: 4),
+                    Text(shop.tagline,
+                        style: GoogleFonts.outfit(
+                            fontSize: 12, color: Colors.white70)),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('Visit shop →',
+                          style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.inkBlack)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1502,17 +1615,7 @@ class _HomeTabState extends State<_HomeTab> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ProductDetailScreen(
-                        productId: p.id,
-                        name: p.name,
-                        price: p.price,
-                        image: p.image,
-                        brand: p.brand,
-                        category: p.category,
-                        description: p.description,
-                        shopName: p.shopName,
-                        discount: off,
-                      ),
+                      builder: (_) => ProductDetailScreen.fromProduct(p, discount: off),
                     ),
                   ),
                   child: Container(

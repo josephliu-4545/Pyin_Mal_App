@@ -1,51 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import 'package:pyin_mal_app/main.dart';
-import 'package:pyin_mal_app/core/constants/api_constants.dart';
-import 'package:pyin_mal_app/widgets/cdn_image.dart';
+import 'package:pyin_mal_app/core/constants/shop_constants.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
 
-/// A shop featured on the home page. Media is served from the assets CDN.
-///
-/// Expected files in the `josephliu-4545/pyin-mal-assets` repo (branch `main`):
-///   assets/images/shops/<slug>/cover.jpg     ← banner + video poster
-///   assets/images/shops/<slug>/logo.png      ← small transparent logo
-///   assets/images/shops/<slug>/look_1.jpg    ← lookbook photos (1..3)
-///   assets/images/shops/<slug>/look_2.jpg
-///   assets/images/shops/<slug>/look_3.jpg
-///   assets/videos/shops/<slug>.mp4           ← short vertical spotlight clip
-class ShopShowcase {
-  final String name; // must match Product.shopName so we can open the shop
-  final String slug;
-  final String tagline;
-  const ShopShowcase(
-      {required this.name, required this.slug, required this.tagline});
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-  String get cover => 'assets/images/shops/$slug/cover.jpg';
-  String get logo => 'assets/images/shops/$slug/logo.png';
-  String look(int i) => 'assets/images/shops/$slug/look_$i.jpg';
-  String get videoUrl => '${ApiConstants.cdnRootUrl}assets/videos/shops/$slug.mp4';
-}
-
-const kShopShowcases = <ShopShowcase>[
-  ShopShowcase(
-      name: 'Pyin Mal Official',
-      slug: 'pyin_mal_official',
-      tagline: 'The flagship store'),
-  ShopShowcase(
-      name: 'Luna Boutique', slug: 'luna_boutique', tagline: 'Elegant womenswear'),
-  ShopShowcase(
-      name: 'NRF Store', slug: 'nrf_store', tagline: 'Streetwear essentials'),
-  ShopShowcase(
-      name: 'ABCD Fashion', slug: 'abcd_fashion', tagline: 'Bold everyday fits'),
-  ShopShowcase(
-      name: 'AJOHN Official', slug: 'ajohn_official', tagline: 'Premium basics'),
-];
-
-void _openShop(BuildContext context, ShopShowcase s) {
+void _openShop(BuildContext context, ShopInfo shop) {
   Navigator.push(context,
-      MaterialPageRoute(builder: (_) => ShopProductsScreen(shopName: s.name)));
+      MaterialPageRoute(builder: (_) => ShopProductsScreen(shopName: shop.name)));
 }
 
 Widget _sectionHeader(String title, String subtitle, bool isDark) {
@@ -63,28 +28,58 @@ Widget _sectionHeader(String title, String subtitle, bool isDark) {
   );
 }
 
-// ── Section 1: Shop Spotlight (videos) ────────────────────────────────────────
-class ShopSpotlightSection extends StatelessWidget {
+/// Loads asset manifest once and caches it for the widget tree.
+Future<List<String>> _loadManifestAssets() async {
+  final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+  return manifest.listAssets();
+}
+
+// ── Section 1: Shop Spotlight (videos) ───────────────────────────────────────
+
+class ShopSpotlightSection extends StatefulWidget {
   final bool isDark;
   const ShopSpotlightSection({super.key, required this.isDark});
 
   @override
+  State<ShopSpotlightSection> createState() => _ShopSpotlightSectionState();
+}
+
+class _ShopSpotlightSectionState extends State<ShopSpotlightSection> {
+  List<ShopInfo> _shops = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadShops();
+  }
+
+  Future<void> _loadShops() async {
+    final assets = await _loadManifestAssets();
+    // Spotlight shows shops that have a cover image (video is optional — loads on tap)
+    final available = ShopConstants.shops
+        .where((s) => assets.contains(s.posterAsset))
+        .toList();
+    if (mounted) setState(() => _shops = available);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final shops = _shops.isEmpty ? ShopConstants.shops : _shops;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Shop Spotlight', 'Tap to watch the latest from our shops',
-            isDark),
+        _sectionHeader(
+            'Shop Spotlight', 'Tap to watch the latest from our shops', widget.isDark),
         const SizedBox(height: 14),
         SizedBox(
           height: 280,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            itemCount: kShopShowcases.length,
+            itemCount: shops.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, i) =>
-                _ShopVideoCard(shop: kShopShowcases[i], isDark: isDark),
+                _ShopVideoCard(shop: shops[i], isDark: widget.isDark),
           ),
         ),
       ],
@@ -93,7 +88,7 @@ class ShopSpotlightSection extends StatelessWidget {
 }
 
 class _ShopVideoCard extends StatefulWidget {
-  final ShopShowcase shop;
+  final ShopInfo shop;
   final bool isDark;
   const _ShopVideoCard({required this.shop, required this.isDark});
 
@@ -116,21 +111,15 @@ class _ShopVideoCardState extends State<_ShopVideoCard> {
     final c = _ctrl;
     if (c == null) {
       setState(() => _loading = true);
-      final controller =
-          VideoPlayerController.networkUrl(Uri.parse(widget.shop.videoUrl));
+      final controller = VideoPlayerController.networkUrl(
+          Uri.parse(widget.shop.videoUrl));
       try {
         await controller.initialize();
         await controller.setLooping(true);
         await controller.setVolume(0);
         await controller.play();
-        if (!mounted) {
-          controller.dispose();
-          return;
-        }
-        setState(() {
-          _ctrl = controller;
-          _loading = false;
-        });
+        if (!mounted) { controller.dispose(); return; }
+        setState(() { _ctrl = controller; _loading = false; });
       } catch (_) {
         controller.dispose();
         if (!mounted) return;
@@ -147,10 +136,7 @@ class _ShopVideoCardState extends State<_ShopVideoCard> {
   void _toggleMute() {
     final c = _ctrl;
     if (c == null) return;
-    setState(() {
-      _muted = !_muted;
-      c.setVolume(_muted ? 0 : 1);
-    });
+    setState(() { _muted = !_muted; c.setVolume(_muted ? 0 : 1); });
   }
 
   @override
@@ -169,7 +155,6 @@ class _ShopVideoCardState extends State<_ShopVideoCard> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Video (when playing) or poster image
               if (ready)
                 FittedBox(
                   fit: BoxFit.cover,
@@ -181,21 +166,15 @@ class _ShopVideoCardState extends State<_ShopVideoCard> {
                   ),
                 )
               else
-                CdnImage(
-                  widget.shop.cover,
+                Image.asset(
+                  widget.shop.posterAsset,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
-                    color: widget.isDark
-                        ? AppColors.darkWarm
-                        : AppColors.creamAlt,
-                    child: Icon(Icons.storefront_rounded,
-                        size: 42,
-                        color: widget.isDark
-                            ? Colors.white24
-                            : Colors.black26),
+                    color: widget.isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                    child: Icon(Icons.storefront_rounded, size: 42,
+                        color: widget.isDark ? Colors.white24 : Colors.black26),
                   ),
                 ),
-              // Scrim
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -208,7 +187,6 @@ class _ShopVideoCardState extends State<_ShopVideoCard> {
                   ),
                 ),
               ),
-              // Play / loading indicator
               if (!playing)
                 Center(
                   child: Container(
@@ -222,13 +200,11 @@ class _ShopVideoCardState extends State<_ShopVideoCard> {
                         ? const Padding(
                             padding: EdgeInsets.all(12),
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                          )
+                                strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.play_arrow_rounded,
                             color: Colors.white, size: 28),
                   ),
                 ),
-              // Mute toggle (only while playing)
               if (playing)
                 Positioned(
                   top: 10,
@@ -242,19 +218,13 @@ class _ShopVideoCardState extends State<_ShopVideoCard> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                          _muted
-                              ? Icons.volume_off_rounded
-                              : Icons.volume_up_rounded,
-                          color: Colors.white,
-                          size: 16),
+                          _muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                          color: Colors.white, size: 16),
                     ),
                   ),
                 ),
-              // Shop name + visit
               Positioned(
-                left: 12,
-                right: 12,
-                bottom: 12,
+                left: 12, right: 12, bottom: 12,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -293,27 +263,50 @@ class _ShopVideoCardState extends State<_ShopVideoCard> {
   }
 }
 
-// ── Section 2: Featured Shops (image banners) ─────────────────────────────────
-class FeaturedShopsSection extends StatelessWidget {
+// ── Section 2: Featured Shops (cover + logo) ──────────────────────────────────
+
+class FeaturedShopsSection extends StatefulWidget {
   final bool isDark;
   const FeaturedShopsSection({super.key, required this.isDark});
 
   @override
+  State<FeaturedShopsSection> createState() => _FeaturedShopsSectionState();
+}
+
+class _FeaturedShopsSectionState extends State<FeaturedShopsSection> {
+  List<ShopInfo> _shops = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadShops();
+  }
+
+  Future<void> _loadShops() async {
+    final assets = await _loadManifestAssets();
+    final available = ShopConstants.shops
+        .where((s) => assets.contains(s.coverAsset))
+        .toList();
+    if (mounted) setState(() => _shops = available);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final shops = _shops.isEmpty ? ShopConstants.shops : _shops;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Featured Shops', 'Discover stores on Pyin Mal', isDark),
+        _sectionHeader('Featured Shops', 'Discover stores on Pyin Mal', widget.isDark),
         const SizedBox(height: 14),
         SizedBox(
           height: 170,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            itemCount: kShopShowcases.length,
+            itemCount: shops.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, i) {
-              final s = kShopShowcases[i];
+              final s = shops[i];
               return GestureDetector(
                 onTap: () => _openShop(context, s),
                 child: ClipRRect(
@@ -323,16 +316,15 @@ class FeaturedShopsSection extends StatelessWidget {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        CdnImage(
-                          s.cover,
+                        Image.asset(
+                          s.coverAsset,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
-                            color: isDark
+                            color: widget.isDark
                                 ? AppColors.darkWarm
                                 : AppColors.creamAlt,
-                            child: Icon(Icons.storefront_rounded,
-                                size: 40,
-                                color: isDark
+                            child: Icon(Icons.storefront_rounded, size: 40,
+                                color: widget.isDark
                                     ? Colors.white24
                                     : Colors.black26),
                           ),
@@ -350,12 +342,9 @@ class FeaturedShopsSection extends StatelessWidget {
                           ),
                         ),
                         Positioned(
-                          left: 14,
-                          right: 14,
-                          bottom: 14,
+                          left: 14, right: 14, bottom: 14,
                           child: Row(
                             children: [
-                              // Logo bubble
                               Container(
                                 width: 40,
                                 height: 40,
@@ -366,8 +355,8 @@ class FeaturedShopsSection extends StatelessWidget {
                                 clipBehavior: Clip.antiAlias,
                                 child: Padding(
                                   padding: const EdgeInsets.all(4),
-                                  child: CdnImage(
-                                    s.logo,
+                                  child: Image.asset(
+                                    s.logoAsset,
                                     fit: BoxFit.contain,
                                     errorBuilder: (_, __, ___) => const Icon(
                                         Icons.store_rounded,
@@ -394,8 +383,7 @@ class FeaturedShopsSection extends StatelessWidget {
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.outfit(
                                             fontSize: 11,
-                                            color: Colors.white
-                                                .withOpacity(0.85))),
+                                            color: Colors.white.withOpacity(0.85))),
                                   ],
                                 ),
                               ),
@@ -417,23 +405,51 @@ class FeaturedShopsSection extends StatelessWidget {
   }
 }
 
-// ── Section 3: Shop Lookbook (image gallery) ──────────────────────────────────
-class ShopLookbookSection extends StatelessWidget {
+// ── Section 3: Shop Lookbook ──────────────────────────────────────────────────
+
+class ShopLookbookSection extends StatefulWidget {
   final bool isDark;
   const ShopLookbookSection({super.key, required this.isDark});
 
   @override
-  Widget build(BuildContext context) {
-    // Flatten 3 looks per shop into one scrollable row.
-    final looks = <({ShopShowcase shop, String path})>[
-      for (final s in kShopShowcases)
-        for (var i = 1; i <= 3; i++) (shop: s, path: s.look(i)),
-    ];
+  State<ShopLookbookSection> createState() => _ShopLookbookSectionState();
+}
 
+class _ShopLookbookSectionState extends State<ShopLookbookSection> {
+  List<({ShopInfo shop, String path})> _looks = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLooks();
+  }
+
+  Future<void> _loadLooks() async {
+    final assets = await _loadManifestAssets();
+    final looks = <({ShopInfo shop, String path})>[];
+    for (final s in ShopConstants.shops) {
+      for (var i = 1; i <= 3; i++) {
+        final path = s.lookAsset(i);
+        if (assets.contains(path)) looks.add((shop: s, path: path));
+      }
+    }
+    if (mounted) setState(() => _looks = looks);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // If no looks uploaded yet, show placeholders using all shops (look_1 path)
+    final looks = _looks.isNotEmpty
+        ? _looks
+        : [
+            for (final s in ShopConstants.shops)
+              (shop: s, path: s.lookAsset(1)),
+          ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Shop Lookbook', 'Styles straight from the shops', isDark),
+        _sectionHeader(
+            'Shop Lookbook', 'Styles straight from the shops', widget.isDark),
         const SizedBox(height: 14),
         SizedBox(
           height: 180,
@@ -445,41 +461,33 @@ class ShopLookbookSection extends StatelessWidget {
             itemBuilder: (_, i) {
               final l = looks[i];
               return GestureDetector(
-                onTap: () => _openLookbook(context, looks, i, isDark),
+                onTap: () => _openLookbook(context, looks, i, widget.isDark),
                 child: SizedBox(
                   width: 150,
                   child: Stack(
                     children: [
-                      // Stacked-card edges peeking behind (implies a gallery)
                       Positioned(
-                        top: 6,
-                        right: 0,
-                        bottom: 6,
-                        left: 10,
+                        top: 6, right: 0, bottom: 6, left: 10,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: (isDark ? Colors.white : Colors.black)
+                            color: (widget.isDark ? Colors.white : Colors.black)
                                 .withOpacity(0.10),
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                       ),
                       Positioned(
-                        top: 3,
-                        right: 5,
-                        bottom: 3,
-                        left: 5,
+                        top: 3, right: 5, bottom: 3, left: 5,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: (isDark ? Colors.white : Colors.black)
+                            color: (widget.isDark ? Colors.white : Colors.black)
                                 .withOpacity(0.16),
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                       ),
-                      // The front photo
                       Padding(
-                        padding: const EdgeInsets.only(left: 0, right: 10),
+                        padding: const EdgeInsets.only(right: 10),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: SizedBox(
@@ -488,24 +496,22 @@ class ShopLookbookSection extends StatelessWidget {
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                CdnImage(
+                                Image.asset(
                                   l.path,
                                   fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) => Container(
-                                    color: isDark
+                                    color: widget.isDark
                                         ? AppColors.darkWarm
                                         : AppColors.creamAlt,
                                     child: Icon(Icons.checkroom_rounded,
                                         size: 30,
-                                        color: isDark
+                                        color: widget.isDark
                                             ? Colors.white24
                                             : Colors.black26),
                                   ),
                                 ),
-                                // "Gallery" badge — photo count + tap hint
                                 Positioned(
-                                  top: 8,
-                                  right: 8,
+                                  top: 8, right: 8,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 7, vertical: 3),
@@ -528,13 +534,11 @@ class ShopLookbookSection extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                // Bottom gradient + shop name + "Tap to view"
                                 Align(
                                   alignment: Alignment.bottomLeft,
                                   child: Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.fromLTRB(
-                                        10, 18, 10, 8),
+                                    padding: const EdgeInsets.fromLTRB(10, 18, 10, 8),
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         begin: Alignment.topCenter,
@@ -546,8 +550,7 @@ class ShopLookbookSection extends StatelessWidget {
                                       ),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(l.shop.name,
@@ -561,16 +564,13 @@ class ShopLookbookSection extends StatelessWidget {
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Icon(
-                                                Icons.touch_app_rounded,
-                                                size: 10,
-                                                color: Colors.white70),
+                                            const Icon(Icons.touch_app_rounded,
+                                                size: 10, color: Colors.white70),
                                             const SizedBox(width: 3),
                                             Text('Tap to view',
                                                 style: GoogleFonts.outfit(
                                                     fontSize: 9,
-                                                    fontWeight:
-                                                        FontWeight.w500,
+                                                    fontWeight: FontWeight.w500,
                                                     color: Colors.white70)),
                                           ],
                                         ),
@@ -595,10 +595,11 @@ class ShopLookbookSection extends StatelessWidget {
   }
 }
 
-// ── Immersive lookbook viewer (coverflow / circular motion) ───────────────────
+// ── Lookbook viewer ───────────────────────────────────────────────────────────
+
 void _openLookbook(
     BuildContext context,
-    List<({ShopShowcase shop, String path})> looks,
+    List<({ShopInfo shop, String path})> looks,
     int index,
     bool isDark) {
   Navigator.push(
@@ -611,13 +612,12 @@ void _openLookbook(
       pageBuilder: (_, __, ___) =>
           _LookbookViewer(looks: looks, initialIndex: index, isDark: isDark),
       transitionsBuilder: (_, anim, __, child) {
-        final curved =
-            CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
         return FadeTransition(
           opacity: anim,
           child: SlideTransition(
-            position: Tween(begin: const Offset(0, 1), end: Offset.zero)
-                .animate(curved),
+            position:
+                Tween(begin: const Offset(0, 1), end: Offset.zero).animate(curved),
             child: child,
           ),
         );
@@ -627,14 +627,11 @@ void _openLookbook(
 }
 
 class _LookbookViewer extends StatefulWidget {
-  final List<({ShopShowcase shop, String path})> looks;
+  final List<({ShopInfo shop, String path})> looks;
   final int initialIndex;
   final bool isDark;
-  const _LookbookViewer({
-    required this.looks,
-    required this.initialIndex,
-    required this.isDark,
-  });
+  const _LookbookViewer(
+      {required this.looks, required this.initialIndex, required this.isDark});
 
   @override
   State<_LookbookViewer> createState() => _LookbookViewerState();
@@ -649,9 +646,7 @@ class _LookbookViewerState extends State<_LookbookViewer> {
     super.initState();
     _pc = PageController(viewportFraction: 0.66, initialPage: widget.initialIndex);
     _page = widget.initialIndex.toDouble();
-    _pc.addListener(() {
-      setState(() => _page = _pc.page ?? _page);
-    });
+    _pc.addListener(() => setState(() => _page = _pc.page ?? _page));
   }
 
   @override
@@ -670,7 +665,6 @@ class _LookbookViewerState extends State<_LookbookViewer> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Tap outside to dismiss
             Positioned.fill(
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -679,7 +673,6 @@ class _LookbookViewerState extends State<_LookbookViewer> {
             ),
             Column(
               children: [
-                // Top bar: position counter (centre) + close (right)
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
@@ -718,7 +711,6 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                     ],
                   ),
                 ),
-                // Coverflow carousel + swipe chevrons
                 Expanded(
                   child: Stack(
                     children: [
@@ -727,9 +719,8 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                         itemCount: widget.looks.length,
                         physics: const BouncingScrollPhysics(),
                         itemBuilder: (_, i) {
-                          final diff = i - _page; // 0 = centred
+                          final diff = i - _page;
                           final absd = diff.abs().clamp(0.0, 1.0);
-                          // Circular/arc motion: side cards shrink, drop and tilt.
                           final scale = 1 - 0.22 * absd;
                           final translateY = 46.0 * absd;
                           final rotate = 0.20 * diff.clamp(-1.0, 1.0);
@@ -750,7 +741,6 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                           );
                         },
                       ),
-                      // Directional hints — show only where more images exist
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Padding(
@@ -758,8 +748,7 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                _chevron(Icons.chevron_left_rounded,
-                                    current > 0),
+                                _chevron(Icons.chevron_left_rounded, current > 0),
                                 _chevron(Icons.chevron_right_rounded,
                                     current < widget.looks.length - 1),
                               ],
@@ -771,7 +760,6 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                // Swipe hint
                 if (widget.looks.length > 1)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -786,7 +774,6 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                     ],
                   ),
                 const SizedBox(height: 12),
-                // Caption + Visit
                 Text(currentShop.name,
                     style: GoogleFonts.rufina(
                         fontSize: 20,
@@ -803,8 +790,8 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                     _openShop(context, currentShop);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 22, vertical: 11),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
@@ -849,7 +836,7 @@ class _LookbookViewerState extends State<_LookbookViewer> {
     );
   }
 
-  Widget _bigCard(({ShopShowcase shop, String path}) l) {
+  Widget _bigCard(({ShopInfo shop, String path}) l) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: ClipRRect(
@@ -859,7 +846,7 @@ class _LookbookViewerState extends State<_LookbookViewer> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              CdnImage(
+              Image.asset(
                 l.path,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(

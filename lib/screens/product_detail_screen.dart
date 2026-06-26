@@ -6,6 +6,7 @@ import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/core/constants/api_constants.dart';
 import '../widgets/product_3d_viewer.dart';
 import '../widgets/cdn_image.dart';
+import '../models/product.dart';
 import '../widgets/cart_bar.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
@@ -28,6 +29,10 @@ class ProductDetailScreen extends StatefulWidget {
   /// When non-null, the product is on sale at this % discount and a
   /// strikethrough original price is shown next to the sale price.
   final int? discount;
+  /// colorCode → list of all photos for that color. Empty for OpenCart products.
+  final Map<String, List<String>> colorVariants;
+  /// Default color to show when the screen opens.
+  final String defaultColor;
 
   const ProductDetailScreen({
     super.key,
@@ -40,7 +45,26 @@ class ProductDetailScreen extends StatefulWidget {
     this.description,
     this.shopName,
     this.discount,
+    this.colorVariants = const {},
+    this.defaultColor = '',
   });
+
+  /// Convenience constructor — pass a [Product] directly.
+  factory ProductDetailScreen.fromProduct(Product p, {int? discount}) {
+    return ProductDetailScreen(
+      productId: p.id,
+      name: p.name,
+      price: p.price,
+      image: p.image,
+      brand: p.brand,
+      category: p.category,
+      description: p.description,
+      shopName: p.shopName,
+      colorVariants: p.colorVariants,
+      defaultColor: p.defaultColor,
+      discount: discount,
+    );
+  }
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
@@ -49,23 +73,32 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String _selectedSize = 'M';
   bool _isFavorite = false;
-  String _selectedColor = 'Black';
+  late String _selectedColor;
 
   // Size recommendation from the user's saved Bodygram measurements.
   SizeRecommendation? _sizeRec;
 
-  // ── Photo gallery (multiple angles / poses) ───────────────────────────────
+  // ── Photo gallery ─────────────────────────────────────────────────────────
   final PageController _galleryController = PageController();
   int _galleryPage = 0;
-  // Starts with the primary image; numbered sibling shots are appended once
-  // validated against the CDN (e.g. "...hoodie0.jpg", "...hoodie1.jpg").
-  late List<String> _galleryImages = [widget.image];
+
+  List<String> get _galleryImages {
+    if (widget.colorVariants.isNotEmpty) {
+      return widget.colorVariants[_selectedColor] ??
+          widget.colorVariants.values.first;
+    }
+    return [widget.image];
+  }
 
   @override
   void initState() {
     super.initState();
+    _selectedColor = widget.defaultColor.isNotEmpty
+        ? widget.defaultColor
+        : (widget.colorVariants.keys.isNotEmpty
+            ? widget.colorVariants.keys.first
+            : '');
     _loadSizeRecommendation();
-    _buildGallery();
   }
 
   @override
@@ -74,38 +107,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
-  // Build the photo gallery by discovering numbered variants of the base image.
-  Future<void> _buildGallery() async {
-    final base = widget.image;
-    // Match a trailing number before the extension, e.g. "shirt 0.jpg" → 0.
-    final m = RegExp(r'^(.*?)(\d+)(\.[A-Za-z0-9]+)$').firstMatch(base);
-    if (m == null) return; // no numbering scheme — keep the single image
-
-    final prefix = m.group(1)!;
-    final ext = m.group(3)!;
-    final found = <String>[];
-    for (int i = 0; i <= 8; i++) {
-      final candidate = '$prefix$i$ext';
-      if (candidate == base || await _cdnExists(candidate)) {
-        found.add(candidate);
-      }
-    }
-    if (!found.contains(base)) found.insert(0, base);
-    if (found.length > 1 && mounted) {
-      setState(() => _galleryImages = found);
-    }
-  }
-
-  Future<bool> _cdnExists(String assetPath) async {
-    try {
-      final rel = assetPath.replaceFirst('assets/images/', '');
-      final url = Uri.parse(Uri.encodeFull('${ApiConstants.cdnBaseUrl}$rel'));
-      final resp = await http.head(url).timeout(const Duration(seconds: 5));
-      return resp.statusCode == 200;
-    } catch (_) {
-      return false;
-    }
-  }
 
   // ── Variant picker sheet (color + size + quantity) ──────────────────────────
   void _showVariantSheet(bool isDark) {
@@ -228,59 +229,50 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 fontWeight: FontWeight.w700,
                                 color: ink)),
                         const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 14,
-                          runSpacing: 14,
-                          children: _colors.map((c) {
-                            final name = c['name'] as String;
-                            final sel = color == name;
-                            return GestureDetector(
-                              onTap: () => setSheet(() => color = name),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  AnimatedContainer(
-                                    duration: const Duration(milliseconds: 180),
-                                    width: 58,
-                                    height: 58,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: sel ? accent : Colors.transparent,
-                                        width: 2.5,
+                        if (widget.colorVariants.isNotEmpty)
+                          Wrap(
+                            spacing: 14,
+                            runSpacing: 14,
+                            children: widget.colorVariants.entries.map((entry) {
+                              final colorCode = entry.key;
+                              final photos = entry.value;
+                              final thumbPhoto = photos.isNotEmpty ? photos.first : '';
+                              final sel = color == colorCode;
+                              return GestureDetector(
+                                onTap: () => setSheet(() => color = colorCode),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AnimatedContainer(
+                                      duration: const Duration(milliseconds: 180),
+                                      width: 58,
+                                      height: 58,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: sel ? accent : Colors.transparent,
+                                          width: 2.5,
+                                        ),
+                                      ),
+                                      child: ClipOval(
+                                        child: thumbPhoto.isNotEmpty
+                                            ? Image.asset(thumbPhoto, fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) =>
+                                                    Container(color: Colors.grey.shade300))
+                                            : Container(color: Colors.grey.shade300),
                                       ),
                                     ),
-                                    child: ClipOval(
-                                      child: Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          CdnImage(widget.image,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  Container(
-                                                      color:
-                                                          c['color'] as Color)),
-                                          Container(
-                                            color: (c['color'] as Color)
-                                                .withOpacity(
-                                                    name == 'Black' ? 0.0 : 0.22),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Text(name,
-                                      style: GoogleFonts.outfit(
-                                          fontSize: 11,
-                                          fontWeight:
-                                              sel ? FontWeight.w700 : FontWeight.w500,
-                                          color: sel ? accent : muted)),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
+                                    const SizedBox(height: 5),
+                                    Text(colorCode.toUpperCase(),
+                                        style: GoogleFonts.outfit(
+                                            fontSize: 11,
+                                            fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                                            color: sel ? accent : muted)),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
                         const SizedBox(height: 22),
                         // Size
                         Row(
@@ -441,13 +433,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   static const double _heroH = 420;
 
   final List<String> _sizes = ['XS', 'S', 'M', 'L', 'XL'];
-  final List<Map<String, dynamic>> _colors = [
-    {'name': 'Black', 'color': Colors.black},
-    {'name': 'White', 'color': Colors.white},
-    {'name': 'Gray',  'color': Colors.grey},
-    {'name': 'Beige', 'color': Color(0xFFD4B896)},
-    {'name': 'Navy',  'color': Color(0xFF001F3F)},
-  ];
 
   final List<Map<String, dynamic>> _reviews = [
     {'name': 'Aye Myat', 'rating': 5, 'comment': 'Absolutely love it! Great quality and fits perfectly.', 'date': '2 days ago'},
@@ -801,72 +786,66 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                             const SizedBox(height: 16),
                           ],
-                          // Circle thumbnails — original size, wide gap so only 3 fit
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: Row(
-                              children: List.generate(_colors.length, (i) {
-                                final c   = _colors[i];
-                                final sel = _selectedColor == c['name'];
-                                return GestureDetector(
-                                  onTap: () => setState(
-                                      () => _selectedColor = c['name']),
-                                  child: AnimatedContainer(
-                                    duration:
-                                        const Duration(milliseconds: 220),
-                                    curve: Curves.easeOut,
-                                    margin: EdgeInsets.only(
-                                        right: i < _colors.length - 1 ? 50 : 0),
-                                    width:  sel ? 64 : 54,
-                                    height: sel ? 64 : 54,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: sel
-                                            ? (isDark
-                                                ? Colors.white
-                                                : AppColors.inkBlack)
-                                            : Colors.transparent,
-                                        width: 2.5,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(
-                                              sel ? 0.22 : 0.08),
-                                          blurRadius: sel ? 14 : 6,
-                                          offset: const Offset(0, 3),
+                          // Color thumbnails — one circle per color variant
+                          if (widget.colorVariants.length > 1)
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Row(
+                                children: widget.colorVariants.entries.toList().asMap().entries.map((entry) {
+                                  final i = entry.key;
+                                  final colorCode = entry.value.key;
+                                  final photos = entry.value.value;
+                                  final thumbPhoto = photos.isNotEmpty ? photos.first : '';
+                                  final sel = _selectedColor == colorCode;
+                                  final variants = widget.colorVariants.entries.toList();
+                                  return GestureDetector(
+                                    onTap: () => setState(() {
+                                      _selectedColor = colorCode;
+                                      _galleryPage = 0;
+                                      _galleryController.jumpToPage(0);
+                                    }),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 220),
+                                      curve: Curves.easeOut,
+                                      margin: EdgeInsets.only(
+                                          right: i < variants.length - 1 ? 16 : 0),
+                                      width:  sel ? 64 : 54,
+                                      height: sel ? 64 : 54,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: sel
+                                              ? (isDark ? Colors.white : AppColors.inkBlack)
+                                              : Colors.transparent,
+                                          width: 2.5,
                                         ),
-                                      ],
-                                    ),
-                                    child: ClipOval(
-                                      child: Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          // Product image — clearly visible
-                                          CdnImage(
-                                            widget.image,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) =>
-                                                Container(
-                                                    color: c['color'] as Color),
-                                          ),
-                                          // Subtle color tint
-                                          Container(
-                                            color: (c['color'] as Color)
-                                                .withOpacity(
-                                                    c['name'] == 'Black'
-                                                        ? 0.0
-                                                        : 0.22),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(sel ? 0.22 : 0.08),
+                                            blurRadius: sel ? 14 : 6,
+                                            offset: const Offset(0, 3),
                                           ),
                                         ],
                                       ),
+                                      child: ClipOval(
+                                        child: thumbPhoto.isNotEmpty
+                                            ? Image.asset(
+                                                thumbPhoto,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) => Container(
+                                                  color: isDark ? Colors.white12 : Colors.black12,
+                                                ),
+                                              )
+                                            : Container(
+                                                color: isDark ? Colors.white12 : Colors.black12,
+                                              ),
+                                      ),
                                     ),
-                                  ),
-                                );
-                              }),
+                                  );
+                                }).toList(),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),

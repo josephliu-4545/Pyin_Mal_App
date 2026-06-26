@@ -267,16 +267,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProductDetailScreen(
-              productId: product.id,
-              name: product.name,
-              price: product.price,
-              image: product.image,
-              brand: product.brand,
-              category: product.category,
-              description: product.description,
-              shopName: product.shopName,
-            ),
+            builder: (_) => ProductDetailScreen.fromProduct(product),
           ),
         );
       },

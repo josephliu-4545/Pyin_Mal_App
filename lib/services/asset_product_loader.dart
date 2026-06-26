@@ -17,8 +17,36 @@ class AssetProductLoader {
   ];
 
 
-  // Folders under Female/ to skip entirely.
+  // Male brand folder → display shop name
+  static const _maleBrandMap = {
+    'nrf': 'NRF Store',
+    'classydock': 'CLASSYDOCK',
+    'burmese studio': 'Burmese Studio',
+    'malory': 'Malory',
+    'restyle': 'Restyle',
+    'val3': 'VAL3',
+  };
+
+  // Female shop folder → display shop name
+  static const _femaleBrandMap = {
+    'nami': 'Nami',
+    'oro': 'Oro',
+    'saw in style': 'Sew In Style',
+    'sew in style': 'Sew In Style',
+  };
+
+  // Male brand folders to skip
+  static const _excludedMaleBrands = {
+    'burmese dress for men', 'set', 'photo', 'outfits',
+  };
+
+  // Female dress-type folders to skip
   static const _excludedFemaleFolders = {'dress.burmese'};
+
+  // Female shop folders to skip
+  static const _excludedFemaleShops = {
+    't shirt collection', 'luna', 'oro set',
+  };
 
   static Future<List<Product>> load(AssetBundle bundle) async {
     final manifest = await AssetManifest.loadFromAssetBundle(bundle);
@@ -36,26 +64,24 @@ class AssetProductLoader {
 
     debugPrint('📦 Fashion images found: ${fashion.length}');
 
-    // Map: productKey → _Group
+    // Map: itemKey → _Group (one group per item, colors nested inside)
     final Map<String, _Group> groups = {};
 
     for (final path in fashion) {
       final img = _parse(path, prefix);
       if (img == null) continue;
 
-      groups.putIfAbsent(img.key, () => _Group(
-        key: img.key,
+      groups.putIfAbsent(img.itemKey, () => _Group(
+        key: img.itemKey,
         name: img.name,
         gender: img.gender,
         brand: img.brand,
         category: img.category,
       ));
 
-      if (img.isPlain) {
-        groups[img.key]!.plain.add(path);
-      } else {
-        groups[img.key]!.lifestyle.add(path);
-      }
+      final group = groups[img.itemKey]!;
+      group.colorPhotos.putIfAbsent(img.colorCode ?? '_', () => []);
+      group.colorPhotos[img.colorCode ?? '_']!.add(path);
     }
 
     return groups.values.map(_toProduct).toList()
@@ -77,54 +103,30 @@ class AssetProductLoader {
     String brand, category, filename;
 
     if (gender == 'Male') {
-      if (parts.length == 2) {
-        // Male/{file} — shouldn't happen but guard
-        brand = 'Unknown';
+      if (parts.length < 3) return null;
+      final brandFolder = parts[1].toLowerCase();
+      if (_excludedMaleBrands.contains(brandFolder)) return null;
+      brand = _maleBrandMap[brandFolder] ?? parts[1];
+      if (parts.length == 3) {
         category = 'Other';
-        filename = parts[1];
-      } else if (parts.length == 3) {
-        // Could be Male/{shop}/{file} (flat shop) OR Male/Set/{shop_as_file}
-        // Check if parts[0] after Male is a known category word
-        if (parts[1] == 'Set') {
-          // Male/Set/{file} — treat whole "Set" as category, no separate shop
-          brand = 'Sian Store';
-          category = 'Set';
-          filename = parts[2];
-        } else {
-          brand = parts[1];
-          category = 'Other';
-          filename = parts[2];
-        }
+        filename = parts[2];
       } else {
-        // Male/{shop_or_category}/{sub}/{file}
-        if (parts[1] == 'Set') {
-          // Male/Set/{shop}/{file}
-          brand = parts[2];
-          category = 'Set';
-          filename = parts[3];
-        } else {
-          brand = parts[1];
-          category = _mapMaleCategory(parts[2]);
-          filename = parts[3];
-        }
+        category = _mapMaleCategory(parts[2]);
+        filename = parts[3];
       }
     } else {
       // Female
       if (parts.length < 3) return null;
       final dressType = parts[1];
       if (_excludedFemaleFolders.contains(dressType)) return null;
-
       category = _mapFemaleCategory(dressType);
-
       if (parts.length == 3) {
-        // Female/{dress.type}/{file} — flat category folder
-        brand = 'Unknown';
-        filename = parts[2];
-      } else {
-        // Female/{dress.type}/{shop}/{file}
-        brand = parts[2];
-        filename = parts[3];
+        return null; // no shop subfolder — skip
       }
+      final shopFolder = parts[2].toLowerCase();
+      if (_excludedFemaleShops.contains(shopFolder)) return null;
+      brand = _femaleBrandMap[shopFolder] ?? _titleCase(parts[2]);
+      filename = parts[3];
     }
 
     final nameNoExt = _stripExt(filename);
@@ -142,22 +144,18 @@ class AssetProductLoader {
     }
 
     if (colorCode == null) {
-      // No color code → each unique numbered file = its own product
-      // Strip trailing digits to get base name, use full nameNoExt as unique key
+      // No color code → strip trailing digits to group numbered shots of same item
       final baseName = nameNoExt.replaceAll(RegExp(r'\s*\d+$'), '').trim();
-      final key = _makeKey(gender, brand, nameNoExt);
+      final itemKey = _makeKey(gender, brand, baseName.isNotEmpty ? baseName : nameNoExt);
       return _Img(
-        key: key,
+        itemKey: itemKey,
+        colorCode: null,
         name: _titleCase(baseName.isNotEmpty ? baseName : nameNoExt),
         gender: gender,
         brand: brand,
         category: category,
-        isPlain: false,
       );
     }
-
-    // Has color code — detect plain (_p{n} suffix)
-    final isPlain = RegExp(r'_p\d+$', caseSensitive: false).hasMatch(itemBase);
 
     // Strip trailing _p{n} or _{n} or {space}{n} to get clean item name
     final cleanName = itemBase
@@ -166,43 +164,42 @@ class AssetProductLoader {
         .replaceAll(RegExp(r'\s+\d+$'), '')
         .trim();
 
-    final key = _makeKey(gender, brand, cleanName);
+    final itemKey = _makeKey(gender, brand, cleanName);
 
     return _Img(
-      key: key,
+      itemKey: itemKey,
+      colorCode: colorCode,
       name: _titleCase(cleanName),
       gender: gender,
       brand: brand,
       category: category,
-      isPlain: isPlain,
     );
   }
 
   static Product _toProduct(_Group g) {
-    final defaultImage = g.lifestyle.isNotEmpty
-        ? g.lifestyle.first
-        : (g.plain.isNotEmpty ? g.plain.first : '');
-
-    final gallery = [
-      ...g.lifestyle.skip(1),
-      ...g.plain,
-    ];
-
     // Deterministic price 40k–80k rounded to nearest 5k
     final raw = 40000 + (g.key.hashCode.abs() % 40001);
     final rounded = ((raw / 5000).round() * 5000).clamp(40000, 80000);
     final price = '${_fmtNum(rounded)} MMK';
 
+    // Preferred default: mix first, then alphabetical
+    final String defaultColor;
+    if (g.colorPhotos.containsKey('mix')) {
+      defaultColor = 'mix';
+    } else {
+      defaultColor = g.colorPhotos.keys.isNotEmpty ? g.colorPhotos.keys.first : '';
+    }
+
     return Product(
       id: g.key,
       name: g.name,
       price: price,
-      image: defaultImage,
-      images: gallery,
       category: g.category,
       gender: g.gender,
       brand: g.brand,
       shopName: g.brand != 'Unknown' ? g.brand : null,
+      colorVariants: Map.unmodifiable(g.colorPhotos),
+      defaultColor: defaultColor,
     );
   }
 
@@ -262,16 +259,16 @@ class AssetProductLoader {
 }
 
 class _Img {
-  final String key, name, gender, brand, category;
-  final bool isPlain;
-  _Img({required this.key, required this.name, required this.gender,
-        required this.brand, required this.category, required this.isPlain});
+  final String itemKey, name, gender, brand, category;
+  final String? colorCode;
+  _Img({required this.itemKey, required this.colorCode, required this.name,
+        required this.gender, required this.brand, required this.category});
 }
 
 class _Group {
   final String key, name, gender, brand, category;
-  final List<String> lifestyle = [];
-  final List<String> plain = [];
+  /// colorCode → ordered list of photo paths (lifestyle + plain mixed, insertion order)
+  final Map<String, List<String>> colorPhotos = {};
   _Group({required this.key, required this.name, required this.gender,
           required this.brand, required this.category});
 }
