@@ -2,6 +2,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConstants {
   static const String cdnBaseUrl = 'https://cdn.jsdelivr.net/gh/josephliu-4545/pyin-mal-assets@main/assets/images/';
+  // Repo root on the CDN — used for non-image assets like shop videos
+  // (e.g. '${cdnRootUrl}assets/videos/shops/<slug>.mp4').
+  static const String cdnRootUrl = 'https://cdn.jsdelivr.net/gh/josephliu-4545/pyin-mal-assets@main/';
   
   static String get geminiApiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
   static String get groqApiKey   => dotenv.env['GROQ_API_KEY']   ?? '';
