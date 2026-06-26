@@ -26,6 +26,7 @@ import 'package:pyin_mal_app/screens/resell_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 import 'package:pyin_mal_app/widgets/cart_bar.dart';
 import 'package:pyin_mal_app/widgets/product_search_sheet.dart';
+import 'package:pyin_mal_app/widgets/shop_showcase.dart';
 
 // ── Main Shell ────────────────────────────────────────────────────────────────
 class MainShell extends StatefulWidget {
@@ -513,24 +514,16 @@ class _HomeTabState extends State<_HomeTab> {
                 _buildResellSection(isDark),
                 const SizedBox(height: 28),
 
-                // ── AI Styling Tools ───────────────────────────────────────
-                _buildSectionLabel('sections.ai_tools', isDark),
-                const SizedBox(height: 16),
-                _buildAIToolsSection(isDark),
+                // ── Shop Spotlight (videos) ────────────────────────────────
+                ShopSpotlightSection(isDark: isDark),
                 const SizedBox(height: 28),
 
-                // ── Discover & Explore ─────────────────────────────────────
-                _buildSectionLabel('sections.discover', isDark),
-                const SizedBox(height: 16),
-                _buildDiscoverSection(isDark),
+                // ── Featured Shops (images) ────────────────────────────────
+                FeaturedShopsSection(isDark: isDark),
                 const SizedBox(height: 28),
 
-                // ── Wardrobe & Recycling ───────────────────────────────────
-                _buildSectionLabel('sections.wardrobe', isDark),
-                const SizedBox(height: 16),
-                _buildWardrobeRecommendations(isDark, isMobile),
-                const SizedBox(height: 16),
-                _buildRecyclingRewardsCard(isDark),
+                // ── Shop Lookbook (images) ─────────────────────────────────
+                ShopLookbookSection(isDark: isDark),
                 const SizedBox(height: 28),
 
                 // ── Give Back ─────────────────────────────────────────────
