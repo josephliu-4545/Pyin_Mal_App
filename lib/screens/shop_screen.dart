@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
@@ -13,6 +14,7 @@ import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/screens/cart_screen.dart';
 import 'package:pyin_mal_app/screens/sale_screen.dart';
+import 'package:pyin_mal_app/core/constants/shop_constants.dart';
 
 class ShopScreen extends StatefulWidget {
   /// When false, the screen does not render its own cart bar — used when the
@@ -44,6 +46,8 @@ class _ShopScreenState extends State<ShopScreen> {
     {'label': 'Sets',        'icon': Icons.style_outlined},
   ];
   String _selectedCategory = 'New in';
+  String? _selectedShop; // null = all shops
+  List<ShopInfo> _shopsWithLogos = [];
   bool _loadingProducts = false;
 
   // ── Flash-sale countdown ──────────────────────────────────────────────────
@@ -55,6 +59,7 @@ class _ShopScreenState extends State<ShopScreen> {
   void initState() {
     super.initState();
     _loadProducts();
+    _loadShopsWithLogos();
 
     // Live flash-sale countdown that ticks every second and loops when it ends.
     _saleEndsAt = DateTime.now().add(_saleRemaining);
@@ -82,21 +87,25 @@ class _ShopScreenState extends State<ShopScreen> {
     if (mounted) setState(() => _loadingProducts = false);
   }
 
-  // Shops with logo colors and icons
-  final List<Map<String, dynamic>> _shops = [
-    {'name': 'Pyin Mal\nOfficial', 'icon': Icons.store_rounded, 'color': Color(0xFF6B2737), 'bg': Color(0xFFF5E6E8)},
-    {'name': 'Luna\nBoutique',     'icon': Icons.diamond_rounded, 'color': Color(0xFF7B5EA7), 'bg': Color(0xFFF0EAF8)},
-    {'name': 'NRF\nStore',         'icon': Icons.bolt_rounded,    'color': Color(0xFF1A1A2E), 'bg': Color(0xFFE8E8F0)},
-    {'name': 'ABCD\nFashion',      'icon': Icons.auto_awesome_rounded, 'color': Color(0xFFB5541B), 'bg': Color(0xFFFAEDE6)},
-    {'name': 'AJOHN\nOfficial',    'icon': Icons.workspace_premium_rounded, 'color': Color(0xFF2E7D32), 'bg': Color(0xFFE8F5E9)},
-    {'name': 'LAPSES\nShop',       'icon': Icons.style_rounded,   'color': Color(0xFF1565C0), 'bg': Color(0xFFE3F2FD)},
-    {'name': 'Fartech\nBrand',     'icon': Icons.flash_on_rounded, 'color': Color(0xFFE65100), 'bg': Color(0xFFFFF3E0)},
-  ];
+  Future<void> _loadShopsWithLogos() async {
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    final assets = manifest.listAssets();
+    final withLogos = ShopConstants.shops
+        .where((s) => assets.contains(s.logoAsset))
+        .toList();
+    if (mounted) setState(() => _shopsWithLogos = withLogos);
+  }
 
 
   List<Product> get _filteredProducts {
-    if (_selectedCategory == 'New in') return ProductRepository.allProducts;
-    return ProductRepository.allProducts
+    var products = ProductRepository.allProducts;
+    if (_selectedShop != null) {
+      products = products
+          .where((p) => (p.brand == _selectedShop) || (p.shopName == _selectedShop))
+          .toList();
+    }
+    if (_selectedCategory == 'New in') return products;
+    return products
         .where((p) => p.category == _selectedCategory || p.gender == _selectedCategory)
         .toList();
   }
@@ -369,62 +378,81 @@ class _ShopScreenState extends State<ShopScreen> {
                   ),
                   SizedBox(
                     height: 100,
-                    child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _shops.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 16),
-                        itemBuilder: (context, index) {
-                          final shop = _shops[index];
-                          final bg = isDark
-                              ? (shop['color'] as Color).withOpacity(0.2)
-                              : shop['bg'] as Color;
-                          final iconColor = shop['color'] as Color;
-                          return Column(
-                            children: [
-                              Container(
-                                width: 64,
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  color: bg,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: iconColor.withOpacity(0.3),
-                                    width: 1.5,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: iconColor.withOpacity(0.15),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 3),
+                    child: _shopsWithLogos.isEmpty
+                        ? const SizedBox()
+                        : ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: _shopsWithLogos.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 16),
+                            itemBuilder: (context, index) {
+                              final shop = _shopsWithLogos[index];
+                              final isSelected = _selectedShop == shop.name;
+                              return GestureDetector(
+                                onTap: () => setState(() {
+                                  _selectedShop = isSelected ? null : shop.name;
+                                }),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 64,
+                                      height: 64,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: isDark
+                                            ? const Color(0xFF2A2421)
+                                            : const Color(0xFFF2EDE8),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? accent
+                                              : (isDark ? Colors.white24 : Colors.black12),
+                                          width: isSelected ? 2.5 : 1.5,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.1),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipOval(
+                                        child: Image.asset(
+                                          shop.logoAsset,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Icon(
+                                            Icons.store_rounded,
+                                            size: 28,
+                                            color: isDark ? Colors.white54 : Colors.black38,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    SizedBox(
+                                      width: 64,
+                                      child: Text(
+                                        shop.name,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 10,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w700
+                                              : FontWeight.w600,
+                                          color: isSelected
+                                              ? accent
+                                              : (isDark ? Colors.white70 : AppColors.inkBlack),
+                                          height: 1.2,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
-                                child: Icon(
-                                  shop['icon'] as IconData,
-                                  color: iconColor,
-                                  size: 28,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              SizedBox(
-                                width: 64,
-                                child: Text(
-                                  shop['name'] as String,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? Colors.white70 : AppColors.inkBlack,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                    ),
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
@@ -492,16 +520,7 @@ class _ShopScreenState extends State<ShopScreen> {
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ProductDetailScreen(
-                            productId: product.id,
-                            name: product.name,
-                            price: product.price,
-                            image: product.image,
-                            brand: product.brand,
-                            category: product.category,
-                            description: product.description,
-                            shopName: product.shopName,
-                          ),
+                          builder: (_) => ProductDetailScreen.fromProduct(product),
                         ),
                       ),
                     );
@@ -678,17 +697,7 @@ class _ShopScreenState extends State<ShopScreen> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ProductDetailScreen(
-                        productId: p.id,
-                        name: p.name,
-                        price: p.price,
-                        image: p.image,
-                        brand: p.brand,
-                        category: p.category,
-                        description: p.description,
-                        shopName: p.shopName,
-                        discount: off,
-                      ),
+                      builder: (_) => ProductDetailScreen.fromProduct(p, discount: off),
                     ),
                   ),
                   child: Container(

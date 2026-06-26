@@ -355,17 +355,7 @@ class _SaleCard extends StatelessWidget {
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => ProductDetailScreen(
-            productId: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.image,
-            brand: product.brand,
-            category: product.category,
-            description: product.description,
-            shopName: product.shopName,
-            discount: discount,
-          ),
+          builder: (_) => ProductDetailScreen.fromProduct(product, discount: discount),
         ),
       ),
       child: Container(

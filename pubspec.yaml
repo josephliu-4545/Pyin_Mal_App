@@ -154,6 +154,15 @@ flutter:
     - pyin-mal-assets/assets/images/cart photo_files/
     - pyin-mal-assets/assets/images/grooming/
     - pyin-mal-assets/assets/images/outfits/
+    - pyin-mal-assets/assets/images/shops/nrf_store/
+    - pyin-mal-assets/assets/images/shops/classydock/
+    - pyin-mal-assets/assets/images/shops/burmese_studio/
+    - pyin-mal-assets/assets/images/shops/malory/
+    - pyin-mal-assets/assets/images/shops/restyle/
+    - pyin-mal-assets/assets/images/shops/val3/
+    - pyin-mal-assets/assets/images/shops/nami/
+    - pyin-mal-assets/assets/images/shops/oro/
+    - pyin-mal-assets/assets/images/shops/sew_in_style/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
