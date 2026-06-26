@@ -57,6 +57,8 @@ class AppColors {
 
   // "Dim" theme scaffold — the light theme on a softly darkened background
   static const dimBg = Color(0xFFE0D6C4); // warm dimmed cream
+  // Lighter rounded "sheet" that holds the content cards in Dim mode
+  static const dimSheet = Color(0xFFF1EADD); // sits between dimBg and white
 
   // Dark theme surfaces
   static const charcoal = Color(0xFF1C1A1A); // near-black warm dark scaffold

@@ -373,6 +373,9 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Dim mode uses a KBZ-style layered look: a lighter rounded "sheet"
+    // behind the whole content, with the section cards sitting on top of it.
+    final isDim = themeNotifier.value == AppThemeMode.dim;
 
     return CustomScrollView(
       slivers: [
@@ -527,11 +530,20 @@ class _HomeTabState extends State<_HomeTab> {
         ),
         // Main Content
         SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 16, 10, 120),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          child: Container(
+            // Dim mode: a lighter rounded sheet holding all the section cards.
+            decoration: isDim
+                ? const BoxDecoration(
+                    color: AppColors.dimSheet,
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(28)),
+                  )
+                : null,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(10, isDim ? 22 : 16, 10, 120),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // ── Tabs + feature shortcuts on a single light panel ──────
                 _buildTopPanel(isDark),
                 const SizedBox(height: 20),
@@ -568,7 +580,8 @@ class _HomeTabState extends State<_HomeTab> {
 
                 // ── User Guide ─────────────────────────────────────────────
                 UserGuideSection(isDark: isDark),
-              ],
+                ],
+              ),
             ),
           ),
         ),
