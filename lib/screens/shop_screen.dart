@@ -15,6 +15,7 @@ import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/screens/cart_screen.dart';
 import 'package:pyin_mal_app/screens/sale_screen.dart';
 import 'package:pyin_mal_app/core/constants/shop_constants.dart';
+import 'package:pyin_mal_app/core/guide_keys.dart';
 
 class ShopScreen extends StatefulWidget {
   /// When false, the screen does not render its own cart bar — used when the
@@ -139,6 +140,7 @@ class _ShopScreenState extends State<ShopScreen> {
                   children: [
                     Expanded(
                       child: Container(
+                        key: GuideKeys.shopSearch,
                         decoration: BoxDecoration(
                           color: isDark ? AppColors.darkWarm : Colors.white,
                           borderRadius: BorderRadius.circular(24),

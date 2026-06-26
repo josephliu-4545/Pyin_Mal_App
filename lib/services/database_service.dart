@@ -52,6 +52,30 @@ class DatabaseService {
     );
   }
 
+  // ── User-guide tour ──────────────────────────────────────────────────────
+  /// True if the user has already seen (or doesn't need) the guided tour.
+  /// Absent flag → treated as completed, so only accounts explicitly marked
+  /// pending (new registrations) auto-run the tour.
+  Future<bool> isGuideCompleted() async {
+    if (_uid == null) return true;
+    final snap = await _db.collection('users').doc(_uid).get();
+    return (snap.data()?['guideCompleted'] as bool?) ?? true;
+  }
+
+  /// Mark a freshly registered account so the tour runs once on first home view.
+  Future<void> markGuidePending() async {
+    if (_uid == null) return;
+    await _db.collection('users').doc(_uid).set(
+        {'guideCompleted': false}, SetOptions(merge: true));
+  }
+
+  /// Remember that the tour has been seen so it never auto-runs again.
+  Future<void> markGuideCompleted() async {
+    if (_uid == null) return;
+    await _db.collection('users').doc(_uid).set(
+        {'guideCompleted': true}, SetOptions(merge: true));
+  }
+
   /// One-shot read of the raw user doc (profile-setup stats, measurements…).
   Future<Map<String, dynamic>?> getUserData() async {
     if (_uid == null) return null;

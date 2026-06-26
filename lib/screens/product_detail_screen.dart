@@ -8,6 +8,7 @@ import '../widgets/product_3d_viewer.dart';
 import '../widgets/cdn_image.dart';
 import '../models/product.dart';
 import '../widgets/cart_bar.dart';
+import 'package:pyin_mal_app/core/guide_keys.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/services/size_recommendation_service.dart';
@@ -929,6 +930,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: ElevatedButton.icon(
+                                  key: GuideKeys.productAddToCart,
                                   onPressed: () => _showVariantSheet(isDark),
                                   icon: const Icon(Icons.add_shopping_cart_rounded,
                                       size: 16),

@@ -24,11 +24,15 @@ import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/screens/sale_screen.dart';
 import 'package:pyin_mal_app/screens/resell_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
+import 'package:pyin_mal_app/services/database_service.dart';
+import 'package:pyin_mal_app/core/guide_keys.dart';
+import 'package:pyin_mal_app/widgets/guide_coach.dart';
 import 'package:pyin_mal_app/widgets/cart_bar.dart';
 import 'package:pyin_mal_app/widgets/product_search_sheet.dart';
 import 'package:pyin_mal_app/widgets/shop_showcase.dart';
 import 'package:pyin_mal_app/core/constants/shop_constants.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
+import 'package:pyin_mal_app/screens/user_guide_screen.dart';
 
 /// Foodpanda-style brand pink used for the bottom nav + home tabs accent.
 const Color kBrandPink = Color(0xFFD70F64);
@@ -47,6 +51,17 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     pendingOverlayProduct.addListener(_onOverlayProduct);
+    GuideNav.switchTab = _switchTab; // let the guided tour change tabs
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeRunGuideTour());
+  }
+
+  // Run the spotlight tour once for newly registered accounts.
+  Future<void> _maybeRunGuideTour() async {
+    final db = DatabaseService();
+    final done = await db.isGuideCompleted();
+    if (done || !mounted) return;
+    GuideController.start(context, buildGuideTour(),
+        onDone: () => db.markGuideCompleted());
   }
 
   @override
@@ -97,6 +112,7 @@ class _MainShellState extends State<MainShell> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 20.0),
         child: FloatingActionButton(
+          key: GuideKeys.aiFab,
           onPressed: () {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const AiChatScreen()));
           },
@@ -110,6 +126,7 @@ class _MainShellState extends State<MainShell> {
         children: [
           const CartBar(),
           _GlassNav(
+            key: GuideKeys.bottomNav,
             currentIndex: _currentIndex,
             onTap: (i) => setState(() => _currentIndex = i),
             isDark: isDark,
@@ -125,7 +142,7 @@ class _GlassNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final bool isDark;
-  const _GlassNav({required this.currentIndex, required this.onTap, required this.isDark});
+  const _GlassNav({super.key, required this.currentIndex, required this.onTap, required this.isDark});
 
   static const _items = [
     (icon: Icons.home_rounded,        outline: Icons.home_outlined,              label: 'nav.home'),
@@ -391,6 +408,7 @@ class _HomeTabState extends State<_HomeTab> {
               child: GestureDetector(
                 onTap: () => _showLanguageSheet(context, isDark),
                 child: Container(
+                  key: GuideKeys.language,
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
@@ -411,6 +429,7 @@ class _HomeTabState extends State<_HomeTab> {
               child: GestureDetector(
                 onTap: () => _showSearchBottomSheet(context, isDark),
                 child: Container(
+                  key: GuideKeys.search,
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
@@ -461,6 +480,7 @@ class _HomeTabState extends State<_HomeTab> {
                   return GestureDetector(
                     onTap: toggleTheme,
                     child: Container(
+                      key: GuideKeys.theme,
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
@@ -544,6 +564,10 @@ class _HomeTabState extends State<_HomeTab> {
                 _buildSectionLabel('sections.give_back', isDark),
                 const SizedBox(height: 16),
                 _buildGiveBackSection(isDark),
+                const SizedBox(height: 28),
+
+                // ── User Guide ─────────────────────────────────────────────
+                UserGuideSection(isDark: isDark),
               ],
             ),
           ),
@@ -917,12 +941,14 @@ class _HomeTabState extends State<_HomeTab> {
         children: [
           // Tabs
           Padding(
+            key: GuideKeys.tabs,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: _buildHomeTabs(isDark),
           ),
           const SizedBox(height: 16),
           // Feature shortcuts
           SizedBox(
+            key: GuideKeys.shortcuts,
             height: 78,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,

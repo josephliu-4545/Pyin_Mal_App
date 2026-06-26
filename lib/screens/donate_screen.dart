@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pyin_mal_app/main.dart';
+import 'package:pyin_mal_app/core/guide_keys.dart';
 
 class Shelter {
   final String name;
@@ -482,6 +483,7 @@ class _DonateScreenState extends State<DonateScreen>
                   (context, index) => _reveal(
                     index + 3,
                     _ShelterCard(
+                      key: index == 0 ? GuideKeys.donateDirections : null,
                       shelter: _shelters[index],
                       isDark: isDark,
                       accent: accent,
@@ -695,6 +697,7 @@ class _ShelterCard extends StatefulWidget {
   final Color accent;
 
   const _ShelterCard({
+    super.key,
     required this.shelter,
     required this.isDark,
     required this.accent,

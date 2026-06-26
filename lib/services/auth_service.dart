@@ -35,6 +35,8 @@ class AuthService {
         );
         
         await _db.createUserProfile(profile);
+        // New account → run the guided tour once on first home view.
+        await _db.markGuidePending();
         return profile;
       }
       return null;
