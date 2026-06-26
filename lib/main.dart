@@ -55,6 +55,9 @@ class AppColors {
   static const creamAlt =
       Color(0xFFEDE7DC); // slightly deeper cream for sections
 
+  // "Dim" theme scaffold — the light theme on a softly darkened background
+  static const dimBg = Color(0xFFE0D6C4); // warm dimmed cream
+
   // Dark theme surfaces
   static const charcoal = Color(0xFF1C1A1A); // near-black warm dark scaffold
   static const darkWarm = Color(0xFF2A2320); // warm dark card surface
@@ -71,22 +74,26 @@ class PyinMalApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
+    return ValueListenableBuilder<AppThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, mode, _) {
+        // "dim" is the light theme on a darkened background.
+        final isDim = mode == AppThemeMode.dim;
+        final lightBg = isDim ? AppColors.dimBg : AppColors.cream;
         return MaterialApp(
           localizationsDelegates: context.localizationDelegates,
           supportedLocales: context.supportedLocales,
           locale: context.locale,
           title: 'Pyin Mal',
           debugShowCheckedModeBanner: false,
-          themeMode: mode,
+          themeMode:
+              mode == AppThemeMode.dark ? ThemeMode.dark : ThemeMode.light,
 
-          // ── Light Theme ──────────────────────────────────────────────────
+          // ── Light Theme (also used for "dim", with a darker background) ───
           theme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.light,
-            scaffoldBackgroundColor: AppColors.cream,
+            scaffoldBackgroundColor: lightBg,
             colorScheme: const ColorScheme.light(
               primary: AppColors.burgundy,
               secondary: AppColors.gold,
@@ -108,7 +115,7 @@ class PyinMalApp extends StatelessWidget {
                   fontWeight: FontWeight.w600, color: AppColors.inkBlack),
             ),
             appBarTheme: AppBarTheme(
-              backgroundColor: AppColors.cream,
+              backgroundColor: lightBg,
               elevation: 0,
               scrolledUnderElevation: 0,
               foregroundColor: AppColors.inkBlack,

@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 
-/// Global theme notifier — call themeNotifier.value = ThemeMode.light / .dark anywhere
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
+/// Three app themes: light, dim (a softly darkened light theme) and dark.
+enum AppThemeMode { light, dim, dark }
 
+/// Global theme notifier — set themeNotifier.value = AppThemeMode.x anywhere.
+final ValueNotifier<AppThemeMode> themeNotifier =
+    ValueNotifier(AppThemeMode.dark);
+
+/// Cycle light → dim → dark → light.
 void toggleTheme() {
-  themeNotifier.value =
-      themeNotifier.value == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+  final next =
+      AppThemeMode.values[(themeNotifier.value.index + 1) % AppThemeMode.values.length];
+  themeNotifier.value = next;
 }
+
+void setThemeMode(AppThemeMode mode) => themeNotifier.value = mode;

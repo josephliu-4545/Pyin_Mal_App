@@ -28,6 +28,9 @@ import 'package:pyin_mal_app/widgets/cart_bar.dart';
 import 'package:pyin_mal_app/widgets/product_search_sheet.dart';
 import 'package:pyin_mal_app/widgets/shop_showcase.dart';
 
+/// Foodpanda-style brand pink used for the bottom nav + home tabs accent.
+const Color kBrandPink = Color(0xFFD70F64);
+
 // ── Main Shell ────────────────────────────────────────────────────────────────
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -335,15 +338,13 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 640;
 
     return CustomScrollView(
       slivers: [
         // Custom App Bar
         SliverAppBar(
           pinned: true,
-          backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: Padding(
@@ -428,27 +429,34 @@ class _HomeTabState extends State<_HomeTab> {
                 ),
               ),
             ),
-            // Theme Toggle
+            // Theme Toggle — cycles Light → Dim → Dark
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: ValueListenableBuilder<ThemeMode>(
+              child: ValueListenableBuilder<AppThemeMode>(
                 valueListenable: themeNotifier,
-                builder: (_, mode, __) => GestureDetector(
-                  onTap: toggleTheme,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
-                      shape: BoxShape.circle,
+                builder: (_, mode, __) {
+                  final icon = switch (mode) {
+                    AppThemeMode.light => Icons.wb_sunny_rounded,
+                    AppThemeMode.dim => Icons.brightness_4_rounded,
+                    AppThemeMode.dark => Icons.nightlight_round,
+                  };
+                  return GestureDetector(
+                    onTap: toggleTheme,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        icon,
+                        color: isDark ? Colors.white : AppColors.inkBlack,
+                        size: 20,
+                      ),
                     ),
-                    child: Icon(
-                      mode == ThemeMode.dark ? Icons.wb_sunny_rounded : Icons.nightlight_round,
-                      color: isDark ? Colors.white : AppColors.inkBlack,
-                      size: 20,
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
             // Profile Avatar — opens Profile (no longer a bottom tab)
@@ -482,28 +490,16 @@ class _HomeTabState extends State<_HomeTab> {
         // Main Content
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+            padding: const EdgeInsets.fromLTRB(10, 16, 10, 120),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Greeting ──────────────────────────────────────────────
-                _buildGreetingSection(isDark),
-                const SizedBox(height: 20),
-
-                // ── Row 1: Tabs ───────────────────────────────────────────
-                _buildHomeTabs(isDark),
-                const SizedBox(height: 18),
-
-                // ── Row 2: Bordered scrollable features ───────────────────
-                _buildQuickFeatureRow(isDark),
+                // ── Tabs + feature shortcuts on a single light panel ──────
+                _buildTopPanel(isDark),
                 const SizedBox(height: 20),
 
                 // ── Row 3: Sliding advertisement ──────────────────────────
                 _buildAdCarousel(isDark),
-                const SizedBox(height: 24),
-
-                // ── Points & Lucky Draw ────────────────────────────────────
-                _buildPointsLuckyDrawBanner(isDark),
                 const SizedBox(height: 24),
 
                 // ── On Sale ────────────────────────────────────────────────
@@ -542,7 +538,6 @@ class _HomeTabState extends State<_HomeTab> {
   // ── Row 1: Home tabs (For You / My Closet) ────────────────────────────────
   Widget _buildHomeTabs(bool isDark) {
     final accent = isDark ? AppColors.gold : AppColors.burgundy;
-    final ink = isDark ? Colors.white : AppColors.inkBlack;
     final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
     const tabs = ['For You', 'Services'];
 
@@ -559,7 +554,7 @@ class _HomeTabState extends State<_HomeTab> {
                     style: GoogleFonts.outfit(
                         fontSize: 16,
                         fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                        color: sel ? ink : muted)),
+                        color: sel ? accent : muted)),
                 const SizedBox(height: 8),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
@@ -784,58 +779,78 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   // ── Row 3: Bordered, horizontally scrollable feature shortcuts ────────────
-  Widget _buildQuickFeatureRow(bool isDark) {
+  // Light "panel" card holding the For You/Services tabs and the feature
+  // shortcuts (Foodpanda-style card on the page background).
+  Widget _buildTopPanel(bool isDark) {
     final accent = isDark ? AppColors.gold : AppColors.burgundy;
     final ink = isDark ? Colors.white : AppColors.inkBlack;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkWarm : AppColors.creamCard,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.22 : 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: SizedBox(
-        height: 76,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: _quickFeatures.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 20),
-          itemBuilder: (_, i) {
-            final f = _quickFeatures[i];
-            return GestureDetector(
-              onTap: f.$3,
-              child: SizedBox(
-                width: 60,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: accent.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Icon(f.$2, color: accent, size: 23),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        children: [
+          // Tabs
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: _buildHomeTabs(isDark),
+          ),
+          const SizedBox(height: 16),
+          // Feature shortcuts
+          SizedBox(
+            height: 78,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              itemCount: _quickFeatures.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 16),
+              itemBuilder: (_, i) {
+                final f = _quickFeatures[i];
+                return GestureDetector(
+                  onTap: f.$3,
+                  child: SizedBox(
+                    width: 62,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: accent.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(f.$2, color: accent, size: 23),
+                        ),
+                        const SizedBox(height: 7),
+                        Text(f.$1,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: ink)),
+                      ],
                     ),
-                    const SizedBox(height: 7),
-                    Text(f.$1,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.outfit(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: ink)),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
