@@ -22,8 +22,11 @@ class CdnImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Keep local assets for core UI components
-    if (assetPath.contains('logo') || assetPath.contains('splash')) {
+    // Local bundled assets — use Image.asset directly
+    if (assetPath.contains('logo') || assetPath.contains('splash') ||
+        assetPath.startsWith('pyin-mal-assets/') ||
+        assetPath.startsWith('assets/clothes/') ||
+        assetPath.startsWith('assets/models/')) {
       return Image.asset(
         assetPath,
         width: width,

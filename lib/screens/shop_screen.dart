@@ -569,11 +569,14 @@ class _ShopScreenState extends State<ShopScreen> {
                     children: [
                       Row(
                         children: [
-                          Text('Flash Sale',
-                              style: GoogleFonts.rufina(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: ink)),
+                          Flexible(
+                            child: Text('Flash Sale',
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.rufina(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: ink)),
+                          ),
                           const SizedBox(width: 4),
                           Icon(Icons.chevron_right_rounded, size: 20, color: muted),
                         ],

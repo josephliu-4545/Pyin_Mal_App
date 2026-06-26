@@ -54,33 +54,27 @@ class OpenCartService {
 
   // ── PRODUCTS ───────────────────────────────────────────────────────────────
 
-  // Fetch all products (paginated — limit 100 per page).
+  // Fetch all products via custom products_api.php (bypasses InfinityFree anti-bot).
   static Future<List<Product>> fetchProducts({
     int page = 1,
     int limit = 100,
     String? category,
   }) async {
-    await _ensureAuthenticated();
-
     try {
-      final params = {
-        'route': 'catalog/product',
-        'api_token': _apiToken ?? '',
-        'page': '$page',
-        'limit': '$limit',
-        if (category != null) 'filter_category_id': category,
-      };
-
-      final uri = Uri.parse('$_baseUrl/index.php').replace(queryParameters: params);
+      final uri = Uri.parse('$_baseUrl/products_api.php');
+      debugPrint('🛒 Fetching from: $uri');
       final response = await http.get(uri);
+      debugPrint('🛒 Status: ${response.statusCode}');
+      debugPrint('🛒 Body preview: ${response.body.substring(0, response.body.length.clamp(0, 200))}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final List products = data['products'] ?? [];
+        debugPrint('🛒 Products count: ${products.length}');
         return products.map((p) => Product.fromOpenCart(p)).toList();
       }
     } catch (e) {
-      debugPrint('OpenCart fetchProducts error: $e');
+      debugPrint('🛒 OpenCart fetchProducts error: $e');
     }
     return [];
   }

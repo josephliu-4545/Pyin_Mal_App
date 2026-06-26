@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -238,6 +239,15 @@ class _HomeTabState extends State<_HomeTab> {
   ];
 
   // Where each promo banner navigates when tapped (index-aligned with _ads).
+  static Future<bool> _assetExists(String path) async {
+    try {
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      return manifest.listAssets().contains(path);
+    } catch (_) {
+      return false;
+    }
+  }
+
   void _onAdTap(int i) {
     switch (i) {
       case 0:
@@ -616,12 +626,16 @@ class _HomeTabState extends State<_HomeTab> {
                             ),
                           ),
                         ),
-                        // Optional banner image (sale / announcement)
-                        Image.asset(
-                          ad.$5,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const SizedBox(),
-                        ),
+                        // Optional banner image — only shown if asset exists.
+                        // Place ad_sale.jpg / ad_ai.jpg / ad_donate.jpg in
+                        // assets/images/ to enable; gradient shows as fallback.
+                        if (ad.$5.isNotEmpty)
+                          FutureBuilder<bool>(
+                            future: _assetExists(ad.$5),
+                            builder: (_, snap) => (snap.data == true)
+                                ? Image.asset(ad.$5, fit: BoxFit.cover)
+                                : const SizedBox(),
+                          ),
                         // Decorative translucent circles (promo-banner feel)
                         Positioned(
                           top: -28,
@@ -712,11 +726,14 @@ class _HomeTabState extends State<_HomeTab> {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Text(ad.$7,
-                                              style: GoogleFonts.outfit(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: ad.$3.last)),
+                                          Flexible(
+                                            child: Text(ad.$7,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: GoogleFonts.outfit(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: ad.$3.last)),
+                                          ),
                                           const SizedBox(width: 4),
                                           Icon(Icons.arrow_forward_rounded,
                                               size: 13, color: ad.$3.last),

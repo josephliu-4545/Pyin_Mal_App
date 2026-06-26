@@ -12,6 +12,10 @@ class Product {
   /// Used by the AI scan feature to match camera photos against the catalog.
   final List<String> tags;
 
+  /// Additional gallery images shown in the product detail screen.
+  /// Plain-background shots (_p) go here; [image] holds the default lifestyle shot.
+  final List<String> images;
+
   Product({
     required this.id,
     required this.name,
@@ -23,29 +27,37 @@ class Product {
     this.description,
     this.shopName,
     this.tags = const [],
+    this.images = const [],
   });
 
   // Parse a product from OpenCart's REST API JSON response.
   // OpenCart returns prices as plain numbers (e.g. "15000"), images as full URLs.
   factory Product.fromOpenCart(Map<String, dynamic> json) {
     final rawPrice = json['price'] ?? '0';
-    // Format: "15000" → "15,000 MMK"
     final numPrice = double.tryParse(rawPrice.toString().replaceAll(',', '')) ?? 0;
     final formattedPrice =
         '${numPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')} MMK';
+
+    // Strip HTML tags from description
+    final rawDesc = json['description']?.toString() ?? '';
+    final cleanDesc = rawDesc.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+
+    // Image URL — prepend base URL if it's a relative path
+    final rawImage = json['image']?.toString() ?? '';
+    final imageUrl = rawImage.startsWith('http')
+        ? rawImage
+        : 'http://192.168.1.8/opencart/image/$rawImage';
 
     return Product(
       id: json['product_id']?.toString() ?? '',
       name: json['name'] ?? '',
       price: formattedPrice,
-      image: json['image'] ?? '',
-      category: json['categories']?.isNotEmpty == true
-          ? json['categories'][0]['name']
-          : 'Other',
-      gender: _parseGender(json['tags'] ?? ''),
+      image: imageUrl,
+      category: json['category'] ?? 'Other',
+      gender: _parseGender(json['category'] ?? ''),
       brand: json['manufacturer'] ?? 'Unknown',
-      description: json['description'],
-      shopName: json['store_name'],
+      description: cleanDesc.isNotEmpty ? cleanDesc : null,
+      shopName: null,
     );
   }
 

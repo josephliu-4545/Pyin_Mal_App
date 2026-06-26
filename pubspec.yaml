@@ -1,4 +1,4 @@
-name: pyin_mal_app
+﻿name: pyin_mal_app
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -87,6 +87,72 @@ flutter:
     - assets/models/
     - assets/translations/
     - assets/clothes/
+    - pyin-mal-assets/assets/images/
+    - pyin-mal-assets/assets/images/Female/
+    - pyin-mal-assets/assets/images/Female/dress. top/
+    - pyin-mal-assets/assets/images/Female/dress. top/Oro/
+    - pyin-mal-assets/assets/images/Female/dress. top/T shirt collection/
+    - pyin-mal-assets/assets/images/Female/dress. top/nami/
+    - pyin-mal-assets/assets/images/Female/dress.burmese/
+    - pyin-mal-assets/assets/images/Female/dress.burmese/Anastasia/
+    - pyin-mal-assets/assets/images/Female/dress.burmese/Luna/
+    - pyin-mal-assets/assets/images/Female/dress.burmese/Veronica/
+    - pyin-mal-assets/assets/images/Female/dress.burmese/luxe/
+    - pyin-mal-assets/assets/images/Female/dress.dress/
+    - pyin-mal-assets/assets/images/Female/dress.dress/Saw in style/
+    - pyin-mal-assets/assets/images/Female/dress.set/
+    - pyin-mal-assets/assets/images/Female/dress.set/Luna/
+    - pyin-mal-assets/assets/images/Female/dress.set/oro set/
+    - pyin-mal-assets/assets/images/Female/dress.skirt/
+    - pyin-mal-assets/assets/images/HairStyle/
+    - pyin-mal-assets/assets/images/HairStyle/Female/
+    - pyin-mal-assets/assets/images/HairStyle/Female/Diamond Face/
+    - pyin-mal-assets/assets/images/HairStyle/Female/Heart Face/
+    - pyin-mal-assets/assets/images/HairStyle/Female/Oval Face/
+    - pyin-mal-assets/assets/images/HairStyle/Female/Round Face/
+    - pyin-mal-assets/assets/images/HairStyle/Female/Square Face/
+    - pyin-mal-assets/assets/images/HairStyle/Female/Triangle Face/
+    - pyin-mal-assets/assets/images/HairStyle/Male/
+    - pyin-mal-assets/assets/images/HairStyle/Male/Diamond Face/
+    - pyin-mal-assets/assets/images/HairStyle/Male/Heart Face/
+    - pyin-mal-assets/assets/images/HairStyle/Male/Oval Face/
+    - pyin-mal-assets/assets/images/HairStyle/Male/Round Face/
+    - pyin-mal-assets/assets/images/HairStyle/Male/Square Face/
+    - pyin-mal-assets/assets/images/HairStyle/Male/Triangle Face/
+    - pyin-mal-assets/assets/images/Hero/
+    - pyin-mal-assets/assets/images/Male/
+    - pyin-mal-assets/assets/images/Male/Burmese Studio/
+    - pyin-mal-assets/assets/images/Male/Burmese Studio/Coat/
+    - pyin-mal-assets/assets/images/Male/Burmese Studio/Pant/
+    - pyin-mal-assets/assets/images/Male/Burmese Studio/Shirt/
+    - pyin-mal-assets/assets/images/Male/Burmese Studio/Tee/
+    - pyin-mal-assets/assets/images/Male/Burmese dress for men/
+    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/
+    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/Hoodie/
+    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/Jersey/
+    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/Shirt/
+    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/Sweater/
+    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/Tee/
+    - pyin-mal-assets/assets/images/Male/Malory/
+    - pyin-mal-assets/assets/images/Male/Malory/T shirt/
+    - pyin-mal-assets/assets/images/Male/Malory/pants/
+    - pyin-mal-assets/assets/images/Male/Nrf/
+    - pyin-mal-assets/assets/images/Male/Nrf/Hoodie/
+    - pyin-mal-assets/assets/images/Male/Nrf/Tee/
+    - pyin-mal-assets/assets/images/Male/Restyle/
+    - pyin-mal-assets/assets/images/Male/Restyle/Jacket/
+    - pyin-mal-assets/assets/images/Male/Restyle/Shirt/
+    - pyin-mal-assets/assets/images/Male/Set/
+    - pyin-mal-assets/assets/images/Male/Set/outfit set from sian store/
+    - pyin-mal-assets/assets/images/Male/VAL3/
+    - pyin-mal-assets/assets/images/Male/VAL3/Hoodie/
+    - pyin-mal-assets/assets/images/Male/VAL3/Pants/
+    - pyin-mal-assets/assets/images/Male/VAL3/T shirt/
+    - pyin-mal-assets/assets/images/Photo/
+    - pyin-mal-assets/assets/images/cart/
+    - pyin-mal-assets/assets/images/cart photo_files/
+    - pyin-mal-assets/assets/images/grooming/
+    - pyin-mal-assets/assets/images/outfits/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
