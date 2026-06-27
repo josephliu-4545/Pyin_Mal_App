@@ -1,6 +1,6 @@
 # Pyin Mal — AI Fashion & Grooming App 💈👗
 
-> A Flutter mobile application built for a design competition showcasing AI-powered styling, virtual outfit & hairstyle try-on, smart clothing scanning, 3D product previews, and a gamified loyalty rewards system — all backed by Firebase and Gemini AI.
+> A Flutter mobile application built for a design competition showcasing AI-powered styling, virtual outfit & hairstyle try-on, smart clothing scanning, 3D product previews, AR fitting room, and a gamified loyalty rewards system — all backed by Firebase and Gemini AI.
 
 ---
 
@@ -17,6 +17,13 @@
 | 💇‍♀️ **Hair Try-On** | Upload your photo + a reference hairstyle → AI generates your new look |
 | 📸 **Smart Scan** | Point your camera at any clothing item → Gemini AI identifies it and matches it to the closest product in the catalog |
 | 🪞 **AR Hair Filter** | Real-time face detection with ML Kit + camera overlay for hair style previews (Android & iOS) |
+| 👗 **AR Fitting Room** | Real-time body pose detection using Google ML Kit to overlay virtual clothing directly onto the user's camera feed |
+| 📏 **AI Body Scan & Sizing** | AI-powered body scanning to measure dimensions and provide accurate size recommendations |
+| ♻️ **Resell & Donate** | Circular fashion ecosystem! List old items for resale, chat with buyers, or donate clothes |
+| 🪟 **Floating Scanner** | A persistent floating window scanner that runs over other apps, using Android Overlay permissions |
+| 🎙️ **Voice Search** | Integrated Speech-to-Text for hands-free product searching |
+| 🌍 **Localization** | Multi-language support out of the box using Easy Localization |
+| 📦 **Sale & Delivery** | Dedicated screens for tracking ongoing sales, orders, and delivery statuses |
 | 🧊 **3D Product Viewer** | Procedurally generated GLB models displayed in an interactive `model_viewer_plus` widget with rotation & zoom |
 | ❤️ **Favorites** | Searchable saved looks grid with remove functionality |
 | 🤖 **AI Stylist Chat** | Context-aware Gemini AI that knows the user's style preferences, search history, viewed items, and purchases — returns structured JSON with inline product recommendations |
@@ -52,11 +59,19 @@ lib/
 │   ├── cart_service.dart         # In-memory cart state (ChangeNotifier singleton)
 │   ├── gemini_service.dart       # Gemini AI chat with dynamic user context injection
 │   ├── nanobanana_api_service.dart # NanoBanana API: virtual try-on & hairstyle generation
-│   └── model_3d_service.dart     # Procedural GLB 3D model generation (hoodie mesh)
+│   ├── model_3d_service.dart     # Procedural GLB 3D model generation (hoodie mesh)
+│   ├── pose_detection_service.dart # ML Kit skeletal tracking for AR Fitting Room
+│   ├── bodygram_service.dart     # Integration for body scanning & measurements
+│   ├── floating_scanner_service.dart # Overlay window background task management
+│   └── opencart_service.dart     # OpenCart e-commerce catalog integration
 ├── screens/
 │   ├── shop_screen.dart          # Fashion products grid + Barber booking + cart icon
 │   ├── product_detail_screen.dart # Product details, size selector, Add to Cart, 3D viewer
 │   ├── cart_screen.dart          # Cart items, quantity controls, checkout flow
+│   ├── ar_fitting_room_screen.dart # Real-time camera with 33-point pose detection
+│   ├── body_scan_screen.dart     # Body measurement & size recommendation flow
+│   ├── resell_screen.dart        # Circular fashion marketplace listings
+│   ├── donate_screen.dart        # Clothing donation portal
 │   ├── haircut_screen.dart       # Face shape analysis + trending hairstyles
 │   ├── model_preview_screen.dart # Virtual mannequin try-on
 │   ├── try_on_screen.dart        # AI virtual try-on (person + clothing upload → result)
@@ -85,7 +100,7 @@ assets/
 
 ## 🤖 AI Architecture
 
-The app integrates **three distinct AI systems**:
+The app integrates **several distinct AI systems**:
 
 ### 1. Gemini AI Stylist (Chat)
 
@@ -114,7 +129,17 @@ The app integrates **three distinct AI systems**:
 3. **POST** to the NanoBanana `/generate` endpoint with the image URLs.
 4. **Poll** the `/record-info` endpoint every 3 seconds (up to 30 attempts) for the result image.
 
-Used by both `TryOnScreen` (outfit: person + shirt + pants + shoes) and `HairTryOnScreen` (hair: person + reference hairstyle).
+### 4. Google ML Kit — AR Fitting Room & Pose Detection
+
+`PoseDetectionService` processes real-time camera frames:
+
+1. Tracks 33 skeletal landmarks.
+2. Maps virtual clothing assets dynamically onto the user's shoulders, torso, and hips.
+3. Adapts the bounding box scaling based on the detected body proportions.
+
+### 5. Floating Scanner Overlay
+
+Powered by `flutter_overlay_window` and foreground services, the app provides a floating camera button that persists outside the application. This allows users to instantly snap and scan fashion items they spot anywhere on their device (e.g., social media or browsing).
 
 ---
 
@@ -269,7 +294,9 @@ flutter run
 | Virtual Try-On (NanoBanana) | ✅ | ✅ | ✅ | ⚠️ No image compression |
 | Hair Try-On (NanoBanana) | ✅ | ✅ | ✅ | ⚠️ No image compression |
 | AR Hair Filter (ML Kit) | ❌ | ✅ | ✅ | ❌ |
+| AR Fitting Room (ML Kit) | ❌ | ✅ | ✅ | ❌ |
 | 3D Product Viewer | ✅ (data URL) | ✅ (file) | ✅ (file) | ✅ (file) |
+| Floating Scanner Overlay | ❌ | ✅ | ❌ | ❌ |
 
 ---
 
@@ -287,12 +314,13 @@ dependencies:
   image_picker: ^1.2.2            # Photo upload (try-on, scan, onboarding)
   camera: ^0.10.5+5               # Live camera access (AR filter)
   google_mlkit_face_detection: ^0.13.0  # Real-time face detection for AR overlay
+  google_mlkit_pose_detection: ^0.14.1  # Real-time body pose detection for AR fitting room
+  easy_localization: ^3.0.8       # Multi-language translation support
+  speech_to_text: ^7.4.0          # Voice search
+  flutter_overlay_window: ^0.5.0  # Floating UI over other apps
   http: ^1.6.0                    # HTTP requests (NanoBanana API)
   flutter_image_compress: ^2.4.0  # Image compression before API upload
-  image: ^4.8.0                   # Image processing utilities
-  http_parser: ^4.1.2             # Multipart request helpers
-  path_provider: ^2.1.5           # App documents directory (3D model storage)
-  model_viewer_plus: ^1.10.0      # Interactive 3D GLB model viewer
+  model_viewer_plus: ^1.9.3       # Interactive 3D GLB model viewer
 ```
 
 ---
@@ -301,9 +329,6 @@ dependencies:
 
 - [ ] Real payment gateway integration (Stripe / local payment providers)
 - [ ] Push notifications for checkout confirmations and rank-ups
-- [ ] Order history screen with purchase timeline
-- [ ] AR clothing overlay with body pose detection
-- [ ] Improved 3D models with texture mapping and product-specific meshes
 - [ ] Social sharing of try-on results
 - [ ] App Store / Play Store deployment
 
@@ -331,4 +356,4 @@ For major changes, please open an issue first to discuss what you would like to 
 
 ---
 
-*© 2025 Pyin Mal — Designed for those who stand out.*
+*© 2026 Pyin Mal — Designed for those who stand out.*

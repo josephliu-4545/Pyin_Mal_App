@@ -6,7 +6,7 @@ import 'dart:math' as math;
 
 /// Service to generate and manage 3D models for product viewing
 class Model3DService {
-  static const String hoodiemodelFileName = 'hoodie_3d.glb';
+  static const String hoodiemodelFileName = 'w_star wear_p1.glb';
 
   /// Generate a procedural 3D hoodie model as GLB file or data URL
   static Future<String?> generateHoodie3DModel() async {

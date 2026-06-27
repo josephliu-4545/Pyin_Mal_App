@@ -525,11 +525,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             }
 
-            final profile = profileSnapshot.data;
-            if (profile == null) {
+            // Stream errored (e.g. Firestore permission-denied) — show a retry
+            // state instead of spinning forever or crashing.
+            if (profileSnapshot.hasError) {
+              debugPrint('🔴 Profile load error: ${profileSnapshot.error}');
               return Scaffold(
                 backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
-                body: Center(child: CircularProgressIndicator(color: isDark ? AppColors.gold : AppColors.burgundy)),
+                body: SafeArea(
+                  child: _buildProfileError(
+                    isDark,
+                    "Couldn't load your profile. Please check your connection and try again.",
+                  ),
+                ),
+              );
+            }
+
+            final profile = profileSnapshot.data;
+            if (profile == null) {
+              // Signed in but no profile document yet (or it couldn't be read).
+              return Scaffold(
+                backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
+                body: SafeArea(
+                  child: _buildProfileError(
+                    isDark,
+                    "We couldn't find your profile data. Tap retry to try again.",
+                  ),
+                ),
               );
             }
 
@@ -540,6 +561,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
         );
       },
+    );
+  }
+
+  // Error / retry state shown when the profile data can't be loaded.
+  // Retry simply rebuilds, which re-subscribes to a fresh profile stream.
+  Widget _buildProfileError(bool isDark, String message) {
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off_rounded, size: 48, color: accent),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 15,
+                color: isDark ? AppColors.paleText : AppColors.inkGrey,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => setState(() {}),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: Text('Retry', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accent,
+                foregroundColor: isDark ? AppColors.inkBlack : Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
