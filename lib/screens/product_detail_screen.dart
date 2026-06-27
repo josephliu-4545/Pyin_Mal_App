@@ -430,16 +430,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     } catch (_) {} // no measurements / offline — selector works as before
   }
 
-  /// 3D model asset for this product, or null if it has no 3D model.
-  /// Only "W Star Wear" ships with a real 3D model for now — every other
-  /// product shows photos only (no 360° view).
+  /// Color code → 3D model asset for the "Star Wear" product. The filename
+  /// prefix is the color (e.g. 'w' = white), matching the photo naming scheme
+  /// in AssetProductLoader. Add an entry here as you export a model per color.
+  static const Map<String, String> _starWearModels = {
+    'w': 'assets/models/w_star_wear_p1.glb',
+  };
+
+  /// 3D model asset for this product + selected color, or null if none.
+  /// Only "Star Wear" ships with a real 3D model for now — every other product
+  /// shows photos only (no 360° view).
   String? get _model3dAsset {
     final normalized =
         widget.name.toLowerCase().replaceAll(RegExp(r'[\s_]+'), '');
-    if (normalized.contains('wstarwear')) {
-      return 'assets/models/w_star_wear_p1.glb';
-    }
-    return null;
+    if (!normalized.contains('starwear')) return null;
+    // Prefer the model for the selected color; fall back to any available one
+    // so the 3D view still works while only some colors have a model.
+    return _starWearModels[_selectedColor] ??
+        (_starWearModels.isNotEmpty ? _starWearModels.values.first : null);
   }
 
   bool get _has3DModel => _model3dAsset != null;
