@@ -32,20 +32,52 @@ class _ShopScreenState extends State<ShopScreen> {
   final Set<String> _favorites = {};
 
   // Categories matching reference design
-  final List<Map<String, dynamic>> _categories = [
-    {'label': 'New in',      'icon': Icons.auto_awesome_rounded},
-    {'label': 'Women',       'icon': Icons.female_rounded},
-    {'label': 'Men',         'icon': Icons.male_rounded},
-    {'label': 'T-Shirts',    'icon': Icons.checkroom_rounded},
-    {'label': 'Hoodies',     'icon': Icons.dry_cleaning_rounded},
-    {'label': 'Pants',       'icon': Icons.straighten_rounded},
-    {'label': 'Shoes',       'icon': Icons.directions_walk_rounded},
-    {'label': 'Bags',        'icon': Icons.shopping_bag_outlined},
-    {'label': 'Hats',        'icon': Icons.theater_comedy_outlined},
-    {'label': 'Accessories', 'icon': Icons.watch_outlined},
-    {'label': 'Sports',      'icon': Icons.sports_basketball_outlined},
-    {'label': 'Sets',        'icon': Icons.style_outlined},
+  // Fixed icon map — covers all categories from the asset file structure
+  static const _categoryIcons = {
+    'New in':   Icons.auto_awesome_rounded,
+    'Women':    Icons.female_rounded,
+    'Men':      Icons.male_rounded,
+    'T-Shirt':  Icons.checkroom_rounded,
+    'Hoodie':   Icons.dry_cleaning_rounded,
+    'Shirt':    Icons.checkroom_rounded,
+    'Jacket':   Icons.downhill_skiing_rounded,
+    'Sweater':  Icons.ac_unit_rounded,
+    'Coat':     Icons.umbrella_rounded,
+    'Pants':    Icons.straighten_rounded,
+    'Jersey':   Icons.sports_rounded,
+    'Set':      Icons.style_outlined,
+    'Top':      Icons.female_rounded,
+    'Dress':    Icons.female_rounded,
+    'Skirt':    Icons.female_rounded,
+    'Other':    Icons.category_outlined,
+  };
+
+  List<Map<String, dynamic>> _categories = [
+    {'label': 'New in', 'icon': Icons.auto_awesome_rounded},
+    {'label': 'Women',  'icon': Icons.female_rounded},
+    {'label': 'Men',    'icon': Icons.male_rounded},
   ];
+
+  void _buildCategories() {
+    final seen = <String>{};
+    final dynamicCats = <Map<String, dynamic>>[];
+    for (final p in ProductRepository.allProducts) {
+      final cat = p.category;
+      if (cat.isEmpty || cat == 'Other' || seen.contains(cat)) continue;
+      seen.add(cat);
+      dynamicCats.add({
+        'label': cat,
+        'icon': _categoryIcons[cat] ?? Icons.category_outlined,
+      });
+    }
+    dynamicCats.sort((a, b) => (a['label'] as String).compareTo(b['label'] as String));
+    _categories = [
+      {'label': 'New in', 'icon': Icons.auto_awesome_rounded},
+      {'label': 'Women',  'icon': Icons.female_rounded},
+      {'label': 'Men',    'icon': Icons.male_rounded},
+      ...dynamicCats,
+    ];
+  }
   String _selectedCategory = 'New in';
   String? _selectedShop; // null = all shops
   List<ShopInfo> _shopsWithLogos = [];
@@ -85,7 +117,10 @@ class _ShopScreenState extends State<ShopScreen> {
   Future<void> _loadProducts() async {
     setState(() => _loadingProducts = true);
     await ProductRepository.loadFromOpenCart();
-    if (mounted) setState(() => _loadingProducts = false);
+    if (mounted) setState(() {
+      _loadingProducts = false;
+      _buildCategories();
+    });
   }
 
   Future<void> _loadShopsWithLogos() async {
@@ -106,9 +141,13 @@ class _ShopScreenState extends State<ShopScreen> {
           .toList();
     }
     if (_selectedCategory == 'New in') return products;
-    return products
-        .where((p) => p.category == _selectedCategory || p.gender == _selectedCategory)
-        .toList();
+    if (_selectedCategory == 'Women') {
+      return products.where((p) => p.gender == 'Female').toList();
+    }
+    if (_selectedCategory == 'Men') {
+      return products.where((p) => p.gender == 'Male').toList();
+    }
+    return products.where((p) => p.category == _selectedCategory).toList();
   }
 
   @override
@@ -328,7 +367,7 @@ class _ShopScreenState extends State<ShopScreen> {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: Text(
-                                  'shop.categories.$label'.tr(),
+                                  label,
                                   style: GoogleFonts.outfit(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
