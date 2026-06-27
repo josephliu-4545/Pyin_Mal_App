@@ -792,7 +792,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minWidth:
+                                    MediaQuery.of(context).size.width - 48,
+                              ),
                               child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: widget.colorVariants.entries.toList().asMap().entries.map((entry) {
                                   final i = entry.key;
                                   final colorCode = entry.value.key;
@@ -845,6 +851,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     ),
                                   );
                                 }).toList(),
+                              ),
                               ),
                             ),
                         ],
