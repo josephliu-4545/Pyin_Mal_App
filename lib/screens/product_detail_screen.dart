@@ -1426,15 +1426,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   // ── Size chart data (cm) ──────────────────────────────────────────────────
-  static const _sizeChart = <List<String>>[
-    // Size, Shoulder, Bust, Waist, Length
-    ['XS', '13.4', '29.1', '23.6', '17.7'],
-    ['S', '13.8', '30.7', '25.2', '18.1'],
-    ['M', '14.2', '32.3', '26.8', '18.5'],
-    ['L', '14.6', '34.6', '29.1', '18.9'],
-    ['XL', '15.0', '37.0', '31.5', '19.3'],
-  ];
-
   // ── Compact "Size & Fit" section (above reviews) ──────────────────────────
   Widget _buildSizeGuideSection(bool isDark, Color accent, Color cardBg) {
     final ink = isDark ? Colors.white : AppColors.inkBlack;
@@ -1467,47 +1458,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          // Action buttons row
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _openSizeGuideSheet(0),
-                  icon: const Icon(Icons.grid_on_rounded, size: 15),
-                  label: Text('Size Guide',
-                      style: GoogleFonts.outfit(
-                          fontSize: 12, fontWeight: FontWeight.w600)),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 11),
-                    side: BorderSide(
-                        color:
-                            isDark ? Colors.white24 : const Color(0xFFCCCCCC)),
-                    foregroundColor: ink,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
+          // Single full-width Size Guide button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _openSizeGuideSheet(0),
+              icon: const Icon(Icons.straighten_rounded, size: 16),
+              label: Text('Size Guide',
+                  style: GoogleFonts.outfit(
+                      fontSize: 13, fontWeight: FontWeight.w600)),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                side: BorderSide(
+                    color: isDark ? Colors.white24 : const Color(0xFFCCCCCC)),
+                foregroundColor: ink,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _openSizeGuideSheet(0),
-                  icon: const Icon(Icons.person_search_rounded, size: 15),
-                  label: Text('Check My Size',
-                      style: GoogleFonts.outfit(
-                          fontSize: 12, fontWeight: FontWeight.w600)),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 11),
-                    side: BorderSide(
-                        color:
-                            isDark ? Colors.white24 : const Color(0xFFCCCCCC)),
-                    foregroundColor: ink,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 12),
           // Fit stat
@@ -1545,7 +1513,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final cardBg = isDark ? AppColors.darkWarm : Colors.white;
     final ink = isDark ? Colors.white : AppColors.inkBlack;
     final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
-    int tab = initialTab; // 0 = Product Chart, 1 = Shop Chart
+    int tab = initialTab; // 0 = Product Chart (image), 1 = Body Chart
+    // Body Chart state
+    String? bodyShape;
+    double bust = 34;
+    double waist = 27;
+    double hips = 37;
 
     showModalBottomSheet(
       context: context,
@@ -1594,7 +1567,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         children: [
                           _sizeTab('Product Chart', 0, tab, accent, ink, isDark,
                               () => setSheet(() => tab = 0)),
-                          _sizeTab('Shop Chart', 1, tab, accent, ink, isDark,
+                          _sizeTab('Body Chart', 1, tab, accent, ink, isDark,
                               () => setSheet(() => tab = 1)),
                         ],
                       ),
@@ -1606,8 +1579,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       controller: scroll,
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
                       child: tab == 0
-                          ? _productChart(isDark, accent, ink, muted)
-                          : _shopChart(isDark, accent, ink, muted),
+                          ? _shopChart(isDark, accent, ink, muted)
+                          : _bodyChart(
+                              isDark,
+                              accent,
+                              ink,
+                              muted,
+                              bodyShape,
+                              bust,
+                              waist,
+                              hips,
+                              (s) => setSheet(() => bodyShape = s),
+                              (b) => setSheet(() => bust = b),
+                              (w) => setSheet(() => waist = w),
+                              (h) => setSheet(() => hips = h),
+                            ),
                     ),
                   ),
                 ],
@@ -1644,36 +1630,73 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _productChart(bool isDark, Color accent, Color ink, Color muted) {
+  // Body-chart reference ranges (inches): Size, Height, Bust, Waist, Hip
+  static const _bodyChartRows = <List<String>>[
+    ['XS', '63-65', '32.3-33.9', '24.4-26', '34.3-35.8'],
+    ['S', '65-66.9', '33.9-35.4', '26-27.6', '35.8-37.4'],
+    ['M', '65-66.9', '35.4-37', '27.6-29.1', '37.4-39'],
+    ['L', '66.9-68.9', '37-39.4', '29.1-31.5', '39-41.3'],
+    ['XL', '66.9-68.9', '39.4-41.7', '31.5-33.9', '41.3-43'],
+  ];
+
+  // Upper bounds (inches) used to map a measurement to a size index.
+  static const _bustBounds = [33.9, 35.4, 37.0, 39.4];
+  static const _waistBounds = [26.0, 27.6, 29.1, 31.5];
+  static const _hipsBounds = [35.8, 37.4, 39.0, 41.3];
+  static const _sizeLabels = ['XS', 'S', 'M', 'L', 'XL'];
+
+  int _bandFor(double value, List<double> bounds) {
+    for (var i = 0; i < bounds.length; i++) {
+      if (value <= bounds[i]) return i;
+    }
+    return bounds.length; // last size
+  }
+
+  String _recommendSize(double bust, double waist, double hips) {
+    // Bust carries the most weight; average the three bands and round.
+    final b = _bandFor(bust, _bustBounds);
+    final w = _bandFor(waist, _waistBounds);
+    final h = _bandFor(hips, _hipsBounds);
+    final idx = ((b * 2 + w + h) / 4).round().clamp(0, 4);
+    return _sizeLabels[idx];
+  }
+
+  // Interactive Body Chart: reference table + body shape + measurements → size
+  Widget _bodyChart(
+    bool isDark,
+    Color accent,
+    Color ink,
+    Color muted,
+    String? bodyShape,
+    double bust,
+    double waist,
+    double hips,
+    ValueChanged<String> onShape,
+    ValueChanged<double> onBust,
+    ValueChanged<double> onWaist,
+    ValueChanged<double> onHips,
+  ) {
     final headerBg = isDark ? Colors.white10 : const Color(0xFFF4F2EF);
     final line = isDark ? Colors.white12 : const Color(0xFFEDE9E4);
-    const headers = ['Size', 'Shoulder', 'Bust', 'Waist', 'Length'];
+    const headers = ['Size', 'Height', 'Bust', 'Waist', 'Hip'];
+    final recommended = _recommendSize(bust, waist, hips);
+
+    const shapes = [
+      ['Hourglass', '⏳'],
+      ['Triangle', '▽'],
+      ['Rounded', '◯'],
+      ['Rectangle', '▭'],
+      ['Inverted Triangle', '△'],
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Measurements (cm)',
-                style: GoogleFonts.outfit(
-                    fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: accent.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text('${_selectedSize} (you)',
-                  style: GoogleFonts.outfit(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: accent)),
-            ),
-          ],
-        ),
+        // ── Reference table ──
+        Text('Body size reference (in)',
+            style: GoogleFonts.outfit(
+                fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
         const SizedBox(height: 12),
-        // Table
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
@@ -1681,7 +1704,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           child: Column(
             children: [
-              // Header row
               Container(
                 decoration: BoxDecoration(
                   color: headerBg,
@@ -1705,9 +1727,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       .toList(),
                 ),
               ),
-              // Data rows
-              ..._sizeChart.map((row) {
-                final isMine = row[0] == _selectedSize;
+              ..._bodyChartRows.map((row) {
+                final isMine = row[0] == recommended;
                 return Container(
                   decoration: BoxDecoration(
                     color: isMine ? accent.withOpacity(0.10) : null,
@@ -1721,7 +1742,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           child: Text(row[c],
                               textAlign: TextAlign.center,
                               style: GoogleFonts.outfit(
-                                  fontSize: 12,
+                                  fontSize: 11,
                                   fontWeight: c == 0 || isMine
                                       ? FontWeight.w700
                                       : FontWeight.w400,
@@ -1736,19 +1757,111 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Text('*Data may vary by 0.39–0.79 in.',
+        Text('*For reference only — depends on body type & fit preference.',
             style: GoogleFonts.outfit(fontSize: 11, color: muted)),
-        const SizedBox(height: 22),
+        const SizedBox(height: 24),
 
-        // Fit type indicator
+        // ── Your Body Shape ──
+        Text('Your Body Shape',
+            style: GoogleFonts.outfit(
+                fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: shapes.map((s) {
+            final sel = bodyShape == s[0];
+            return GestureDetector(
+              onTap: () => onShape(s[0]),
+              child: Container(
+                width: 96,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: sel
+                      ? accent.withOpacity(0.12)
+                      : (isDark ? Colors.white10 : const Color(0xFFF6F4F1)),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: sel ? accent : Colors.transparent, width: 1.5),
+                ),
+                child: Column(
+                  children: [
+                    Text(s[1],
+                        style: TextStyle(
+                            fontSize: 22,
+                            color: sel ? accent : ink)),
+                    const SizedBox(height: 6),
+                    Text(s[0],
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            fontWeight:
+                                sel ? FontWeight.w700 : FontWeight.w500,
+                            color: sel ? accent : ink)),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 24),
+
+        // ── Your Measurements ──
+        Text('Your Measurements',
+            style: GoogleFonts.outfit(
+                fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
+        const SizedBox(height: 12),
+        _measureSlider('Bust', bust, 28, 48, accent, ink, muted, isDark, onBust),
+        const SizedBox(height: 14),
+        _measureSlider(
+            'Waist', waist, 22, 42, accent, ink, muted, isDark, onWaist),
+        const SizedBox(height: 14),
+        _measureSlider('Hips', hips, 30, 50, accent, ink, muted, isDark, onHips),
+        const SizedBox(height: 24),
+
+        // ── Recommendation ──
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+          decoration: BoxDecoration(
+            color: accent.withOpacity(isDark ? 0.16 : 0.10),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: accent.withOpacity(0.4)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.thumb_up_alt_rounded, size: 18, color: accent),
+                  const SizedBox(width: 8),
+                  Text('Best fit for you:  $recommended',
+                      style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: accent)),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                bodyShape == null
+                    ? 'Based on your measurements'
+                    : 'Based on your $bodyShape shape & measurements',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(fontSize: 12, color: ink),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // ── Fit + buyer reviews ──
         _fitBar('Fit Type', ['Skinny', 'Regular', 'Oversized'], 1, accent, ink,
             muted, isDark),
         const SizedBox(height: 16),
         _fitBar('Stretch', ['Non', 'Slight', 'Medium', 'High'], 1, accent, ink,
             muted, isDark),
         const SizedBox(height: 24),
-
-        // How buyers reviewed the fit
         Text('How buyers reviewed the fit',
             style: GoogleFonts.outfit(
                 fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
@@ -1758,6 +1871,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _fitReview('True to size', 94, accent, ink, muted, isDark),
         const SizedBox(height: 8),
         _fitReview('Large', 3, accent, ink, muted, isDark),
+      ],
+    );
+  }
+
+  Widget _measureSlider(String label, double value, double min, double max,
+      Color accent, Color ink, Color muted, bool isDark, ValueChanged<double> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label,
+                style: GoogleFonts.outfit(
+                    fontSize: 13, fontWeight: FontWeight.w600, color: ink)),
+            Text('${value.toStringAsFixed(1)} in',
+                style: GoogleFonts.outfit(
+                    fontSize: 14, fontWeight: FontWeight.w800, color: accent)),
+          ],
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 4,
+            activeTrackColor: accent,
+            inactiveTrackColor:
+                isDark ? Colors.white12 : const Color(0xFFEDE9E4),
+            thumbColor: accent,
+            overlayColor: accent.withOpacity(0.15),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
+          ),
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: ((max - min) * 2).round(),
+            onChanged: onChanged,
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('${min.toStringAsFixed(0)} in',
+                style: GoogleFonts.outfit(fontSize: 10, color: muted)),
+            Text('${max.toStringAsFixed(0)} in',
+                style: GoogleFonts.outfit(fontSize: 10, color: muted)),
+          ],
+        ),
       ],
     );
   }
@@ -1896,7 +2056,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Use the Product Chart tab for exact measurements.',
+                  'Switch to Body Chart to get your recommended size.',
                   style: GoogleFonts.outfit(fontSize: 12, color: ink),
                 ),
               ),

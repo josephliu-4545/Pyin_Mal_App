@@ -14,6 +14,7 @@ import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/screens/cart_screen.dart';
 import 'package:pyin_mal_app/screens/sale_screen.dart';
+import 'package:pyin_mal_app/screens/scan_screen.dart';
 import 'package:pyin_mal_app/core/constants/shop_constants.dart';
 import 'package:pyin_mal_app/core/guide_keys.dart';
 
@@ -226,11 +227,11 @@ class _ShopScreenState extends State<ShopScreen> {
                       ),
                       child: IconButton(
                         icon: Icon(Icons.document_scanner_rounded, color: accent),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('shop.camera_coming_soon'.tr())),
-                          );
-                        },
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const ScanScreen()),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
