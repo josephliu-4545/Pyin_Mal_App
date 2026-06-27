@@ -15,6 +15,7 @@ class ResellPost {
   final String condition; // Like New / Good / Fair
   final String seller;
   final String size;
+  final bool isSoldOut;
 
   const ResellPost({
     required this.title,
@@ -24,7 +25,19 @@ class ResellPost {
     required this.condition,
     required this.seller,
     required this.size,
+    this.isSoldOut = false,
   });
+
+  ResellPost copyWith({bool? isSoldOut}) => ResellPost(
+        title: title,
+        price: price,
+        image: image,
+        imageBytes: imageBytes,
+        condition: condition,
+        seller: seller,
+        size: size,
+        isSoldOut: isSoldOut ?? this.isSoldOut,
+      );
 }
 
 /// In-memory store so user-posted items persist for the session.
@@ -53,6 +66,7 @@ class ResellStore {
       condition: 'Good',
       seller: 'Ko Zaw',
       size: '2XL',
+      isSoldOut: true,
     ),
     const ResellPost(
       title: 'ABCD Tee',
@@ -61,6 +75,7 @@ class ResellStore {
       condition: 'Fair',
       seller: 'Su Su',
       size: 'M',
+      isSoldOut: true,
     ),
     const ResellPost(
       title: 'Luna Set 1',
@@ -255,7 +270,7 @@ class _ResellScreenState extends State<ResellScreen> {
                     ink: ink,
                     muted: muted,
                     accent: accent,
-                    onTap: () => _openDetailSheet(posts[i], isDark, accent),
+                    onTap: () => _openDetailSheet(posts[i], i, isDark, accent),
                   ),
                   childCount: posts.length,
                 ),
@@ -550,7 +565,7 @@ class _ResellScreenState extends State<ResellScreen> {
   }
 
   // ── Listing detail sheet ────────────────────────────────────────────────────
-  void _openDetailSheet(ResellPost post, bool isDark, Color accent) {
+  void _openDetailSheet(ResellPost post, int postIndex, bool isDark, Color accent) {
     final cardBg = isDark ? AppColors.darkWarm : Colors.white;
     final ink = isDark ? Colors.white : AppColors.inkBlack;
     final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
@@ -559,7 +574,8 @@ class _ResellScreenState extends State<ResellScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetCtx) => Container(
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (sheetCtx, setSheet) => Container(
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -588,6 +604,32 @@ class _ResellScreenState extends State<ResellScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Sold-out banner ──────────────────────────────────────
+                  if (post.isSoldOut)
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 14),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE53935).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: const Color(0xFFE53935).withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.cancel_rounded,
+                              color: Color(0xFFE53935), size: 18),
+                          const SizedBox(width: 8),
+                          Text('This item has been sold',
+                              style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFFE53935))),
+                        ],
+                      ),
+                    ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -596,13 +638,20 @@ class _ResellScreenState extends State<ResellScreen> {
                             style: GoogleFonts.outfit(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: ink)),
+                                color: post.isSoldOut
+                                    ? ink.withOpacity(0.45)
+                                    : ink)),
                       ),
                       Text(post.price,
                           style: GoogleFonts.outfit(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
-                              color: accent)),
+                              color: post.isSoldOut
+                                  ? muted
+                                  : accent,
+                              decoration: post.isSoldOut
+                                  ? TextDecoration.lineThrough
+                                  : null)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -613,6 +662,11 @@ class _ResellScreenState extends State<ResellScreen> {
                       _tag(post.condition, conditionColor(post.condition),
                           isDark,
                           filled: true),
+                      if (post.isSoldOut) ...[
+                        const SizedBox(width: 8),
+                        _tag('Sold Out', const Color(0xFFE53935), isDark,
+                            filled: true),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -673,34 +727,54 @@ class _ResellScreenState extends State<ResellScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            CartService.instance.addToCart(
-                              CartItem(
-                                productId: 'resell_${post.title}_${post.seller}',
-                                name: post.title,
-                                price: post.price,
-                                image: post.image,
-                                brand: 'Resell · ${post.seller}',
-                                size: post.size,
-                              ),
-                            );
-                            Navigator.pop(sheetCtx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('${post.title} added to cart'),
-                                  duration: const Duration(seconds: 2)),
-                            );
-                          },
-                          icon: const Icon(Icons.shopping_bag_rounded, size: 16),
-                          label: Text('Buy now',
+                          onPressed: post.isSoldOut
+                              ? null
+                              : () {
+                                  CartService.instance.addToCart(
+                                    CartItem(
+                                      productId:
+                                          'resell_${post.title}_${post.seller}',
+                                      name: post.title,
+                                      price: post.price,
+                                      image: post.image,
+                                      brand: 'Resell · ${post.seller}',
+                                      size: post.size,
+                                    ),
+                                  );
+                                  // Mark as sold out in the store.
+                                  setState(() {
+                                    ResellStore.posts[postIndex] =
+                                        ResellStore.posts[postIndex]
+                                            .copyWith(isSoldOut: true);
+                                  });
+                                  Navigator.pop(sheetCtx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content:
+                                            Text('${post.title} added to cart'),
+                                        duration:
+                                            const Duration(seconds: 2)),
+                                  );
+                                },
+                          icon: Icon(
+                              post.isSoldOut
+                                  ? Icons.block_rounded
+                                  : Icons.shopping_bag_rounded,
+                              size: 16),
+                          label: Text(
+                              post.isSoldOut ? 'Sold Out' : 'Buy now',
                               style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.w600, fontSize: 13)),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 13),
-                            backgroundColor:
-                                isDark ? Colors.white : AppColors.inkBlack,
-                            foregroundColor:
-                                isDark ? AppColors.charcoal : Colors.white,
+                            backgroundColor: post.isSoldOut
+                                ? (isDark
+                                    ? Colors.white24
+                                    : const Color(0xFFDDDDDD))
+                                : (isDark ? Colors.white : AppColors.inkBlack),
+                            foregroundColor: post.isSoldOut
+                                ? (isDark ? Colors.white38 : Colors.grey)
+                                : (isDark ? AppColors.charcoal : Colors.white),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
@@ -715,8 +789,9 @@ class _ResellScreenState extends State<ResellScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _tag(String text, Color color, bool isDark, {bool filled = false}) {
     return Container(
@@ -785,16 +860,28 @@ class _ResellCard extends StatelessWidget {
                     child: SizedBox(
                       width: double.infinity,
                       height: double.infinity,
-                      child: post.imageBytes != null
-                          ? Image.memory(post.imageBytes!, fit: BoxFit.cover)
-                          : CdnImage(post.image,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                  color: isDark
-                                      ? AppColors.darkBorder
-                                      : AppColors.creamAlt)),
+                      child: ColorFiltered(
+                        colorFilter: post.isSoldOut
+                            ? const ColorFilter.matrix([
+                                0.2126, 0.7152, 0.0722, 0, 0,
+                                0.2126, 0.7152, 0.0722, 0, 0,
+                                0.2126, 0.7152, 0.0722, 0, 0,
+                                0,      0,      0,      1, 0,
+                              ])
+                            : const ColorFilter.mode(
+                                Colors.transparent, BlendMode.multiply),
+                        child: post.imageBytes != null
+                            ? Image.memory(post.imageBytes!, fit: BoxFit.cover)
+                            : CdnImage(post.image,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                    color: isDark
+                                        ? AppColors.darkBorder
+                                        : AppColors.creamAlt)),
+                      ),
                     ),
                   ),
+                  // Condition badge (top-left)
                   Positioned(
                     top: 8,
                     left: 8,
@@ -812,6 +899,34 @@ class _ResellCard extends StatelessWidget {
                               color: Colors.white)),
                     ),
                   ),
+                  // Sold-out overlay
+                  if (post.isSoldOut)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                        child: Container(
+                          color: Colors.black.withOpacity(0.45),
+                          alignment: Alignment.center,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE53935),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text('SOLD OUT',
+                                style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.8,
+                                    color: Colors.white)),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -853,7 +968,8 @@ class _ResellCard extends StatelessWidget {
                         style: GoogleFonts.outfit(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
-                            color: accent)),
+                            color: post.isSoldOut ? muted : accent,
+                            decoration: post.isSoldOut ? TextDecoration.lineThrough : null)),
                   ],
                 ),
               ),

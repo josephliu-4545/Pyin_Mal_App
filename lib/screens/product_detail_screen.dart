@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/core/constants/api_constants.dart';
 import '../widgets/product_3d_viewer.dart';
@@ -100,6 +102,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ? widget.colorVariants.keys.first
             : '');
     _loadSizeRecommendation();
+    // Position the PiP at the top-right of the card once layout is known.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final w = MediaQuery.of(context).size.width;
+      setState(() {
+        _pipOffset = Offset(w - _pipW - 20, 90);
+      });
+    });
   }
 
   @override
@@ -428,7 +438,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   // Floating video pip state
   bool _showVideoPip = true;
-  Offset _pipOffset = const Offset(220, 90);
+  // Initialised to the right edge after the first frame (see initState).
+  Offset _pipOffset = const Offset(9999, 90);
   static const double _pipW = 100;
   static const double _pipH = 130;
   static const double _heroH = 420;
@@ -1416,6 +1427,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     int rating = 5;
     final nameCtrl = TextEditingController();
     final commentCtrl = TextEditingController();
+    final List<XFile> pickedImages = [];
+    final picker = ImagePicker();
 
     showModalBottomSheet(
       context: context,
@@ -1424,6 +1437,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       builder: (sheetCtx) {
         return StatefulBuilder(
           builder: (sheetCtx, setSheet) {
+            Future<void> pickImages(ImageSource source) async {
+              if (source == ImageSource.gallery) {
+                final imgs = await picker.pickMultiImage(imageQuality: 80);
+                if (imgs.isNotEmpty) {
+                  setSheet(() {
+                    for (final img in imgs) {
+                      if (pickedImages.length < 5) pickedImages.add(img);
+                    }
+                  });
+                }
+              } else {
+                final img = await picker.pickImage(
+                    source: source, imageQuality: 80);
+                if (img != null && pickedImages.length < 5) {
+                  setSheet(() => pickedImages.add(img));
+                }
+              }
+            }
+
             return Padding(
               // Lift above the keyboard
               padding: EdgeInsets.only(
@@ -1506,6 +1538,131 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       accent: accent,
                       maxLines: 4,
                     ),
+                    const SizedBox(height: 16),
+
+                    // ── Photo upload row ─────────────────────────────────
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Add photos',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white70 : AppColors.inkBlack,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '(up to 5)',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: isDark ? Colors.white38 : const Color(0xFFAAAAAA),
+                              ),
+                            ),
+                            const Spacer(),
+                            // Camera button
+                            GestureDetector(
+                              onTap: pickedImages.length >= 5
+                                  ? null
+                                  : () => pickImages(ImageSource.camera),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: accent.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: accent.withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.camera_alt_rounded, size: 14, color: accent),
+                                    const SizedBox(width: 4),
+                                    Text('Camera',
+                                        style: GoogleFonts.outfit(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: accent)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Gallery button
+                            GestureDetector(
+                              onTap: pickedImages.length >= 5
+                                  ? null
+                                  : () => pickImages(ImageSource.gallery),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: accent.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: accent.withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.photo_library_rounded, size: 14, color: accent),
+                                    const SizedBox(width: 4),
+                                    Text('Gallery',
+                                        style: GoogleFonts.outfit(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: accent)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (pickedImages.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 72,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: pickedImages.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 8),
+                              itemBuilder: (_, i) {
+                                return Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.file(
+                                        File(pickedImages[i].path),
+                                        width: 72,
+                                        height: 72,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 2,
+                                      right: 2,
+                                      child: GestureDetector(
+                                        onTap: () => setSheet(() => pickedImages.removeAt(i)),
+                                        child: Container(
+                                          width: 18,
+                                          height: 18,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.65),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.close_rounded,
+                                              size: 11, color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                     const SizedBox(height: 20),
 
                     // Submit
@@ -1531,6 +1688,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               'rating': rating,
                               'comment': comment,
                               'date': 'product.just_now'.tr(),
+                              'images': pickedImages.map((f) => f.path).toList(),
                             });
                           });
                           Navigator.pop(sheetCtx);
@@ -1757,6 +1915,43 @@ class _ReviewCard extends StatelessWidget {
                   fontSize: 12,
                   height: 1.5,
                   color: isDark ? Colors.white60 : const Color(0xFF666666))),
+          // Attached photos (shown only when the user uploaded images)
+          if (review['images'] != null &&
+              (review['images'] as List).isNotEmpty) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 80,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: (review['images'] as List).length,
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                itemBuilder: (ctx, i) {
+                  final path = (review['images'] as List)[i] as String;
+                  return GestureDetector(
+                    onTap: () => showDialog(
+                      context: ctx,
+                      builder: (_) => Dialog(
+                        backgroundColor: Colors.transparent,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Image.file(File(path), fit: BoxFit.contain),
+                        ),
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.file(
+                        File(path),
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );

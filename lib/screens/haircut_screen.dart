@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/ar_hair_filter_screen.dart';
 import 'package:pyin_mal_app/screens/hair_try_on_screen.dart';
+import 'package:pyin_mal_app/screens/haircut_booking_screen.dart';
 import '../widgets/cdn_image.dart';
 import 'package:flutter/services.dart';
 
@@ -248,6 +249,26 @@ class _HaircutScreenState extends State<HaircutScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 8,
                   shadowColor: accent.withOpacity(0.4),
+                ),
+              ),
+              // General "Book now" — for anyone who just wants to book a salon
+              ElevatedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HaircutBookingScreen(),
+                  ),
+                ),
+                icon: const Icon(Icons.event_available_rounded),
+                label: Text('Book now'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark ? Colors.white : AppColors.inkBlack,
+                  foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                  elevation: 2,
                 ),
               ),
             ],
@@ -651,6 +672,36 @@ class _HaircutScreenState extends State<HaircutScreen> {
                   foregroundColor: isDark ? AppColors.charcoal : Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          ),
+        // Book now with the chosen hairstyle
+        if (_selectedHairstyle != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => HaircutBookingScreen(
+                      preselectedStyle:
+                          _extractHairstyleName(_selectedHairstyle!),
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.event_available_rounded, size: 18),
+                label: Text('Book now with this style',
+                    style: GoogleFonts.outfit(
+                        fontSize: 14, fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: accent,
+                  side: BorderSide(color: accent, width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                 ),
