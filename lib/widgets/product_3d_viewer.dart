@@ -10,10 +10,16 @@ class Product3DViewer extends StatefulWidget {
   final double height;
   final bool isDark;
 
+  /// Asset path of a real GLB model to display (e.g.
+  /// 'assets/models/w_star_wear_p1.glb'). When provided, this model is loaded
+  /// directly. When null, the procedural placeholder model is generated.
+  final String? modelAsset;
+
   const Product3DViewer({
     super.key,
     this.height = 400,
     required this.isDark,
+    this.modelAsset,
   });
 
   @override
@@ -36,6 +42,21 @@ class _Product3DViewerState extends State<Product3DViewer> {
   Future<void> _initializeModel() async {
     try {
       print('🎨 Initializing 3D model...');
+
+      // A real GLB asset was supplied — load it directly (ModelViewer reads
+      // Flutter asset paths), skipping the procedural placeholder generator.
+      if (widget.modelAsset != null && widget.modelAsset!.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            modelPath = widget.modelAsset;
+            isLoading = false;
+            errorMessage = null;
+          });
+          print('✅ 3D model ready (asset): ${widget.modelAsset}');
+        }
+        return;
+      }
+
       final path = await Model3DService.generateHoodie3DModel();
 
       if (mounted) {
