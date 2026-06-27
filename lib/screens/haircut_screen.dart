@@ -5,6 +5,7 @@ import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/ar_hair_filter_screen.dart';
 import 'package:pyin_mal_app/screens/hair_try_on_screen.dart';
 import '../widgets/cdn_image.dart';
+import 'package:flutter/services.dart';
 
 class HaircutScreen extends StatefulWidget {
   const HaircutScreen({super.key});
@@ -19,10 +20,9 @@ class _HaircutScreenState extends State<HaircutScreen> {
   // ── Hairstyle try-on gallery ──────────────────────────────────────────────
   String _hairGender = 'Women'; // 'Women' | 'Men'
   String _hairCategory = 'Hot';
-  String? _selectedHairstyle;
-  final Set<String> _favHairstyles = {};
+  String? _selectedHairstyle; // Selected asset path
+  final Set<String> _favHairstyles = {}; // Fav asset paths
 
-  // Category tabs per gender
   static const _womenCategories = [
     'Hot', 'Bangs', 'Curls', 'Straight', 'Short', 'Wavy', 'Updo'
   ];
@@ -33,48 +33,77 @@ class _HaircutScreenState extends State<HaircutScreen> {
   List<String> get _hairCategories =>
       _hairGender == 'Women' ? _womenCategories : _menCategories;
 
-  // label, gender, category, gradient seed colors
-  static const _hairstyles = <(String, String, String, Color, Color)>[
-    // ── Women ──────────────────────────────────────────────────────────────
-    ('Feather',        'Women', 'Hot',      Color(0xFFB5838D), Color(0xFF6D4C5A)),
-    ('Clarity',        'Women', 'Hot',      Color(0xFFC9A96E), Color(0xFF8A6A3A)),
-    ('Half-Up',        'Women', 'Hot',      Color(0xFFA68A64), Color(0xFF5E4B33)),
-    ('Wispy Side',     'Women', 'Bangs',    Color(0xFF8E9AAF), Color(0xFF4A5468)),
-    ('Thick Side Part','Women', 'Bangs',    Color(0xFF6D6875), Color(0xFF3A3543)),
-    ('Curtain Bangs',  'Women', 'Bangs',    Color(0xFFB08968), Color(0xFF6F543C)),
-    ('Soft Waves',     'Women', 'Curls',    Color(0xFFCB997E), Color(0xFF8A5E45)),
-    ('Spiral Curls',   'Women', 'Curls',    Color(0xFFA5668B), Color(0xFF5E3354)),
-    ('Sleek',          'Women', 'Straight', Color(0xFF6B705C), Color(0xFF3B3E32)),
-    ('Long Straight',  'Women', 'Straight', Color(0xFF7F7065), Color(0xFF463C35)),
-    ('Pixie',          'Women', 'Short',    Color(0xFF936639), Color(0xFF5A3E22)),
-    ('Bob',            'Women', 'Short',    Color(0xFFB98B73), Color(0xFF6E4F3E)),
-    ('Beach Wave',     'Women', 'Wavy',     Color(0xFFDDA15E), Color(0xFF9A6B36)),
-    ('Loose Wave',     'Women', 'Wavy',     Color(0xFFBC9B6A), Color(0xFF7A6240)),
-    ('Top Knot',       'Women', 'Updo',     Color(0xFF8C7A6B), Color(0xFF534639)),
-    ('Braided Bun',    'Women', 'Updo',     Color(0xFFA47551), Color(0xFF634530)),
-    // ── Men ────────────────────────────────────────────────────────────────
-    ('Textured Crop',  'Men',   'Hot',      Color(0xFF4A6670), Color(0xFF2A3B42)),
-    ('Side Part',      'Men',   'Hot',      Color(0xFF5C6B73), Color(0xFF353E44)),
-    ('Slick Back',     'Men',   'Hot',      Color(0xFF6B5D4F), Color(0xFF3E352C)),
-    ('Low Fade',       'Men',   'Fade',     Color(0xFF52616B), Color(0xFF2F383E)),
-    ('High Fade',      'Men',   'Fade',     Color(0xFF5E5548), Color(0xFF35302A)),
-    ('Skin Fade',      'Men',   'Fade',     Color(0xFF646E78), Color(0xFF383F45)),
-    ('French Crop',    'Men',   'Crop',     Color(0xFF6E5C4B), Color(0xFF3F342A)),
-    ('Caesar Cut',     'Men',   'Crop',     Color(0xFF7A6A55), Color(0xFF463C30)),
-    ('Classic Quiff',  'Men',   'Quiff',    Color(0xFF566573), Color(0xFF313943)),
-    ('Modern Quiff',   'Men',   'Quiff',    Color(0xFF625B4E), Color(0xFF38332C)),
-    ('Curly Top',      'Men',   'Curly',    Color(0xFF6B5848), Color(0xFF3D3229)),
-    ('Afro',           'Men',   'Curly',    Color(0xFF4F4639), Color(0xFF2E2820)),
-    ('Man Bun',        'Men',   'Long',     Color(0xFF5A5043), Color(0xFF332E26)),
-    ('Shoulder Length','Men',   'Long',     Color(0xFF6E5F4E), Color(0xFF3F362C)),
-    ('Buzz Cut',       'Men',   'Buzz',     Color(0xFF5C5C5C), Color(0xFF343434)),
-    ('Crew Cut',       'Men',   'Buzz',     Color(0xFF676052), Color(0xFF3B362E)),
-  ];
+  List<String> _allAssetPaths = [];
+  List<String> _visibleHairstyles = [];
 
-  List<(String, String, String, Color, Color)> get _visibleHairstyles =>
-      _hairstyles
-          .where((h) => h.$2 == _hairGender && h.$3 == _hairCategory)
-          .toList();
+  @override
+  void initState() {
+    super.initState();
+    _loadHairstyles();
+  }
+
+  Future<void> _loadHairstyles() async {
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    final allAssets = manifest.listAssets();
+    final prefix = 'pyin-mal-assets/assets/images/Hair/';
+    
+    final hairstyles = allAssets.where((p) => 
+      p.startsWith(prefix) && 
+      (p.endsWith('.jpg') || p.endsWith('.png') || p.endsWith('.webp'))
+    ).toList();
+    
+    if (mounted) {
+      setState(() {
+        _allAssetPaths = hairstyles;
+        _updateVisibleHairstyles();
+      });
+    }
+  }
+
+  void _updateVisibleHairstyles() {
+    final genderPath = _hairGender == 'Women' ? 'Female' : 'Male';
+    final targetFolder = _hairGender == 'Women'
+        ? 'pyin-mal-assets/assets/images/Hair/$genderPath/$_selectedFaceShape/'
+        : 'pyin-mal-assets/assets/images/Hair/$genderPath/';
+    
+    _visibleHairstyles = _allAssetPaths.where((p) {
+      if (!p.startsWith(targetFolder)) return false;
+      return _matchesCategory(p, _hairCategory, _hairGender);
+    }).toList();
+    
+    // If no styles match the category, fallback to showing all for that face shape
+    if (_visibleHairstyles.isEmpty && _hairCategory != 'Hot') {
+        _visibleHairstyles = _allAssetPaths.where((p) => p.startsWith(targetFolder)).toList();
+    }
+    
+    _selectedHairstyle = null;
+  }
+
+  bool _matchesCategory(String path, String category, String gender) {
+    if (category == 'Hot') return true; // Show all for 'Hot'
+    
+    final name = path.toLowerCase();
+    if (gender == 'Women') {
+      switch (category) {
+        case 'Bangs': return name.contains('bangs') || name.contains('fringe');
+        case 'Curls': return name.contains('curl');
+        case 'Wavy': return name.contains('wav') || name.contains('shag') || name.contains('layer');
+        case 'Short': return name.contains('short') || name.contains('bob') || name.contains('pixie') || name.contains('bixie') || name.contains('crop');
+        case 'Straight': return name.contains('straight') || name.contains('sleek') || name.contains('blunt') || name.contains('flat');
+        case 'Updo': return name.contains('updo') || name.contains('bun') || name.contains('knot') || name.contains('half-up');
+      }
+    } else {
+      switch (category) {
+        case 'Fade': return name.contains('fade') || name.contains('taper');
+        case 'Crop': return name.contains('crop') || name.contains('caesar') || name.contains('fringe');
+        case 'Quiff': return name.contains('quiff') || name.contains('pomp');
+        case 'Curly': return name.contains('curl') || name.contains('afro') || name.contains('wav');
+        case 'Long': return name.contains('long') || name.contains('mullet') || name.contains('flow') || name.contains('shag');
+        case 'Buzz': return name.contains('buzz') || name.contains('crew') || name.contains('bald');
+      }
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +132,8 @@ class _HaircutScreenState extends State<HaircutScreen> {
             _buildHero(context, isMobile, isDesktop, isDark, accent),
 
             // 2. Face Shape Selector
-            _buildFaceShapeSelector(isDark, accent),
+            if (_hairGender == 'Women')
+              _buildFaceShapeSelector(isDark, accent),
 
             // 2b. Hairstyle Try-On Gallery (category tabs + selectable cards)
             _buildHairstyleGallery(isDark, accent),
@@ -185,7 +215,11 @@ class _HaircutScreenState extends State<HaircutScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const ARHairFilterScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => ARHairFilterScreen(
+                        initialHairstylePath: _selectedHairstyle,
+                      ),
+                    ),
                   );
                 },
                 icon: const Icon(Icons.face_retouching_natural),
@@ -225,10 +259,12 @@ class _HaircutScreenState extends State<HaircutScreen> {
 
   Widget _buildFaceShapeSelector(bool isDark, Color accent) {
     final shapes = [
-      {'name': 'Oval Face', 'img': 'assets/images/HairStyle/O.jpg'},
-      {'name': 'Round Face', 'img': 'assets/images/HairStyle/R.jpg'},
-      {'name': 'Square Face', 'img': 'assets/images/HairStyle/S.jpg'},
-      {'name': 'Diamond Face', 'img': 'assets/images/HairStyle/O.jpg'}, // Using O as placeholder
+      {'name': 'Oval Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/O.jpg'},
+      {'name': 'Round Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/R.jpg'},
+      {'name': 'Square Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/S.jpg'},
+      {'name': 'Diamond Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/D.jpg'},
+      {'name': 'Heart Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/H.jpg'},
+      {'name': 'Triangle Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/T.jpg'},
     ];
 
     return Column(
@@ -255,7 +291,12 @@ class _HaircutScreenState extends State<HaircutScreen> {
               final shape = shapes[i];
               final isSelected = _selectedFaceShape == shape['name'];
               return GestureDetector(
-                onTap: () => setState(() => _selectedFaceShape = shape['name']!),
+                onTap: () {
+                  setState(() {
+                    _selectedFaceShape = shape['name']!;
+                    _updateVisibleHairstyles();
+                  });
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: 110,
@@ -294,7 +335,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'haircut.face_shapes.${shape['name']}'.tr(),
+                        shape['name']!,
                         style: GoogleFonts.outfit(
                           fontSize: 12,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -322,7 +363,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
           setState(() {
             _hairGender = label;
             _hairCategory = _hairCategories.first;
-            _selectedHairstyle = null;
+            _updateVisibleHairstyles();
           });
         },
         child: AnimatedContainer(
@@ -373,25 +414,28 @@ class _HaircutScreenState extends State<HaircutScreen> {
                   style: GoogleFonts.rufina(
                       fontSize: 20, fontWeight: FontWeight.bold, color: ink)),
               if (_selectedHairstyle != null)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: accent.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20),
+                Flexible(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(_extractHairstyleName(_selectedHairstyle!),
+                        style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: accent),
+                        overflow: TextOverflow.ellipsis),
                   ),
-                  child: Text(_selectedHairstyle!,
-                      style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: accent)),
                 ),
             ],
           ),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
-          child: Text('Pick a category, then tap a look to preview it.',
+          child: Text('Discover styles that suit your face shape.',
               style: GoogleFonts.outfit(fontSize: 13, color: muted)),
         ),
 
@@ -426,7 +470,12 @@ class _HaircutScreenState extends State<HaircutScreen> {
               final cat = _hairCategories[i];
               final sel = _hairCategory == cat;
               return GestureDetector(
-                onTap: () => setState(() => _hairCategory = cat),
+                onTap: () {
+                  setState(() {
+                    _hairCategory = cat;
+                    _updateVisibleHairstyles();
+                  });
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   padding:
@@ -467,12 +516,12 @@ class _HaircutScreenState extends State<HaircutScreen> {
             itemCount: _visibleHairstyles.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, i) {
-              final h = _visibleHairstyles[i];
-              final label = h.$1;
-              final sel = _selectedHairstyle == label;
-              final fav = _favHairstyles.contains(label);
+              final path = _visibleHairstyles[i];
+              final label = _extractHairstyleName(path);
+              final sel = _selectedHairstyle == path;
+              final fav = _favHairstyles.contains(path);
               return GestureDetector(
-                onTap: () => setState(() => _selectedHairstyle = label),
+                onTap: () => setState(() => _selectedHairstyle = path),
                 child: Column(
                   children: [
                     AnimatedContainer(
@@ -480,11 +529,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                       width: 120,
                       height: 148,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [h.$4, h.$5],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                             color: sel ? accent : Colors.transparent,
@@ -499,14 +544,14 @@ class _HaircutScreenState extends State<HaircutScreen> {
                       ),
                       child: Stack(
                         children: [
-                          // Stylised "portrait" placeholder
-                          Center(
-                            child: Icon(
-                                _hairGender == 'Women'
-                                    ? Icons.face_3_rounded
-                                    : Icons.face_6_rounded,
-                                size: 64,
-                                color: Colors.white.withOpacity(0.55)),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(13), // accounting for border
+                            child: CdnImage(
+                              path,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            ),
                           ),
                           // Favourite heart badge
                           Positioned(
@@ -515,8 +560,8 @@ class _HaircutScreenState extends State<HaircutScreen> {
                             child: GestureDetector(
                               onTap: () => setState(() {
                                 fav
-                                    ? _favHairstyles.remove(label)
-                                    : _favHairstyles.add(label);
+                                    ? _favHairstyles.remove(path)
+                                    : _favHairstyles.add(path);
                               }),
                               child: Container(
                                 width: 26,
@@ -560,11 +605,19 @@ class _HaircutScreenState extends State<HaircutScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(label,
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        label,
                         style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                            color: sel ? accent : ink)),
+                            color: sel ? accent : ink),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -580,11 +633,12 @@ class _HaircutScreenState extends State<HaircutScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      behavior: SnackBarBehavior.floating,
-                      content: Text('Previewing "$_selectedHairstyle"'),
-                      duration: const Duration(seconds: 2),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ARHairFilterScreen(
+                        initialHairstylePath: _selectedHairstyle,
+                      ),
                     ),
                   );
                 },
@@ -605,6 +659,28 @@ class _HaircutScreenState extends State<HaircutScreen> {
           ),
       ],
     );
+  }
+
+  String _extractHairstyleName(String path) {
+    final filename = path.split('/').last;
+    final nameWithoutExt = filename.split('.').first;
+    
+    if (path.contains('/Male/')) {
+      final parts = nameWithoutExt.split('_');
+      if (parts.length > 3) {
+        return parts.sublist(3).join(' ').trim();
+      }
+    } else if (path.contains('/Female/')) {
+      final parts = nameWithoutExt.split('_');
+      if (parts.length > 1) {
+        return parts.sublist(1).join(' ').trim();
+      }
+    }
+    
+    if (nameWithoutExt.contains('- ')) {
+      return nameWithoutExt.split('- ')[1].trim();
+    }
+    return nameWithoutExt;
   }
 
   Widget _buildHairstyleSection(BuildContext context, bool isMobile, bool isDark, Color accent) {

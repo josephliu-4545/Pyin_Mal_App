@@ -1,14 +1,18 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../widgets/cdn_image.dart';
 
 class ARHairFilterScreen extends StatefulWidget {
-  const ARHairFilterScreen({super.key});
+  final String? initialHairstylePath;
+  const ARHairFilterScreen({super.key, this.initialHairstylePath});
 
   @override
   State<ARHairFilterScreen> createState() => _ARHairFilterScreenState();
@@ -20,33 +24,49 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
   bool _isCameraInitialized = false;
   bool _isDetectingFaces = false;
   List<Face> _faces = [];
-  double? _headRotation;
-  Offset? _faceCenter;
+  String? _currentHairstyle;
+  Size? _cameraImageSize;
+  InputImageRotation? _cameraRotation;
 
   @override
   void initState() {
     super.initState();
+    _currentHairstyle = widget.initialHairstylePath ?? 'pyin-mal-assets/assets/images/HairStyle/Female/Oval Face/Oval - Bixie Cut.jpg';
     _initializeCamera();
     _initializeFaceDetector();
   }
 
   Future<void> _initializeCamera() async {
-    final cameras = await availableCameras();
-    final frontCamera = cameras.firstWhere(
-      (camera) => camera.lensDirection == CameraLensDirection.front,
-      orElse: () => cameras.first,
-    );
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) return;
+      
+      final frontCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras.first,
+      );
 
-    _cameraController = CameraController(
-      frontCamera,
-      ResolutionPreset.high,
-      enableAudio: false,
-    );
+      _cameraController = CameraController(
+        frontCamera,
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: Platform.isAndroid 
+            ? ImageFormatGroup.nv21 
+            : ImageFormatGroup.bgra8888,
+      );
 
-    await _cameraController!.initialize();
-    if (mounted) {
-      setState(() => _isCameraInitialized = true);
-      _cameraController!.startImageStream(_processCameraImage);
+      await _cameraController!.initialize();
+      
+      // Determine camera rotation based on sensor orientation
+      final sensorOrientation = frontCamera.sensorOrientation;
+      _cameraRotation = InputImageRotationValue.fromRawValue(sensorOrientation);
+      
+      if (mounted) {
+        setState(() => _isCameraInitialized = true);
+        _cameraController!.startImageStream(_processCameraImage);
+      }
+    } catch (e) {
+      debugPrint('Error initializing camera: $e');
     }
   }
 
@@ -54,7 +74,7 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
     _faceDetector = FaceDetector(
       options: FaceDetectorOptions(
         enableContours: true,
-        enableClassification: true,
+        enableClassification: false,
         enableLandmarks: true,
         enableTracking: true,
       ),
@@ -65,62 +85,133 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
     if (_isDetectingFaces) return;
     _isDetectingFaces = true;
 
+    if (_cameraImageSize == null) {
+      setState(() {
+         _cameraImageSize = Size(image.width.toDouble(), image.height.toDouble());
+      });
+    }
+
     final inputImage = _getInputImageFromCameraImage(image);
     if (inputImage == null) {
       _isDetectingFaces = false;
       return;
     }
 
-    final faces = await _faceDetector!.processImage(inputImage);
-
-    if (mounted) {
-      setState(() {
-        _faces = faces;
-        if (faces.isNotEmpty) {
-          _calculateFaceMetrics(faces.first);
-        }
-      });
+    try {
+      final faces = await _faceDetector!.processImage(inputImage);
+      if (mounted) {
+        setState(() {
+          _faces = faces;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error detecting faces: $e');
     }
 
     _isDetectingFaces = false;
   }
 
   InputImage? _getInputImageFromCameraImage(CameraImage image) {
-    final rotation = InputImageRotation.rotation0deg;
-    final format = InputImageFormat.nv21;
+    if (_cameraRotation == null) return null;
+
+    final format = InputImageFormatValue.fromRawValue(image.format.raw);
+    if (format == null) return null;
 
     if (image.planes.isEmpty) return null;
 
-    final plane = image.planes[0];
-    final bytes = plane.bytes;
-
-    // Convert camera image to InputImage
+    final plane = image.planes.first;
+    
     return InputImage.fromBytes(
-      bytes: bytes,
+      bytes: plane.bytes,
       metadata: InputImageMetadata(
         size: Size(image.width.toDouble(), image.height.toDouble()),
-        rotation: rotation,
+        rotation: _cameraRotation!,
         format: format,
         bytesPerRow: plane.bytesPerRow,
       ),
     );
   }
 
-  void _calculateFaceMetrics(Face face) {
-    // Calculate head rotation using eye landmarks
-    final leftEye = face.landmarks[FaceLandmarkType.leftEye];
-    final rightEye = face.landmarks[FaceLandmarkType.rightEye];
+  double _translateX(double x, InputImageRotation rotation, Size size, Size absoluteImageSize) {
+    switch (rotation) {
+      case InputImageRotation.rotation90deg:
+        return x * size.width / (Platform.isIOS ? absoluteImageSize.width : absoluteImageSize.height);
+      case InputImageRotation.rotation270deg:
+        return size.width - x * size.width / (Platform.isIOS ? absoluteImageSize.width : absoluteImageSize.height);
+      default:
+        return x * size.width / absoluteImageSize.width;
+    }
+  }
 
-    if (leftEye != null && rightEye != null) {
-      final dx = rightEye.position.x - leftEye.position.x;
-      final dy = rightEye.position.y - leftEye.position.y;
-      _headRotation = (dy / dx) * (180 / 3.14159);
+  double _translateY(double y, InputImageRotation rotation, Size size, Size absoluteImageSize) {
+    switch (rotation) {
+      case InputImageRotation.rotation90deg:
+      case InputImageRotation.rotation270deg:
+        return y * size.height / (Platform.isIOS ? absoluteImageSize.height : absoluteImageSize.width);
+      default:
+        return y * size.height / absoluteImageSize.height;
+    }
+  }
+
+  Widget _buildHairOverlay(BuildContext context, BoxConstraints constraints) {
+    if (_faces.isEmpty || _cameraImageSize == null || _cameraRotation == null) {
+      return const SizedBox.shrink();
     }
 
-    // Calculate face center
-    _faceCenter = Offset(
-      face.boundingBox.left + face.boundingBox.width / 2,
-      face.boundingBox.top + face.boundingBox.height / 2,
+    final face = _faces.first;
+    final boundingBox = face.boundingBox;
+    final screenSize = Size(constraints.maxWidth, constraints.maxHeight);
+    
+    // Calculate translated face bounding box coordinates
+    final left = _translateX(boundingBox.left, _cameraRotation!, screenSize, _cameraImageSize!);
+    final right = _translateX(boundingBox.right, _cameraRotation!, screenSize, _cameraImageSize!);
+    final top = _translateY(boundingBox.top, _cameraRotation!, screenSize, _cameraImageSize!);
+    final bottom = _translateY(boundingBox.bottom, _cameraRotation!, screenSize, _cameraImageSize!);
+    
+    // Width and height of the face on screen
+    final faceWidth = (right - left).abs();
+    
+    // Scale hair based on face width
+    final hairWidth = faceWidth * 1.65; // Make hair wider than face
+    final hairHeight = hairWidth * 1.1; // Maintain a reasonable aspect ratio
+    
+    // Position hair relative to the translated face coordinates
+    // Center it horizontally
+    final hairLeft = math.min(left, right) - (hairWidth - faceWidth) / 2;
+    
+    // Position it slightly above the face
+    final noseBase = face.landmarks[FaceLandmarkType.noseBase];
+    double hairTop = top - (hairHeight * 0.45);
+    
+    // Use nose for better anchoring if available
+    if (noseBase != null) {
+       final translatedNoseY = _translateY(noseBase.position.y.toDouble(), _cameraRotation!, screenSize, _cameraImageSize!);
+       hairTop = translatedNoseY - (hairHeight * 0.65);
+    }
+
+    // Head rotation
+    double rotationAngle = 0.0;
+    if (face.headEulerAngleZ != null) {
+      rotationAngle = -face.headEulerAngleZ! * math.pi / 180.0;
+    }
+
+    return Positioned(
+      left: hairLeft,
+      top: hairTop,
+      child: Transform.rotate(
+        angle: rotationAngle,
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: hairWidth,
+          height: hairHeight,
+          child: _currentHairstyle != null
+            ? CdnImage(
+                _currentHairstyle!,
+                fit: BoxFit.contain,
+              )
+            : const SizedBox.shrink(),
+        ),
+      ),
     );
   }
 
@@ -133,60 +224,8 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Check if running on web
-    if (kIsWeb || !Platform.isAndroid && !Platform.isIOS) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Text(
-            'ar_hair.title'.tr(),
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.phone_android,
-                  size: 80,
-                  color: Colors.white54,
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'ar_hair.not_supported_title'.tr(),
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'ar_hair.not_supported_desc'.tr(),
-                  style: GoogleFonts.outfit(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      return _buildUnsupportedScreen();
     }
 
     return Scaffold(
@@ -218,39 +257,21 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
       ),
       body: _isCameraInitialized
           ? Stack(
+              fit: StackFit.expand,
               children: [
                 // Camera preview
-                Center(
-                  child: CameraPreview(_cameraController!),
-                ),
+                CameraPreview(_cameraController!),
+                
                 // Hair overlay
-                if (_faces.isNotEmpty && _faceCenter != null && _headRotation != null)
-                  Positioned(
-                    left: _faceCenter!.dx - 100,
-                    top: _faceCenter!.dy - 150,
-                    child: Transform.rotate(
-                      angle: _headRotation! * 3.14159 / 180,
-                      child: Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.face,
-                            size: 100,
-                            color: Colors.white.withOpacity(0.5),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return _buildHairOverlay(context, constraints);
+                  },
+                ),
+                
                 // Instructions
                 Positioned(
-                  bottom: 100,
+                  bottom: 40,
                   left: 0,
                   right: 0,
                   child: Center(
@@ -278,6 +299,61 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
           : const Center(
               child: CircularProgressIndicator(color: Colors.white),
             ),
+    );
+  }
+
+  Widget _buildUnsupportedScreen() {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'ar_hair.title'.tr(),
+          style: GoogleFonts.outfit(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.phone_android,
+                size: 80,
+                color: Colors.white54,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'ar_hair.not_supported_title'.tr(),
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'ar_hair.not_supported_desc'.tr(),
+                style: GoogleFonts.outfit(
+                  color: Colors.white70,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
