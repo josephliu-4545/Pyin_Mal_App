@@ -416,10 +416,6 @@ class _HomeTabState extends State<_HomeTab> {
       const SizedBox(height: 28),
       ShopLookbookSection(isDark: isDark),
       const SizedBox(height: 28),
-      _buildSectionLabel('sections.give_back', isDark),
-      const SizedBox(height: 16),
-      _buildGiveBackSection(isDark),
-      const SizedBox(height: 28),
       UserGuideSection(isDark: isDark),
     ];
 
