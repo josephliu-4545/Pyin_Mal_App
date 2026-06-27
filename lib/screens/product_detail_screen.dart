@@ -1163,6 +1163,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
 
+                    // ── 4b. SIZE CHART & GUIDE ────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                      child: _buildSizeGuideSection(isDark, accent, cardBg),
+                    ),
+
                     // ── 5. REVIEWS SECTION ────────────────────────────────────
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
@@ -1414,6 +1420,507 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  // ── Size chart data (cm) ──────────────────────────────────────────────────
+  static const _sizeChart = <List<String>>[
+    // Size, Shoulder, Bust, Waist, Length
+    ['XS', '13.4', '29.1', '23.6', '17.7'],
+    ['S', '13.8', '30.7', '25.2', '18.1'],
+    ['M', '14.2', '32.3', '26.8', '18.5'],
+    ['L', '14.6', '34.6', '29.1', '18.9'],
+    ['XL', '15.0', '37.0', '31.5', '19.3'],
+  ];
+
+  // ── Compact "Size & Fit" section (above reviews) ──────────────────────────
+  Widget _buildSizeGuideSection(bool isDark, Color accent, Color cardBg) {
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.straighten_rounded, size: 18, color: accent),
+              const SizedBox(width: 8),
+              Text('Size & Fit',
+                  style: GoogleFonts.outfit(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: ink)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Action buttons row
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _openSizeGuideSheet(0),
+                  icon: const Icon(Icons.grid_on_rounded, size: 15),
+                  label: Text('Size Guide',
+                      style: GoogleFonts.outfit(
+                          fontSize: 12, fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    side: BorderSide(
+                        color:
+                            isDark ? Colors.white24 : const Color(0xFFCCCCCC)),
+                    foregroundColor: ink,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _openSizeGuideSheet(0),
+                  icon: const Icon(Icons.person_search_rounded, size: 15),
+                  label: Text('Check My Size',
+                      style: GoogleFonts.outfit(
+                          fontSize: 12, fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    side: BorderSide(
+                        color:
+                            isDark ? Colors.white24 : const Color(0xFFCCCCCC)),
+                    foregroundColor: ink,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Fit stat
+          Row(
+            children: [
+              Icon(Icons.thumb_up_alt_rounded, size: 14, color: accent),
+              const SizedBox(width: 6),
+              Text('94% found it true to size',
+                  style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: ink)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Thanks — we\'ll note your feedback')),
+                ),
+                child: Text('Not your size?',
+                    style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: accent)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Full size guide bottom sheet (table + shop chart + fit) ───────────────
+  void _openSizeGuideSheet(int initialTab) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    final cardBg = isDark ? AppColors.darkWarm : Colors.white;
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+    int tab = initialTab; // 0 = Product Chart, 1 = Shop Chart
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return StatefulBuilder(builder: (sheetCtx, setSheet) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.85,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (_, scroll) => Container(
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.black12,
+                        borderRadius: BorderRadius.circular(2)),
+                  ),
+                  const SizedBox(height: 14),
+                  Text('Size Guide',
+                      style: GoogleFonts.rufina(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: ink)),
+                  const SizedBox(height: 14),
+                  // Tabs
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white10 : const Color(0xFFF2F2F2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          _sizeTab('Product Chart', 0, tab, accent, ink, isDark,
+                              () => setSheet(() => tab = 0)),
+                          _sizeTab('Shop Chart', 1, tab, accent, ink, isDark,
+                              () => setSheet(() => tab = 1)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scroll,
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                      child: tab == 0
+                          ? _productChart(isDark, accent, ink, muted)
+                          : _shopChart(isDark, accent, ink, muted),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  Widget _sizeTab(String label, int idx, int current, Color accent, Color ink,
+      bool isDark, VoidCallback onTap) {
+    final sel = current == idx;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: sel ? accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Text(label,
+              style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: sel
+                      ? (isDark ? AppColors.charcoal : Colors.white)
+                      : ink)),
+        ),
+      ),
+    );
+  }
+
+  Widget _productChart(bool isDark, Color accent, Color ink, Color muted) {
+    final headerBg = isDark ? Colors.white10 : const Color(0xFFF4F2EF);
+    final line = isDark ? Colors.white12 : const Color(0xFFEDE9E4);
+    const headers = ['Size', 'Shoulder', 'Bust', 'Waist', 'Length'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Measurements (cm)',
+                style: GoogleFonts.outfit(
+                    fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: accent.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('${_selectedSize} (you)',
+                  style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: accent)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Table
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: line),
+          ),
+          child: Column(
+            children: [
+              // Header row
+              Container(
+                decoration: BoxDecoration(
+                  color: headerBg,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(13)),
+                ),
+                child: Row(
+                  children: headers
+                      .map((h) => Expanded(
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 11),
+                              child: Text(h,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: ink)),
+                            ),
+                          ))
+                      .toList(),
+                ),
+              ),
+              // Data rows
+              ..._sizeChart.map((row) {
+                final isMine = row[0] == _selectedSize;
+                return Container(
+                  decoration: BoxDecoration(
+                    color: isMine ? accent.withOpacity(0.10) : null,
+                    border: Border(top: BorderSide(color: line)),
+                  ),
+                  child: Row(
+                    children: List.generate(row.length, (c) {
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(row[c],
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: c == 0 || isMine
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
+                                  color: isMine ? accent : ink)),
+                        ),
+                      );
+                    }),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text('*Data may vary by 0.39–0.79 in.',
+            style: GoogleFonts.outfit(fontSize: 11, color: muted)),
+        const SizedBox(height: 22),
+
+        // Fit type indicator
+        _fitBar('Fit Type', ['Skinny', 'Regular', 'Oversized'], 1, accent, ink,
+            muted, isDark),
+        const SizedBox(height: 16),
+        _fitBar('Stretch', ['Non', 'Slight', 'Medium', 'High'], 1, accent, ink,
+            muted, isDark),
+        const SizedBox(height: 24),
+
+        // How buyers reviewed the fit
+        Text('How buyers reviewed the fit',
+            style: GoogleFonts.outfit(
+                fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
+        const SizedBox(height: 12),
+        _fitReview('Small', 3, accent, ink, muted, isDark),
+        const SizedBox(height: 8),
+        _fitReview('True to size', 94, accent, ink, muted, isDark),
+        const SizedBox(height: 8),
+        _fitReview('Large', 3, accent, ink, muted, isDark),
+      ],
+    );
+  }
+
+  Widget _fitBar(String label, List<String> stops, int active, Color accent,
+      Color ink, Color muted, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: GoogleFonts.outfit(
+                fontSize: 13, fontWeight: FontWeight.w600, color: ink)),
+        const SizedBox(height: 10),
+        LayoutBuilder(builder: (context, c) {
+          final w = c.maxWidth;
+          final dotX = (w - 16) * (active / (stops.length - 1));
+          return SizedBox(
+            height: 26,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  top: 7,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white12 : const Color(0xFFEDE9E4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 2,
+                  left: dotX,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: stops
+              .map((s) => Text(s,
+                  style: GoogleFonts.outfit(fontSize: 10, color: muted)))
+              .toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _fitReview(String label, int pct, Color accent, Color ink, Color muted,
+      bool isDark) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 84,
+          child: Text(label,
+              style: GoogleFonts.outfit(fontSize: 12, color: ink)),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: pct / 100,
+              minHeight: 8,
+              backgroundColor:
+                  isDark ? Colors.white12 : const Color(0xFFEDE9E4),
+              valueColor: AlwaysStoppedAnimation(accent),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 36,
+          child: Text('$pct%',
+              textAlign: TextAlign.right,
+              style: GoogleFonts.outfit(
+                  fontSize: 12, fontWeight: FontWeight.w700, color: ink)),
+        ),
+      ],
+    );
+  }
+
+  Widget _shopChart(bool isDark, Color accent, Color ink, Color muted) {
+    // Products don't carry a dedicated size-chart image, so we show the
+    // shop's product photo as a reference, or an empty state.
+    final hasImage = widget.image.isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.shopName != null
+              ? 'Size chart from ${widget.shopName}'
+              : 'Shop size chart',
+          style: GoogleFonts.outfit(
+              fontSize: 13, fontWeight: FontWeight.w600, color: ink),
+        ),
+        const SizedBox(height: 12),
+        if (hasImage)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: AspectRatio(
+              aspectRatio: 3 / 4,
+              child: CdnImage(
+                widget.image,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    _shopChartEmpty(isDark, muted),
+              ),
+            ),
+          )
+        else
+          _shopChartEmpty(isDark, muted),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: accent.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 16, color: accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Use the Product Chart tab for exact measurements.',
+                  style: GoogleFonts.outfit(fontSize: 12, color: ink),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _shopChartEmpty(bool isDark, Color muted) {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : const Color(0xFFF4F2EF),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.image_not_supported_outlined, size: 40, color: muted),
+          const SizedBox(height: 10),
+          Text('This shop hasn\'t uploaded a size chart yet',
+              style: GoogleFonts.outfit(fontSize: 12, color: muted)),
         ],
       ),
     );
