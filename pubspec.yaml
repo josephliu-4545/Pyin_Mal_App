@@ -144,12 +144,12 @@ flutter:
     - pyin-mal-assets/assets/images/Male/Burmese Studio/Shirt/
     - pyin-mal-assets/assets/images/Male/Burmese Studio/Tee/
     - pyin-mal-assets/assets/images/Male/Burmese dress for men/
-    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/
-    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/Hoodie/
-    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/Jersey/
-    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/Shirt/
-    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/Sweater/
-    - pyin-mal-assets/assets/images/Male/CLASSYDOCK/Tee/
+    - pyin-mal-assets/assets/images/Male/classydock/
+    - pyin-mal-assets/assets/images/Male/classydock/Hoodie/
+    - pyin-mal-assets/assets/images/Male/classydock/Jersey/
+    - pyin-mal-assets/assets/images/Male/classydock/Shirt/
+    - pyin-mal-assets/assets/images/Male/classydock/Sweater/
+    - pyin-mal-assets/assets/images/Male/classydock/Tee/
     - pyin-mal-assets/assets/images/Male/Malory/
     - pyin-mal-assets/assets/images/Male/Malory/T shirt/
     - pyin-mal-assets/assets/images/Male/Malory/pants/
@@ -170,15 +170,15 @@ flutter:
     - pyin-mal-assets/assets/images/cart photo_files/
     - pyin-mal-assets/assets/images/grooming/
     - pyin-mal-assets/assets/images/outfits/
-    - pyin-mal-assets/assets/images/shops/nrf_store/
-    - pyin-mal-assets/assets/images/shops/classydock/
-    - pyin-mal-assets/assets/images/shops/burmese_studio/
-    - pyin-mal-assets/assets/images/shops/malory/
-    - pyin-mal-assets/assets/images/shops/restyle/
-    - pyin-mal-assets/assets/images/shops/val3/
-    - pyin-mal-assets/assets/images/shops/nami/
-    - pyin-mal-assets/assets/images/shops/oro/
-    - pyin-mal-assets/assets/images/shops/sew_in_style/
+    - pyin-mal-assets/assets/images/Shops/nrf_store/
+    - pyin-mal-assets/assets/images/Shops/classydock/
+    - pyin-mal-assets/assets/images/Shops/burmese_studio/
+    - pyin-mal-assets/assets/images/Shops/malory/
+    - pyin-mal-assets/assets/images/Shops/restyle/
+    - pyin-mal-assets/assets/images/Shops/val3/
+    - pyin-mal-assets/assets/images/Shops/nami/
+    - pyin-mal-assets/assets/images/Shops/oro/
+    - pyin-mal-assets/assets/images/Shops/sew_in_style/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

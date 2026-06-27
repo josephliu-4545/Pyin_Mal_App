@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
-import '../services/model_3d_service.dart';
 import '../main.dart';
 
 /// Widget to display 3D product model with rotation and zoom
@@ -10,10 +9,15 @@ class Product3DViewer extends StatefulWidget {
   final double height;
   final bool isDark;
 
+  /// Asset path of a real GLB model to display (e.g.
+  /// 'assets/models/w_star_wear_p1.glb'). When null, a placeholder is shown.
+  final String? modelAsset;
+
   const Product3DViewer({
     super.key,
     this.height = 400,
     required this.isDark,
+    this.modelAsset,
   });
 
   @override
@@ -33,27 +37,29 @@ class _Product3DViewerState extends State<Product3DViewer> {
     _initializeModel();
   }
 
-  Future<void> _initializeModel() async {
-    try {
-      print('🎨 Initializing 3D model...');
-      final path = await Model3DService.generateHoodie3DModel();
+  @override
+  void didUpdateWidget(covariant Product3DViewer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload when the model asset changes (e.g. user switches color variant).
+    if (oldWidget.modelAsset != widget.modelAsset) {
+      setState(() {
+        isLoading = true;
+        modelPath = null;
+      });
+      _initializeModel();
+    }
+  }
 
-      if (mounted) {
-        setState(() {
-          modelPath = path;
-          isLoading = false;
-          errorMessage = null;
-        });
-        print('✅ 3D model ready: $path');
-      }
-    } catch (e) {
-      print('❌ Error initializing model: $e');
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-          errorMessage = e.toString();
-        });
-      }
+  void _initializeModel() {
+    // A real GLB asset is loaded directly (ModelViewer reads Flutter asset
+    // paths). When none is supplied, the placeholder state is shown.
+    final asset = widget.modelAsset;
+    if (mounted) {
+      setState(() {
+        modelPath = (asset != null && asset.isNotEmpty) ? asset : null;
+        isLoading = false;
+        errorMessage = null;
+      });
     }
   }
 

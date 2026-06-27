@@ -49,9 +49,11 @@ class ClothingOverlay extends StatefulWidget {
     required this.pose,
     required this.assetPath,
     this.tintColor = Colors.transparent,
-    this.widthMultiplier = 1.8,
-    this.heightMultiplier = 1.4,
-    this.neckOffsetFraction = 0.12,
+    this.widthMultiplier = 3.2, // Matches shoulder width realistically
+    this.heightMultiplier =
+        1.6, // Aspect ratio of the clothing image (height/width)
+    this.neckOffsetFraction =
+        0.50, // Shifts up to align the collar with the neck rather than the shoulder joints
   });
 
   @override
@@ -121,11 +123,15 @@ class _ClothingOverlayState extends State<ClothingOverlay> {
     final shoulderDist = (rsX - lsX).abs();
     final rawWidth = shoulderDist * widget.widthMultiplier;
 
-    // Shoulder-to-hip distance → clothing height
-    final rawHeight =
-        (hipCenterY - shoulderCenterY).abs() * widget.heightMultiplier;
+    // Maintain aspect ratio of the clothing image.
+    // Instead of stretching the clothing based on the hips (which foreshortens in perspective),
+    // we use widget.heightMultiplier as the aspect ratio (height / width).
+    // The placeholder images are 400x480 (aspect ratio 1.2).
+    final rawHeight = rawWidth * widget.heightMultiplier;
 
     // Top-left corner: center X minus half-width, Y minus neck offset
+    // The placeholder clothing has its collar drawn 20% down from the top edge.
+    // We adjust neckOffsetFraction to offset this padding.
     final neckOffset = rawHeight * widget.neckOffsetFraction;
     final rawLeft = shoulderCenterX - rawWidth / 2.0;
     final rawTop = shoulderCenterY - neckOffset;
@@ -185,8 +191,8 @@ class _ClothingOverlayState extends State<ClothingOverlay> {
         errorBuilder: (_, __, ___) =>
             // ── Fallback: drawn silhouette when PNG is missing ──────────
             CustomPaint(
-              painter: _ClothingSilhouettePainter(assetPath: widget.assetPath),
-            ),
+          painter: _ClothingSilhouettePainter(assetPath: widget.assetPath),
+        ),
       ),
     );
   }

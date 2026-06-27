@@ -132,7 +132,7 @@ class PoseDetectionService {
         final lm = pose.landmarks[type];
         if (lm == null) return null;
 
-        // MLKit gives pixel coordinates translated to the rotated image
+        // MLKit gives pixel coordinates translated to the rotated image.
         double nx = lm.x / rotatedWidth;
         double ny = lm.y / rotatedHeight;
 
