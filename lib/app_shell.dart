@@ -37,6 +37,31 @@ import 'package:pyin_mal_app/screens/user_guide_screen.dart';
 /// Foodpanda-style brand pink used for the bottom nav + home tabs accent.
 const Color kBrandPink = Color(0xFFD70F64);
 
+/// The off-white sheet "bump" that rises under the active tab, with a small
+/// dot at the peak — the reference's caret-into-notch detail.
+class _NotchBumpPainter extends CustomPainter {
+  final Color sheetColor;
+  final Color dotColor;
+  _NotchBumpPainter(this.sheetColor, this.dotColor);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final path = Path()
+      ..moveTo(0, h)
+      ..cubicTo(w * 0.30, h, w * 0.34, 0, w * 0.5, 0)
+      ..cubicTo(w * 0.66, 0, w * 0.70, h, w, h)
+      ..close();
+    canvas.drawPath(path, Paint()..color = sheetColor);
+    // Small dot at the peak.
+    canvas.drawCircle(Offset(w / 2, 5), 2.6, Paint()..color = dotColor);
+  }
+
+  @override
+  bool shouldRepaint(covariant _NotchBumpPainter old) =>
+      old.sheetColor != sheetColor || old.dotColor != dotColor;
+}
+
 // ── Main Shell ────────────────────────────────────────────────────────────────
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -373,16 +398,51 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // Dim mode uses a KBZ-style layered look: a lighter rounded "sheet"
-    // behind the whole content, with the section cards sitting on top of it.
+    // Dim mode uses a layered look: a burgundy header with the tabs, then an
+    // off-white rounded sheet (with a caret/notch) holding all the content.
     final isDim = themeNotifier.value == AppThemeMode.dim;
+
+    // Content sections shown below the tabs/shortcuts (same in every mode).
+    final sections = <Widget>[
+      _buildAdCarousel(isDark),
+      const SizedBox(height: 24),
+      _buildSaleSection(isDark),
+      const SizedBox(height: 24),
+      _buildResellSection(isDark),
+      const SizedBox(height: 28),
+      ShopSpotlightSection(isDark: isDark),
+      const SizedBox(height: 28),
+      FeaturedShopsSection(isDark: isDark),
+      const SizedBox(height: 28),
+      ShopLookbookSection(isDark: isDark),
+      const SizedBox(height: 28),
+      _buildSectionLabel('sections.give_back', isDark),
+      const SizedBox(height: 16),
+      _buildGiveBackSection(isDark),
+      const SizedBox(height: 28),
+      UserGuideSection(isDark: isDark),
+    ];
+
+    // The header keeps each theme's own colour (burgundy only in Dim).
+    final headerBand = isDim
+        ? AppColors.burgundy
+        : (isDark ? AppColors.charcoal : AppColors.cream);
+    final headerChip = isDim
+        ? Colors.white.withOpacity(0.18)
+        : (isDark ? AppColors.darkWarm : AppColors.creamAlt);
+    final headerIcon =
+        isDim ? Colors.white : (isDark ? Colors.white : AppColors.inkBlack);
+    // The content sheet that "bumps up" under the active tab.
+    final sheetColor = isDim
+        ? AppColors.dimSheet
+        : (isDark ? AppColors.darkWarm : AppColors.creamCard);
 
     return CustomScrollView(
       slivers: [
         // Custom App Bar
         SliverAppBar(
           pinned: true,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          backgroundColor: headerBand,
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: Padding(
@@ -393,12 +453,12 @@ class _HomeTabState extends State<_HomeTab> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                  color: headerChip,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.menu_rounded,
-                  color: isDark ? Colors.white : AppColors.inkBlack,
+                  color: headerIcon,
                   size: 20,
                 ),
               ),
@@ -415,12 +475,12 @@ class _HomeTabState extends State<_HomeTab> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                    color: headerChip,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.language_rounded,
-                    color: isDark ? Colors.white : AppColors.inkBlack,
+                    color: headerIcon,
                     size: 20,
                   ),
                 ),
@@ -436,12 +496,12 @@ class _HomeTabState extends State<_HomeTab> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                    color: headerChip,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.search_rounded,
-                    color: isDark ? Colors.white : AppColors.inkBlack,
+                    color: headerIcon,
                     size: 20,
                   ),
                 ),
@@ -458,12 +518,12 @@ class _HomeTabState extends State<_HomeTab> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                    color: headerChip,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.notifications_none_rounded,
-                    color: isDark ? Colors.white : AppColors.inkBlack,
+                    color: headerIcon,
                     size: 20,
                   ),
                 ),
@@ -487,12 +547,12 @@ class _HomeTabState extends State<_HomeTab> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                        color: headerChip,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         icon,
-                        color: isDark ? Colors.white : AppColors.inkBlack,
+                        color: headerIcon,
                         size: 20,
                       ),
                     ),
@@ -510,7 +570,9 @@ class _HomeTabState extends State<_HomeTab> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.burgundy,
+                    color: isDim
+                        ? Colors.white.withOpacity(0.22)
+                        : AppColors.burgundy,
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -528,61 +590,62 @@ class _HomeTabState extends State<_HomeTab> {
             ),
           ],
         ),
-        // Main Content
+        // Main Content — burgundy header band with the tabs, then the content
+        // sheet that "bumps up" under the active tab (every theme).
         SliverToBoxAdapter(
-          child: Container(
-            // Dim mode: a lighter rounded sheet holding all the section cards.
-            decoration: isDim
-                ? const BoxDecoration(
-                    color: AppColors.dimSheet,
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(28)),
-                  )
-                : null,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(10, isDim ? 22 : 16, 10, 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                // ── Tabs + feature shortcuts on a single light panel ──────
-                _buildTopPanel(isDark),
-                const SizedBox(height: 20),
-
-                // ── Row 3: Sliding advertisement ──────────────────────────
-                _buildAdCarousel(isDark),
-                const SizedBox(height: 24),
-
-                // ── On Sale ────────────────────────────────────────────────
-                _buildSaleSection(isDark),
-                const SizedBox(height: 24),
-
-                // ── Resell ─────────────────────────────────────────────────
-                _buildResellSection(isDark),
-                const SizedBox(height: 28),
-
-                // ── Shop Spotlight (videos) ────────────────────────────────
-                ShopSpotlightSection(isDark: isDark),
-                const SizedBox(height: 28),
-
-                // ── Featured Shops (images) ────────────────────────────────
-                FeaturedShopsSection(isDark: isDark),
-                const SizedBox(height: 28),
-
-                // ── Shop Lookbook (images) ─────────────────────────────────
-                ShopLookbookSection(isDark: isDark),
-                const SizedBox(height: 28),
-
-                // ── Give Back ─────────────────────────────────────────────
-                _buildSectionLabel('sections.give_back', isDark),
-                const SizedBox(height: 16),
-                _buildGiveBackSection(isDark),
-                const SizedBox(height: 28),
-
-                // ── User Guide ─────────────────────────────────────────────
-                UserGuideSection(isDark: isDark),
-                ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                color: headerBand,
+                padding: const EdgeInsets.only(top: 2),
+                child: Column(
+                  children: [
+                    Padding(
+                      key: GuideKeys.tabs,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: _buildHomeTabs(isDark, onColor: isDim),
+                    ),
+                    // The sheet "bumps up" under the active tab (notch).
+                    SizedBox(
+                      height: 16,
+                      child: Row(
+                        children: List.generate(2, (i) {
+                          final sel = _homeTab == i;
+                          return Expanded(
+                            child: sel
+                                ? Center(
+                                    child: CustomPaint(
+                                      size: const Size(82, 16),
+                                      painter:
+                                          _NotchBumpPainter(sheetColor, headerBand),
+                                    ),
+                                  )
+                                : const SizedBox(),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              Container(
+                decoration: BoxDecoration(
+                  color: sheetColor,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(26)),
+                ),
+                padding: const EdgeInsets.fromLTRB(10, 18, 10, 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShortcutsCard(isDark),
+                    const SizedBox(height: 20),
+                    ...sections,
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -591,9 +654,15 @@ class _HomeTabState extends State<_HomeTab> {
 
   // ── Greeting Section ──────────────────────────────────────────────────────
   // ── Row 1: Home tabs (For You / My Closet) ────────────────────────────────
-  Widget _buildHomeTabs(bool isDark) {
-    final accent = isDark ? AppColors.gold : AppColors.burgundy;
-    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+  Widget _buildHomeTabs(bool isDark, {bool onColor = false}) {
+    // onColor → tabs sit on the burgundy header (Dim): white text. The notch
+    // bump below is the active indicator in every theme (no underline).
+    final accent = onColor
+        ? Colors.white
+        : (isDark ? AppColors.gold : AppColors.burgundy);
+    final muted = onColor
+        ? Colors.white.withOpacity(0.6)
+        : (isDark ? AppColors.paleText : AppColors.inkGrey);
     const tabs = ['For You', 'Services'];
 
     return Row(
@@ -610,16 +679,7 @@ class _HomeTabState extends State<_HomeTab> {
                         fontSize: 16,
                         fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
                         color: sel ? accent : muted)),
-                const SizedBox(height: 8),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  height: 3,
-                  width: sel ? 28 : 0,
-                  decoration: BoxDecoration(
-                    color: accent,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+                const SizedBox(height: 2),
               ],
             ),
           ),
@@ -931,79 +991,66 @@ class _HomeTabState extends State<_HomeTab> {
   // ── Row 3: Bordered, horizontally scrollable feature shortcuts ────────────
   // Light "panel" card holding the For You/Services tabs and the feature
   // shortcuts (Foodpanda-style card on the page background).
-  Widget _buildTopPanel(bool isDark) {
+  // The horizontal feature-shortcut row (AI Try-On, AR Try-On, Haircut, Scan).
+  Widget _buildShortcutsList(bool isDark) {
     final accent = isDark ? AppColors.gold : AppColors.burgundy;
     final ink = isDark ? Colors.white : AppColors.inkBlack;
+    return SizedBox(
+      key: GuideKeys.shortcuts,
+      height: 78,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        itemCount: _quickFeatures.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        itemBuilder: (_, i) {
+          final f = _quickFeatures[i];
+          return GestureDetector(
+            onTap: f.$3,
+            child: SizedBox(
+              width: 62,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(f.$2, color: accent, size: 23),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(f.$1,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: ink)),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
+  // Shortcuts wrapped in a card — used on the Dim-mode sheet (tabs live in the
+  // burgundy header instead of this card).
+  Widget _buildShortcutsCard(bool isDark) {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkWarm : AppColors.creamCard,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.22 : 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        children: [
-          // Tabs
-          Padding(
-            key: GuideKeys.tabs,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: _buildHomeTabs(isDark),
-          ),
-          const SizedBox(height: 16),
-          // Feature shortcuts
-          SizedBox(
-            key: GuideKeys.shortcuts,
-            height: 78,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              itemCount: _quickFeatures.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 16),
-              itemBuilder: (_, i) {
-                final f = _quickFeatures[i];
-                return GestureDetector(
-                  onTap: f.$3,
-                  child: SizedBox(
-                    width: 62,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: accent.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Icon(f.$2, color: accent, size: 23),
-                        ),
-                        const SizedBox(height: 7),
-                        Text(f.$1,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.outfit(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: ink)),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+      child: _buildShortcutsList(isDark),
     );
   }
 
