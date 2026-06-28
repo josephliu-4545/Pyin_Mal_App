@@ -17,6 +17,7 @@ import 'package:pyin_mal_app/screens/ai_chat_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/profile_screen.dart';
 import 'package:pyin_mal_app/screens/scan_screen.dart';
+import 'package:pyin_mal_app/screens/body_scan_screen.dart';
 import 'package:pyin_mal_app/screens/donate_screen.dart';
 import 'package:pyin_mal_app/screens/delivery_screen.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
@@ -324,6 +325,8 @@ class _HomeTabState extends State<_HomeTab> {
         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()))),
     ('Scan', Icons.document_scanner_rounded,
         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanScreen()))),
+    ('Body Measure', Icons.straighten_rounded,
+        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BodyScanScreen()))),
   ];
 
   // Bordered feature shortcuts — "Services" tools
