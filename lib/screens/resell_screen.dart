@@ -46,7 +46,7 @@ class ResellStore {
     const ResellPost(
       title: 'NRF Deathwish Hoodie',
       price: '28,000 MMK',
-      image: 'assets/images/Male/Nrf/Hoodie/NRF Deathwish hoodie0.jpg',
+      image: 'pyin-mal-assets/assets/images/Male/Nrf/Hoodie/b_NRF Deathwish hoodie_p1.jpg',
       condition: 'Like New',
       seller: 'Aung M.',
       size: 'L',
@@ -54,7 +54,7 @@ class ResellStore {
     const ResellPost(
       title: 'AJOHN V2 Hoodie',
       price: '22,000 MMK',
-      image: 'assets/images/Male/Nrf/Hoodie/AJOHN V2 HOODIE.jpg',
+      image: 'pyin-mal-assets/assets/images/Male/Nrf/Hoodie/bl_V2 LOGO Hoodie_p1.jpg',
       condition: 'Good',
       seller: 'Thida K.',
       size: 'M',
@@ -62,7 +62,7 @@ class ResellStore {
     const ResellPost(
       title: 'ABCD Zip Up Hoodie',
       price: '19,000 MMK',
-      image: 'assets/images/Male/Nrf/Hoodie/ABCD 2XL ZIP UP HOODIE0.jpg',
+      image: 'pyin-mal-assets/assets/images/Male/Nrf/Hoodie/b_ABCD 2XL ZIP UP HOODIE_p1.jpg',
       condition: 'Good',
       seller: 'Ko Zaw',
       size: '2XL',
@@ -71,7 +71,7 @@ class ResellStore {
     const ResellPost(
       title: 'ABCD Tee',
       price: '8,000 MMK',
-      image: 'assets/images/Male/Nrf/Tee/ABCD TEE.jpg',
+      image: 'pyin-mal-assets/assets/images/Male/Nrf/Tee/b_ABCD TEE_p1.jpg',
       condition: 'Fair',
       seller: 'Su Su',
       size: 'M',
@@ -80,7 +80,7 @@ class ResellStore {
     const ResellPost(
       title: 'Luna Set 1',
       price: '30,000 MMK',
-      image: 'assets/images/Female/dress.set/Luna/luna set1.jpg',
+      image: 'pyin-mal-assets/assets/images/Female/dress.set/Luna/luna set1.jpg',
       condition: 'Like New',
       seller: 'Ma Thida',
       size: 'S',
@@ -88,7 +88,7 @@ class ResellStore {
     const ResellPost(
       title: 'ACID T-Shirt',
       price: '9,500 MMK',
-      image: 'assets/images/Male/Nrf/Tee/ACID TSHIRT 0.jpg',
+      image: 'pyin-mal-assets/assets/images/Male/Nrf/Tee/b_ACID TSHIRT_p1.jpg',
       condition: 'Good',
       seller: 'Kyaw Z.',
       size: 'L',

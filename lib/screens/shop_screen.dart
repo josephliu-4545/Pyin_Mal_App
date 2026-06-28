@@ -319,9 +319,11 @@ class _ShopScreenState extends State<ShopScreen> {
                       child: GestureDetector(
                         onTap: () {
                           setState(() {
-                            // If they tap the already selected category, maybe reset to 'New in'?
-                            // Let's just set the selected category
                             _selectedCategory = label;
+                            // Gender filters should show all shops, not just selected one
+                            if (label == 'Women' || label == 'Men') {
+                              _selectedShop = null;
+                            }
                           });
                         },
                         child: AnimatedContainer(

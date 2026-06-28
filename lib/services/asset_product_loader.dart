@@ -103,10 +103,8 @@ class AssetProductLoader {
 
     final products = groups.values.map(_toProduct).toList()
       ..sort((a, b) => a.name.compareTo(b.name));
-    final cdSample = products.where((p) => p.brand == 'CLASSYDOCK').take(2);
-    for (final p in cdSample) {
-      debugPrint('🔍 CLASSYDOCK ${p.name} image=${p.image} variants=${p.colorVariants.keys.toList()}');
-    }
+    final femaleCount = products.where((p) => p.gender == 'Female').length;
+    debugPrint('👗 Female products: $femaleCount / ${products.length} total');
     return products;
   }
 
