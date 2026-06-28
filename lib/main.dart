@@ -86,7 +86,7 @@ class PyinMalApp extends StatelessWidget {
           localizationsDelegates: context.localizationDelegates,
           supportedLocales: context.supportedLocales,
           locale: context.locale,
-          title: 'Pyin Mal',
+          title: 'Ta Chat Nhate',
           debugShowCheckedModeBanner: false,
           themeMode:
               mode == AppThemeMode.dark ? ThemeMode.dark : ThemeMode.light,
