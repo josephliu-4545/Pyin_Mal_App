@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
 import '../widgets/cdn_image.dart';
 
 class ARHairFilterScreen extends StatefulWidget {
@@ -27,6 +28,15 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
   String? _currentHairstyle;
   Size? _cameraImageSize;
   InputImageRotation? _cameraRotation;
+  CameraLensDirection _cameraLensDirection = CameraLensDirection.front;
+
+  // Smoothing states
+  double _smoothedHairLeft = 0.0;
+  double _smoothedHairTop = 0.0;
+  double _smoothedHairWidth = 0.0;
+  double _smoothedHairHeight = 0.0;
+  double _smoothedRotationAngle = 0.0;
+  bool _isFirstFrame = true;
 
   @override
   void initState() {
@@ -60,6 +70,7 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
       // Determine camera rotation based on sensor orientation
       final sensorOrientation = frontCamera.sensorOrientation;
       _cameraRotation = InputImageRotationValue.fromRawValue(sensorOrientation);
+      _cameraLensDirection = frontCamera.lensDirection;
       
       if (mounted) {
         setState(() => _isCameraInitialized = true);
@@ -135,11 +146,19 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
   double _translateX(double x, InputImageRotation rotation, Size size, Size absoluteImageSize) {
     switch (rotation) {
       case InputImageRotation.rotation90deg:
-        return x * size.width / (Platform.isIOS ? absoluteImageSize.width : absoluteImageSize.height);
+        return _cameraLensDirection == CameraLensDirection.front
+            ? size.width - x * size.width / (Platform.isIOS ? absoluteImageSize.width : absoluteImageSize.height)
+            : x * size.width / (Platform.isIOS ? absoluteImageSize.width : absoluteImageSize.height);
       case InputImageRotation.rotation270deg:
-        return size.width - x * size.width / (Platform.isIOS ? absoluteImageSize.width : absoluteImageSize.height);
+        return _cameraLensDirection == CameraLensDirection.front
+            ? x * size.width / (Platform.isIOS ? absoluteImageSize.width : absoluteImageSize.height)
+            : size.width - x * size.width / (Platform.isIOS ? absoluteImageSize.width : absoluteImageSize.height);
+      case InputImageRotation.rotation0deg:
+      case InputImageRotation.rotation180deg:
       default:
-        return x * size.width / absoluteImageSize.width;
+        return _cameraLensDirection == CameraLensDirection.front
+            ? size.width - x * size.width / absoluteImageSize.width
+            : x * size.width / absoluteImageSize.width;
     }
   }
 
@@ -148,6 +167,8 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
       case InputImageRotation.rotation90deg:
       case InputImageRotation.rotation270deg:
         return y * size.height / (Platform.isIOS ? absoluteImageSize.height : absoluteImageSize.width);
+      case InputImageRotation.rotation0deg:
+      case InputImageRotation.rotation180deg:
       default:
         return y * size.height / absoluteImageSize.height;
     }
@@ -190,26 +211,54 @@ class _ARHairFilterScreenState extends State<ARHairFilterScreen> {
     }
 
     // Head rotation
-    double rotationAngle = 0.0;
+    double targetRotation = 0.0;
     if (face.headEulerAngleZ != null) {
-      rotationAngle = -face.headEulerAngleZ! * math.pi / 180.0;
+      targetRotation = _cameraLensDirection == CameraLensDirection.front
+          ? face.headEulerAngleZ! * math.pi / 180.0
+          : -face.headEulerAngleZ! * math.pi / 180.0;
+    }
+
+    // Apply smooth lerping
+    if (_isFirstFrame) {
+      _smoothedHairLeft = hairLeft;
+      _smoothedHairTop = hairTop;
+      _smoothedHairWidth = hairWidth;
+      _smoothedHairHeight = hairHeight;
+      _smoothedRotationAngle = targetRotation;
+      _isFirstFrame = false;
+    } else {
+      const double factor = 0.4;
+      _smoothedHairLeft += (hairLeft - _smoothedHairLeft) * factor;
+      _smoothedHairTop += (hairTop - _smoothedHairTop) * factor;
+      _smoothedHairWidth += (hairWidth - _smoothedHairWidth) * factor;
+      _smoothedHairHeight += (hairHeight - _smoothedHairHeight) * factor;
+      
+      double diff = targetRotation - _smoothedRotationAngle;
+      if (diff > math.pi) diff -= 2 * math.pi;
+      if (diff < -math.pi) diff += 2 * math.pi;
+      _smoothedRotationAngle += diff * factor;
     }
 
     return Positioned(
-      left: hairLeft,
-      top: hairTop,
+      left: _smoothedHairLeft,
+      top: _smoothedHairTop,
       child: Transform.rotate(
-        angle: rotationAngle,
+        angle: _smoothedRotationAngle,
         alignment: Alignment.center,
         child: SizedBox(
-          width: hairWidth,
-          height: hairHeight,
-          child: _currentHairstyle != null
-            ? CdnImage(
-                _currentHairstyle!,
-                fit: BoxFit.contain,
-              )
-            : const SizedBox.shrink(),
+          width: _smoothedHairWidth,
+          height: _smoothedHairHeight,
+          child: ModelViewer(
+            src: 'assets/models/hair_3d.glb',
+            alt: 'Hair 3‑D model',
+            ar: false,
+            autoRotate: false,
+            cameraOrbit: "0deg 90deg 100%", // Lock to direct front view
+            cameraControls: false,
+            disableZoom: true,
+            disablePan: true,
+            backgroundColor: Colors.transparent,
+          ),
         ),
       ),
     );

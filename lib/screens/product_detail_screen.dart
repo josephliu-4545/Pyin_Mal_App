@@ -430,6 +430,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     } catch (_) {} // no measurements / offline — selector works as before
   }
 
+  /// Color code → 3D model asset for the "Star Wear" product. The filename
+  /// prefix is the color (e.g. 'w' = white), matching the photo naming scheme
+  /// in AssetProductLoader. Add an entry here as you export a model per color.
+  static const Map<String, String> _starWearModels = {
+    'w': 'assets/models/w_star_wear_p1.glb',
+  };
+
+  /// 3D model asset for this product + selected color, or null if none.
+  /// Only "Star Wear" ships with a real 3D model for now — every other product
+  /// shows photos only (no 360° view).
+  String? get _model3dAsset {
+    final normalized =
+        widget.name.toLowerCase().replaceAll(RegExp(r'[\s_]+'), '');
+    if (!normalized.contains('starwear')) return null;
+    // Prefer the model for the selected color; fall back to any available one
+    // so the 3D view still works while only some colors have a model.
+    return _starWearModels[_selectedColor] ??
+        (_starWearModels.isNotEmpty ? _starWearModels.values.first : null);
+  }
+
+  bool get _has3DModel => _model3dAsset != null;
+
   // Hero view toggle — image (Photo) is default
   bool _show3DView = false;
 
@@ -626,55 +648,61 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     ),
                                   ),
 
-                                  // 3D VIEW
-                                  AnimatedOpacity(
-                                    opacity: _show3DView ? 1.0 : 0.0,
-                                    duration: const Duration(milliseconds: 260),
-                                    curve: Curves.easeInOut,
-                                    child: IgnorePointer(
-                                      ignoring: !_show3DView,
-                                      child: Product3DViewer(
-                                        height: _heroH,
-                                        isDark: isDark,
+                                  // 3D VIEW — only for products that ship a model
+                                  if (_has3DModel)
+                                    AnimatedOpacity(
+                                      opacity: _show3DView ? 1.0 : 0.0,
+                                      duration:
+                                          const Duration(milliseconds: 260),
+                                      curve: Curves.easeInOut,
+                                      child: IgnorePointer(
+                                        ignoring: !_show3DView,
+                                        child: Product3DViewer(
+                                          height: _heroH,
+                                          isDark: isDark,
+                                          modelAsset: _model3dAsset,
+                                        ),
                                       ),
                                     ),
-                                  ),
 
-                                  // VIEW TOGGLE PILL (top-center)
-                                  Positioned(
-                                    top: 14,
-                                    left: 0,
-                                    right: 0,
-                                    child: Center(
-                                      child: Container(
-                                        height: 36,
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.45),
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            _viewTab(
-                                              label: 'product.photo'.tr(),
-                                              icon: Icons.image_rounded,
-                                              active: !_show3DView,
-                                              onTap: () => setState(
-                                                  () => _show3DView = false),
-                                            ),
-                                            _viewTab(
-                                              label: 'product.360'.tr(),
-                                              icon: Icons.view_in_ar_rounded,
-                                              active: _show3DView,
-                                              onTap: () => setState(
-                                                  () => _show3DView = true),
-                                            ),
-                                          ],
+                                  // VIEW TOGGLE PILL (top-center) — only shown
+                                  // when this product has a 3D model.
+                                  if (_has3DModel)
+                                    Positioned(
+                                      top: 14,
+                                      left: 0,
+                                      right: 0,
+                                      child: Center(
+                                        child: Container(
+                                          height: 36,
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Colors.black.withOpacity(0.45),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              _viewTab(
+                                                label: 'product.photo'.tr(),
+                                                icon: Icons.image_rounded,
+                                                active: !_show3DView,
+                                                onTap: () => setState(
+                                                    () => _show3DView = false),
+                                              ),
+                                              _viewTab(
+                                                label: 'product.360'.tr(),
+                                                icon: Icons.view_in_ar_rounded,
+                                                active: _show3DView,
+                                                onTap: () => setState(
+                                                    () => _show3DView = true),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
 
                                   // (Video PiP is rendered at screen level so
                                   // it can be dragged anywhere on the page.)
