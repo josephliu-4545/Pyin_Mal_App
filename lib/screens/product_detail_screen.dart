@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:http/http.dart' as http;
@@ -36,6 +37,8 @@ class ProductDetailScreen extends StatefulWidget {
   final Map<String, List<String>> colorVariants;
   /// Default color to show when the screen opens.
   final String defaultColor;
+  /// CDN URL of a product video, or null if none.
+  final String? videoUrl;
 
   const ProductDetailScreen({
     super.key,
@@ -50,6 +53,7 @@ class ProductDetailScreen extends StatefulWidget {
     this.discount,
     this.colorVariants = const {},
     this.defaultColor = '',
+    this.videoUrl,
   });
 
   /// Convenience constructor — pass a [Product] directly.
@@ -65,6 +69,7 @@ class ProductDetailScreen extends StatefulWidget {
       shopName: p.shopName,
       colorVariants: p.colorVariants,
       defaultColor: p.defaultColor,
+      videoUrl: p.videoUrl,
       discount: discount,
     );
   }
@@ -458,7 +463,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   // Reviews: collapsed by default (show 2), expandable
   bool _showAllReviews = false;
 
-  // Floating video pip state
+  // Floating video pip state — only shown when product has a video
   bool _showVideoPip = true;
   // Initialised to the right edge after the first frame (see initState).
   Offset _pipOffset = const Offset(9999, 90);
@@ -1425,8 +1430,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
           ),
 
-          // Screen-wide draggable video PiP — floats over the whole page
-          if (_showVideoPip)
+          // Screen-wide draggable video PiP — only shown when product has a video
+          if (_showVideoPip && widget.videoUrl != null)
             Positioned(
               left: _pipOffset.dx,
               top: _pipOffset.dy,
@@ -1443,6 +1448,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 child: _FloatingVideoPip(
                   isDark: isDark,
                   image: widget.image,
+                  videoUrl: widget.videoUrl!,
                   accent: accent,
                   onClose: () => setState(() => _showVideoPip = false),
                 ),
@@ -2703,12 +2709,14 @@ class _CharRow extends StatelessWidget {
 class _FloatingVideoPip extends StatefulWidget {
   final bool isDark;
   final String image;
+  final String videoUrl;
   final Color accent;
   final VoidCallback onClose;
 
   const _FloatingVideoPip({
     required this.isDark,
     required this.image,
+    required this.videoUrl,
     required this.accent,
     required this.onClose,
   });
@@ -2717,32 +2725,43 @@ class _FloatingVideoPip extends StatefulWidget {
   State<_FloatingVideoPip> createState() => _FloatingVideoPipState();
 }
 
-class _FloatingVideoPipState extends State<_FloatingVideoPip>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse;
-  late final Animation<double> _scale;
+class _FloatingVideoPipState extends State<_FloatingVideoPip> {
+  late VideoPlayerController _controller;
+  bool _playing = false;
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
-    _scale = Tween<double>(begin: 1.0, end: 1.12)
-        .animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+      ..initialize().then((_) {
+        if (mounted) setState(() => _initialized = true);
+      });
+    _controller.setLooping(true);
   }
 
   @override
   void dispose() {
-    _pulse.dispose();
+    _controller.dispose();
     super.dispose();
+  }
+
+  void _togglePlay() {
+    setState(() {
+      if (_playing) {
+        _controller.pause();
+      } else {
+        _controller.play();
+      }
+      _playing = !_playing;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 100,
-      height: 130,
+      width: 120,
+      height: 160,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
@@ -2757,59 +2776,60 @@ class _FloatingVideoPipState extends State<_FloatingVideoPip>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(widget.image, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                    color: widget.isDark
-                        ? const Color(0xFF2A2A2A)
-                        : const Color(0xFFEEEEEE),
-                    child: const Center(
-                        child: Icon(Icons.videocam_rounded,
-                            color: Colors.white54, size: 32)))),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.55)],
-                  stops: const [0.45, 1.0],
+            // Video or thumbnail
+            if (_initialized)
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _controller.value.size.width,
+                  height: _controller.value.size.height,
+                  child: VideoPlayer(_controller),
                 ),
-              ),
-            ),
-            Center(
-              child: AnimatedBuilder(
-                animation: _scale,
-                builder: (_, child) =>
-                    Transform.scale(scale: _scale.value, child: child),
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.92),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withOpacity(0.25), blurRadius: 8)
-                    ],
+              )
+            else
+              CdnImage(widget.image, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                      color: widget.isDark
+                          ? const Color(0xFF2A2A2A)
+                          : const Color(0xFFEEEEEE),
+                      child: const Center(
+                          child: Icon(Icons.videocam_rounded,
+                              color: Colors.white54, size: 32)))),
+            // Dark gradient overlay when not playing
+            if (!_playing)
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.55)],
+                    stops: const [0.45, 1.0],
                   ),
-                  child: const Icon(Icons.play_arrow_rounded,
-                      color: Colors.black87, size: 22),
+                ),
+              ),
+            // Play/pause button
+            GestureDetector(
+              onTap: _togglePlay,
+              child: Center(
+                child: AnimatedOpacity(
+                  opacity: _playing ? 0.0 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.92),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 8)
+                      ],
+                    ),
+                    child: const Icon(Icons.play_arrow_rounded,
+                        color: Colors.black87, size: 22),
+                  ),
                 ),
               ),
             ),
-            Positioned(
-              bottom: 0, left: 0, right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                color: const Color(0xFFE53935),
-                child: Text('product.pip_preview'.tr(),
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.outfit(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.3)),
-              ),
-            ),
+            // Close button
             Positioned(
               top: 4, right: 4,
               child: GestureDetector(
