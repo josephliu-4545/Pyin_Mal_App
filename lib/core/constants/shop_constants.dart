@@ -6,11 +6,11 @@ class ShopInfo {
   const ShopInfo({required this.name, required this.slug, required this.tagline});
 
   // Bundled asset paths (images only — loaded via Image.asset)
-  String get logoAsset    => 'pyin-mal-assets/assets/images/Shops/$slug/logo.png';
-  String get bannerAsset  => 'pyin-mal-assets/assets/images/Shops/$slug/banner.jpg';
-  String get coverAsset   => 'pyin-mal-assets/assets/images/Shops/$slug/cover.jpg';
-  String get posterAsset  => 'pyin-mal-assets/assets/images/Shops/$slug/poster.jpg';
-  String lookAsset(int n) => 'pyin-mal-assets/assets/images/Shops/$slug/look_$n.jpg';
+  String get logoAsset    => 'pyin-mal-assets/assets/images/shops/$slug/logo.png';
+  String get bannerAsset  => 'pyin-mal-assets/assets/images/shops/$slug/banner.jpg';
+  String get coverAsset   => 'pyin-mal-assets/assets/images/shops/$slug/cover.jpg';
+  String get posterAsset  => 'pyin-mal-assets/assets/images/shops/$slug/poster.jpg';
+  String lookAsset(int n) => 'pyin-mal-assets/assets/images/shops/$slug/look_$n.jpg';
 
   // Video served from jsDelivr CDN (not bundled — too large)
   String get videoUrl =>
