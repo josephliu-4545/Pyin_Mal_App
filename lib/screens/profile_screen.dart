@@ -62,13 +62,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   width: 80, height: 80,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: accent,
-                    borderRadius: BorderRadius.circular(24),
+                    shape: BoxShape.circle,
                     boxShadow: [BoxShadow(color: accent.withOpacity(0.35), blurRadius: 24, offset: const Offset(0, 8))],
                   ),
-                  child: Text(
-                    'PM',
-                    style: GoogleFonts.rufina(color: isDark ? AppColors.charcoal : Colors.white, fontWeight: FontWeight.bold, fontSize: 28),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'pyin-mal-assets/assets/images/logo.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),

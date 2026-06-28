@@ -200,18 +200,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 38, height: 38,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: accent,
-                          borderRadius: BorderRadius.circular(10),
+                      ClipOval(
+                        child: Image.asset(
+                          'pyin-mal-assets/assets/images/logo.png',
+                          width: 38,
+                          height: 38,
+                          fit: BoxFit.cover,
                         ),
-                        child: Text('PM', style: GoogleFonts.rufina(color: isDark ? AppColors.charcoal : Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Pyin Mal',
+                        'Ta Chat Nhate',
                         style: GoogleFonts.rufina(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack),
                       ),
                     ],
