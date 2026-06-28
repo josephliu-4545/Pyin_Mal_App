@@ -17,6 +17,7 @@ import 'package:pyin_mal_app/screens/sale_screen.dart';
 import 'package:pyin_mal_app/screens/scan_screen.dart';
 import 'package:pyin_mal_app/core/constants/shop_constants.dart';
 import 'package:pyin_mal_app/core/guide_keys.dart';
+import 'package:pyin_mal_app/core/favorites_notifier.dart';
 
 class ShopScreen extends StatefulWidget {
   /// When false, the screen does not render its own cart bar — used when the
@@ -30,7 +31,6 @@ class ShopScreen extends StatefulWidget {
 
 class _ShopScreenState extends State<ShopScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final Set<String> _favorites = {};
 
   // Categories matching reference design
   // Fixed icon map — covers all categories from the asset file structure
@@ -554,23 +554,24 @@ class _ShopScreenState extends State<ShopScreen> {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final product = _filteredProducts[index];
-                    final isFavorited = _favorites.contains(product.id);
-                    return _ProductCard(
-                      product: product,
-                      isFavorited: isFavorited,
-                      isDark: isDark,
-                      accent: accent,
-                      onFavTap: () => setState(() {
-                        isFavorited
-                            ? _favorites.remove(product.id)
-                            : _favorites.add(product.id);
-                      }),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ProductDetailScreen.fromProduct(product),
-                        ),
-                      ),
+                    return ValueListenableBuilder<Set<String>>(
+                      valueListenable: favoritesNotifier,
+                      builder: (context, favorites, _) {
+                        final isFavorited = favorites.contains(product.id);
+                        return _ProductCard(
+                          product: product,
+                          isFavorited: isFavorited,
+                          isDark: isDark,
+                          accent: accent,
+                          onFavTap: () => favoritesNotifier.toggleFavorite(product.id),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailScreen.fromProduct(product),
+                            ),
+                          ),
+                        );
+                      }
                     );
                   },
                   childCount: _filteredProducts.length,

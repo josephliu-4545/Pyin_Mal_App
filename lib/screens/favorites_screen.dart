@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/cdn_image.dart';
+import 'package:pyin_mal_app/core/favorites_notifier.dart';
+import 'package:pyin_mal_app/data/product_repository.dart';
 
 class SavedItem {
   final String id;
@@ -32,56 +34,16 @@ class FavoritesScreen extends StatefulWidget {
 class _FavoritesScreenState extends State<FavoritesScreen> {
   final TextEditingController _searchController = TextEditingController();
   
-  List<SavedItem> _allFavorites = [
-    SavedItem(
-      id: '1',
-      title: 'Summer Collection Set',
-      description: 'Light and breezy outfits perfect for warm weather',
-      image: 'assets/images/Photo/summer collection.jpg',
-      category: 'SET',
-      shop: 'Pyin Mal Official',
-    ),
-    SavedItem(
-      id: '2',
-      title: 'Classic High Skin Fade',
-      description: 'Modern fade haircut with longer top',
-      image: 'assets/images/HairStyle/Male/Round Face/Round - High Skin Fade + Long Comb Over.jpg',
-      category: 'HAIRSTYLE',
-      shop: 'Barber Connect',
-    ),
-  ];
-
-  List<SavedItem> _filteredFavorites = [];
-
   @override
   void initState() {
     super.initState();
-    _filteredFavorites = List.from(_allFavorites);
-  }
-
-  void _filter(String query) {
-    if (query.isEmpty) {
-      setState(() {
-        _filteredFavorites = List.from(_allFavorites);
-      });
-      return;
-    }
-    
-    final lower = query.toLowerCase();
-    setState(() {
-      _filteredFavorites = _allFavorites.where((item) {
-        return item.title.toLowerCase().contains(lower) || 
-               item.description.toLowerCase().contains(lower) || 
-               item.shop.toLowerCase().contains(lower);
-      }).toList();
+    _searchController.addListener(() {
+      setState(() {});
     });
   }
 
   void _remove(String id) {
-    setState(() {
-      _allFavorites.removeWhere((item) => item.id == id);
-      _filter(_searchController.text);
-    });
+    favoritesNotifier.toggleFavorite(id);
   }
 
   @override
@@ -104,47 +66,74 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         )),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 1. Premium Header Section
-            _buildHeader(isMobile, isDark, accent),
+      body: ValueListenableBuilder<Set<String>>(
+        valueListenable: favoritesNotifier,
+        builder: (context, favorites, _) {
+          final query = _searchController.text.toLowerCase();
+          
+          final allFavoritedItems = ProductRepository.allProducts
+              .where((p) => favorites.contains(p.id))
+              .map((p) => SavedItem(
+                    id: p.id,
+                    title: p.name,
+                    description: p.description ?? '',
+                    image: p.image,
+                    category: p.category,
+                    shop: p.shopName ?? p.brand,
+                  ))
+              .toList();
+              
+          final filteredFavorites = query.isEmpty 
+              ? allFavoritedItems
+              : allFavoritedItems.where((item) {
+                  return item.title.toLowerCase().contains(query) || 
+                         item.description.toLowerCase().contains(query) || 
+                         item.shop.toLowerCase().contains(query);
+                }).toList();
 
-            // 2. Search & Grid Container
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              child: Column(
-                children: [
-                  // Search Bar
-                  _buildSearchBar(isDark, accent),
-                  
-                  const SizedBox(height: 32),
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Premium Header Section
+                _buildHeader(isMobile, isDark, accent),
 
-                  // Grid / Empty State
-                  if (_filteredFavorites.isEmpty)
-                    _buildEmptyState(isDark, accent)
-                  else
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: isMobile ? 1 : (isDesktop ? 3 : 2),
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.68,
-                      ),
-                      itemCount: _filteredFavorites.length,
-                      itemBuilder: (context, index) {
-                        final item = _filteredFavorites[index];
-                        return _buildSavedCard(item, isDark, accent);
-                      },
-                    )
-                ],
-              ),
-            )
-          ],
-        ),
+                // 2. Search & Grid Container
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  child: Column(
+                    children: [
+                      // Search Bar
+                      _buildSearchBar(isDark, accent, filteredFavorites.length),
+                      
+                      const SizedBox(height: 32),
+
+                      // Grid / Empty State
+                      if (filteredFavorites.isEmpty)
+                        _buildEmptyState(isDark, accent)
+                      else
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: isDesktop ? 4 : (isMobile ? 2 : 3),
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.68,
+                          ),
+                          itemCount: filteredFavorites.length,
+                          itemBuilder: (context, index) {
+                            final item = filteredFavorites[index];
+                            return _buildSavedCard(item, isDark, accent);
+                          },
+                        )
+                    ],
+                  ),
+                )
+              ],
+            ),
+          );
+        }
       ),
     );
   }
@@ -198,7 +187,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildSearchBar(bool isDark, Color accent) {
+  Widget _buildSearchBar(bool isDark, Color accent, int count) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -226,7 +215,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
               ),
               Text(
-                'favorites.saved_count'.tr(args: [_filteredFavorites.length.toString()]),
+                'favorites.saved_count'.tr(args: [count.toString()]),
                 style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12),
               ),
             ],
@@ -237,7 +226,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               Expanded(
                 child: TextField(
                   controller: _searchController,
-                  onChanged: _filter,
                   style: GoogleFonts.outfit(fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'favorites.search_hint'.tr(),
@@ -251,7 +239,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
               const SizedBox(width: 12),
               GestureDetector(
-                onTap: () => _filter(_searchController.text),
+                onTap: () {},
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
