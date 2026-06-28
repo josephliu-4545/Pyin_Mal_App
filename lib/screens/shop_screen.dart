@@ -126,9 +126,12 @@ class _ShopScreenState extends State<ShopScreen> {
   Future<void> _loadShopsWithLogos() async {
     final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
     final assets = manifest.listAssets();
+    final shopAssets = assets.where((a) => a.contains('/shops/')).toList();
+    debugPrint('🏪 Shop assets in manifest: $shopAssets');
     final withLogos = ShopConstants.shops
         .where((s) => assets.contains(s.logoAsset))
         .toList();
+    debugPrint('🏪 Shops with logos: ${withLogos.map((s) => s.slug).toList()}');
     if (mounted) setState(() => _shopsWithLogos = withLogos);
   }
 
@@ -461,11 +464,14 @@ class _ShopScreenState extends State<ShopScreen> {
                                         child: Image.asset(
                                           shop.logoAsset,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => Icon(
-                                            Icons.store_rounded,
-                                            size: 28,
-                                            color: isDark ? Colors.white54 : Colors.black38,
-                                          ),
+                                          errorBuilder: (_, err, stack) {
+                                            debugPrint('🏪 Logo error for ${shop.slug}: $err');
+                                            return Icon(
+                                              Icons.store_rounded,
+                                              size: 28,
+                                              color: isDark ? Colors.white54 : Colors.black38,
+                                            );
+                                          },
                                         ),
                                       ),
                                     ),

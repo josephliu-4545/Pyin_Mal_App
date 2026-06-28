@@ -33,7 +33,11 @@ class CdnImage extends StatelessWidget {
         height: height,
         fit: fit,
         color: color,
-        errorBuilder: errorBuilder,
+        errorBuilder: (ctx, err, stack) {
+          debugPrint('🖼️ Asset failed: $assetPath | $err');
+          if (errorBuilder != null) return errorBuilder!(ctx, err, stack);
+          return const SizedBox.shrink();
+        },
       );
     }
 
