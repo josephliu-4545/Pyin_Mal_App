@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/body_scan_screen.dart';
 import 'package:pyin_mal_app/screens/overlay_permission_screen.dart';
+import 'package:pyin_mal_app/screens/subscription_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -377,11 +378,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 children: [
                   _buildActionTile(
+                    icon: Icons.star_border_rounded,
+                    label: 'Manage Subscription', // Ideally localized
+                    isDark: isDark,
+                    accent: accent,
+                    isFirst: true,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+                      );
+                    },
+                  ),
+                  Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.creamAlt, indent: 56),
+                  _buildActionTile(
                     icon: Icons.settings_outlined,
                     label: 'profile.settings'.tr(),
                     isDark: isDark,
                     accent: accent,
-                    isFirst: true,
+                    isFirst: false,
                     onTap: () {},
                   ),
                   Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.creamAlt, indent: 56),
