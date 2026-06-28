@@ -9,6 +9,9 @@ class Product {
   final String? shopName;
   final List<String> tags;
 
+  /// CDN URL for a product video, if one exists. Null = no video.
+  final String? videoUrl;
+
   /// colorCode → ordered list of all photos for that color (lifestyle + plain).
   /// Empty map = OpenCart product with a single image (use [_fallbackImage]).
   final Map<String, List<String>> colorVariants;
@@ -30,6 +33,7 @@ class Product {
     this.description,
     this.shopName,
     this.tags = const [],
+    this.videoUrl,
     this.colorVariants = const {},
     String? defaultColor,
     String fallbackImage = '',

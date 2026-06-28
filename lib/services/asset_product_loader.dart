@@ -62,6 +62,16 @@ class AssetProductLoader {
       (p.endsWith('.jpg') || p.endsWith('.png') || p.endsWith('.webp')),
     ).toList();
 
+    // Collect video paths separately → map itemKey → CDN URL
+    const cdnBase = 'https://cdn.jsdelivr.net/gh/josephliu-4545/pyin-mal-assets@main/';
+    final Map<String, String> videoUrls = {};
+    for (final path in all.where((p) => p.startsWith(prefix) && p.endsWith('.mp4'))) {
+      final img = _parse(path.replaceAll('.mp4', '.jpg'), prefix);
+      if (img == null) continue;
+      final rel = path.substring('pyin-mal-assets/'.length);
+      videoUrls[img.itemKey] = '$cdnBase$rel';
+    }
+
     debugPrint('📦 Fashion images found: ${fashion.length}');
 
     // Map: itemKey → _Group (one group per item, colors nested inside)
@@ -84,12 +94,17 @@ class AssetProductLoader {
       group.colorPhotos[img.colorCode ?? '_']!.add(path);
     }
 
+    // Attach video URLs to groups
+    for (final entry in videoUrls.entries) {
+      if (groups.containsKey(entry.key)) {
+        groups[entry.key]!.videoUrl = entry.value;
+      }
+    }
+
     final products = groups.values.map(_toProduct).toList()
       ..sort((a, b) => a.name.compareTo(b.name));
-    final cdSample = products.where((p) => p.brand == 'CLASSYDOCK').take(2);
-    for (final p in cdSample) {
-      debugPrint('🔍 CLASSYDOCK ${p.name} image=${p.image} variants=${p.colorVariants.keys.toList()}');
-    }
+    final femaleCount = products.where((p) => p.gender == 'Female').length;
+    debugPrint('👗 Female products: $femaleCount / ${products.length} total');
     return products;
   }
 
@@ -205,6 +220,7 @@ class AssetProductLoader {
       shopName: g.brand != 'Unknown' ? g.brand : null,
       colorVariants: Map.unmodifiable(g.colorPhotos),
       defaultColor: defaultColor,
+      videoUrl: g.videoUrl,
     );
   }
 
@@ -274,6 +290,7 @@ class _Group {
   final String key, name, gender, brand, category;
   /// colorCode → ordered list of photo paths (lifestyle + plain mixed, insertion order)
   final Map<String, List<String>> colorPhotos = {};
+  String? videoUrl;
   _Group({required this.key, required this.name, required this.gender,
           required this.brand, required this.category});
 }

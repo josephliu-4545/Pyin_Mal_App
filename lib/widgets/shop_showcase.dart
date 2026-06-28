@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/core/constants/shop_constants.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
+
+const _cdnPfx = 'https://cdn.jsdelivr.net/gh/josephliu-4545/pyin-mal-assets@main/';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -45,7 +48,8 @@ class ShopSpotlightSection extends StatefulWidget {
 }
 
 class _ShopSpotlightSectionState extends State<ShopSpotlightSection> {
-  List<ShopInfo> _shops = [];
+  // shop → poster URL (bundled asset path or CDN URL)
+  final Map<ShopInfo, String> _shopPosters = {};
 
   @override
   void initState() {
@@ -54,17 +58,27 @@ class _ShopSpotlightSectionState extends State<ShopSpotlightSection> {
   }
 
   Future<void> _loadShops() async {
-    final assets = await _loadManifestAssets();
-    // Spotlight shows shops that have a cover image (video is optional — loads on tap)
-    final available = ShopConstants.shops
-        .where((s) => assets.contains(s.posterAsset))
-        .toList();
-    if (mounted) setState(() => _shops = available);
+    final assets = (await _loadManifestAssets()).toSet();
+    final result = <ShopInfo, String>{};
+    for (final shop in ShopConstants.shops) {
+      if (shop.hasCdnPoster) {
+        // Explicit CDN poster (e.g. CLASSYDOCK at non-standard path)
+        result[shop] = shop.posterCdnUrl;
+      } else if (assets.contains(shop.posterAsset)) {
+        // Standard bundled poster — serve via CDN
+        result[shop] = '${_cdnPfx}assets/images/shops/${shop.slug}/poster.jpg';
+      } else if (assets.contains(shop.coverAsset)) {
+        // Fall back to cover image for shops without a poster
+        result[shop] = '${_cdnPfx}assets/images/shops/${shop.slug}/cover.jpg';
+      }
+    }
+    if (mounted) setState(() { _shopPosters..clear()..addAll(result); });
   }
 
   @override
   Widget build(BuildContext context) {
-    final shops = _shops.isEmpty ? ShopConstants.shops : _shops;
+    if (_shopPosters.isEmpty) return const SizedBox.shrink();
+    final entries = _shopPosters.entries.toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -76,10 +90,13 @@ class _ShopSpotlightSectionState extends State<ShopSpotlightSection> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            itemCount: shops.length,
+            itemCount: entries.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) =>
-                _ShopVideoCard(shop: shops[i], isDark: widget.isDark),
+            itemBuilder: (_, i) => _ShopVideoCard(
+              shop: entries[i].key,
+              posterAsset: entries[i].value,
+              isDark: widget.isDark,
+            ),
           ),
         ),
       ],
@@ -89,8 +106,9 @@ class _ShopSpotlightSectionState extends State<ShopSpotlightSection> {
 
 class _ShopVideoCard extends StatefulWidget {
   final ShopInfo shop;
+  final String posterAsset;
   final bool isDark;
-  const _ShopVideoCard({required this.shop, required this.isDark});
+  const _ShopVideoCard({required this.shop, required this.posterAsset, required this.isDark});
 
   @override
   State<_ShopVideoCard> createState() => _ShopVideoCardState();
@@ -166,10 +184,15 @@ class _ShopVideoCardState extends State<_ShopVideoCard> {
                   ),
                 )
               else
-                Image.asset(
-                  widget.shop.posterAsset,
+                CachedNetworkImage(
+                  imageUrl: widget.posterAsset,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  placeholder: (_, __) => Container(
+                    color: widget.isDark ? AppColors.darkWarm : AppColors.creamAlt,
+                  ),
+                  errorWidget: (_, __, ___) => Container(
                     color: widget.isDark ? AppColors.darkWarm : AppColors.creamAlt,
                     child: Icon(Icons.storefront_rounded, size: 42,
                         color: widget.isDark ? Colors.white24 : Colors.black26),
