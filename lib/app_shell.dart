@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
@@ -13,6 +14,7 @@ import 'package:pyin_mal_app/screens/favorites_screen.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/model_preview_screen.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
+import 'package:pyin_mal_app/screens/ar_fitting_room_screen.dart';
 import 'package:pyin_mal_app/screens/ai_chat_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/profile_screen.dart';
@@ -321,7 +323,7 @@ class _HomeTabState extends State<_HomeTab> {
     ('AI Try-On', Icons.checkroom_rounded,
         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TryOnScreen()))),
     ('AR Try-On', Icons.view_in_ar_rounded,
-        () => _comingSoon('AR Try-On & 3D Models')),
+        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ARFittingRoomScreen()))),
     ('Haircut', Icons.content_cut_rounded,
         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()))),
     ('Scan', Icons.document_scanner_rounded,
@@ -447,66 +449,49 @@ class _HomeTabState extends State<_HomeTab> {
           scrolledUnderElevation: 0,
           leading: Padding(
             padding: const EdgeInsets.only(left: 16),
-            child: GestureDetector(
-              onTap: () => _showMenuBottomSheet(context, isDark),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: headerChip,
-                  shape: BoxShape.circle,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () => _showMenuBottomSheet(context, isDark),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: headerChip,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.menu_rounded,
+                      color: headerIcon,
+                      size: 20,
+                    ),
+                  ),
                 ),
-                child: Icon(
-                  Icons.menu_rounded,
-                  color: headerIcon,
-                  size: 20,
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _showSearchBottomSheet(context, isDark),
+                  child: Container(
+                    key: GuideKeys.search,
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: headerChip,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: headerIcon,
+                      size: 20,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
+          leadingWidth: 104,
           actions: [
-            // Language
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
-                onTap: () => _showLanguageSheet(context, isDark),
-                child: Container(
-                  key: GuideKeys.language,
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: headerChip,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.language_rounded,
-                    color: headerIcon,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-            // Search
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
-                onTap: () => _showSearchBottomSheet(context, isDark),
-                child: Container(
-                  key: GuideKeys.search,
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: headerChip,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.search_rounded,
-                    color: headerIcon,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
+
             // Notification
             Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -1931,51 +1916,297 @@ class _HomeTabState extends State<_HomeTab> {
 
   // ── Menu Bottom Sheet ───────────────────────────────────────────────────────
   void _showMenuBottomSheet(BuildContext context, bool isDark) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.charcoal : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 20),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkBorder : AppColors.inkGrey.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
+    final user = FirebaseAuth.instance.currentUser;
+    final displayName = user?.displayName ?? user?.email?.split('@').first ?? 'Guest';
+    final email = user?.email ?? '';
+    final photoUrl = user?.photoURL;
+
+    late OverlayEntry entry;
+    late AnimationController ctrl;
+
+    ctrl = AnimationController(
+      vsync: Navigator.of(context),
+      duration: const Duration(milliseconds: 320),
+    );
+
+    final slideAnim = Tween<Offset>(
+      begin: const Offset(-1.0, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: ctrl, curve: Curves.easeOutCubic));
+
+    final fadeAnim = Tween<double>(begin: 0.0, end: 1.0)
+        .animate(CurvedAnimation(parent: ctrl, curve: Curves.easeOut));
+
+    void closeDrawer() {
+      ctrl.reverse().then((_) {
+        entry.remove();
+        ctrl.dispose();
+      });
+    }
+
+    entry = OverlayEntry(
+      builder: (_) => AnimatedBuilder(
+        animation: ctrl,
+        builder: (_, __) => Material(
+          color: Colors.transparent,
+          child: Stack(
+            children: [
+              // Dim backdrop
+              GestureDetector(
+                onTap: closeDrawer,
+                child: FadeTransition(
+                  opacity: fadeAnim,
+                  child: Container(
+                    color: Colors.black.withOpacity(0.45),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            _buildMenuItem(Icons.person_rounded, 'menu.profile'.tr(), () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-            }, isDark),
-            _buildMenuItem(Icons.settings_rounded, 'menu.settings'.tr(), () => Navigator.pop(context), isDark),
-            _buildMenuItem(Icons.info_outline_rounded, 'menu.about'.tr(), () => Navigator.pop(context), isDark),
-            const SizedBox(height: 32),
-          ],
+              // Slide-in drawer panel
+              SlideTransition(
+                position: slideAnim,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.78,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkWarm : Colors.white,
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(28),
+                        bottomRight: Radius.circular(28),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.22),
+                          blurRadius: 24,
+                          offset: const Offset(6, 0),
+                        ),
+                      ],
+                    ),
+                    child: SafeArea(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Profile header ──────────────────────────────
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Avatar
+                                CircleAvatar(
+                                  radius: 36,
+                                  backgroundColor: isDark
+                                      ? AppColors.darkBorder
+                                      : AppColors.creamAlt,
+                                  backgroundImage: photoUrl != null
+                                      ? NetworkImage(photoUrl)
+                                      : null,
+                                  child: photoUrl == null
+                                      ? Icon(
+                                          Icons.person_rounded,
+                                          size: 36,
+                                          color: isDark
+                                              ? AppColors.paleText
+                                              : AppColors.inkGrey,
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(height: 14),
+                                // Name
+                                Text(
+                                  displayName,
+                                  style: GoogleFonts.rufina(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark
+                                        ? Colors.white
+                                        : AppColors.inkBlack,
+                                  ),
+                                ),
+                                if (email.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    email,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 13,
+                                      color: isDark
+                                          ? AppColors.paleText
+                                          : AppColors.inkGrey,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          // Divider
+                          Divider(
+                            height: 1,
+                            indent: 24,
+                            endIndent: 24,
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.inkGrey.withOpacity(0.15),
+                          ),
+                          const SizedBox(height: 12),
+                          // ── Menu items ──────────────────────────────────
+                          _buildDrawerItem(
+                            Icons.home_rounded,
+                            'menu.home'.tr(),
+                            () {
+                              closeDrawer();
+                              // Switch to Home tab in the shell
+                              GuideNav.switchTab?.call(0);
+                            },
+                            isDark,
+                          ),
+                          _buildDrawerItem(
+                            Icons.person_rounded,
+                            'menu.profile'.tr(),
+                            () {
+                              closeDrawer();
+                              Future.delayed(
+                                const Duration(milliseconds: 200),
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const ProfileScreen()),
+                                ),
+                              );
+                            },
+                            isDark,
+                          ),
+                          _buildDrawerItem(
+                            Icons.favorite_rounded,
+                            'menu.favorites'.tr(),
+                            () {
+                              closeDrawer();
+                              // Switch to Favourites tab (index 3) in the shell
+                              GuideNav.switchTab?.call(3);
+                            },
+                            isDark,
+                          ),
+                          _buildDrawerItem(
+                            Icons.settings_rounded,
+                            'menu.settings'.tr(),
+                            () {
+                              closeDrawer();
+                              Future.delayed(
+                                const Duration(milliseconds: 200),
+                                () => ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('Settings coming soon')),
+                                ),
+                              );
+                            },
+                            isDark,
+                          ),
+                          _buildDrawerItem(
+                            Icons.language_rounded,
+                            'language.title'.tr(),
+                            () {
+                              closeDrawer();
+                              Future.delayed(
+                                const Duration(milliseconds: 200),
+                                () => _showLanguageSheet(context, isDark),
+                              );
+                            },
+                            isDark,
+                          ),
+                          _buildDrawerItem(
+                            Icons.info_outline_rounded,
+                            'menu.about'.tr(),
+                            () {
+                              closeDrawer();
+                              Future.delayed(
+                                const Duration(milliseconds: 200),
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const UserGuideScreen()),
+                                ),
+                              );
+                            },
+                            isDark,
+                          ),
+                          const Spacer(),
+                          // ── Sign-out ─────────────────────────────────────
+                          Divider(
+                            height: 1,
+                            indent: 24,
+                            endIndent: 24,
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.inkGrey.withOpacity(0.15),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: ListTile(
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                              leading: Icon(Icons.logout_rounded,
+                                  color: AppColors.burgundy, size: 22),
+                              title: Text(
+                                'Sign out',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.burgundy,
+                                ),
+                              ),
+                              onTap: () {
+                                closeDrawer();
+                                Future.delayed(
+                                  const Duration(milliseconds: 200),
+                                  () => FirebaseAuth.instance.signOut(),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+
+    Overlay.of(context).insert(entry);
+    ctrl.forward();
   }
 
-  Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap, bool isDark) {
-    return ListTile(
-      leading: Icon(icon, color: isDark ? Colors.white : AppColors.inkBlack),
-      title: Text(
-        title,
-        style: GoogleFonts.outfit(
-          fontSize: 16,
-          color: isDark ? Colors.white : AppColors.inkBlack,
+  Widget _buildDrawerItem(
+      IconData icon, String title, VoidCallback onTap, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      child: ListTile(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        leading: Icon(
+          icon,
+          color: isDark ? AppColors.gold : AppColors.burgundy,
+          size: 22,
         ),
+        title: Text(
+          title,
+          style: GoogleFonts.outfit(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: isDark ? Colors.white : AppColors.inkBlack,
+          ),
+        ),
+        onTap: onTap,
+        hoverColor: isDark
+            ? AppColors.darkBorder
+            : AppColors.burgundy.withOpacity(0.06),
       ),
-      onTap: onTap,
     );
   }
 
@@ -1989,7 +2220,7 @@ class _HomeTabState extends State<_HomeTab> {
     final row1 = [
       _AICard(label: 'Model\nTry-On',      sub: 'Virtual avatar',    icon: Icons.view_in_ar_rounded,              color: const Color(0xFFC9A96E), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelPreviewScreen()))),
       _AICard(label: 'Virtual\nTry-On',    sub: 'AI on yourself',    icon: Icons.checkroom_rounded,               color: const Color(0xFF7C6AF7), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TryOnScreen()))),
-      _AICard(label: 'AR Try-On\n& 3D',   sub: 'Augmented reality', icon: Icons.view_in_ar_rounded,              color: const Color(0xFF3D9BE9), onTap: () => _comingSoon('AR Try-On & 3D Models')),
+      _AICard(label: 'AR Try-On\n& 3D',   sub: 'Augmented reality', icon: Icons.view_in_ar_rounded,              color: const Color(0xFF3D9BE9), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ARFittingRoomScreen()))),
       _AICard(label: 'Haircut\nRec',       sub: 'AI hairstyle',      icon: Icons.face_retouching_natural_rounded, color: const Color(0xFF52B788), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()))),
     ];
     final row2 = [

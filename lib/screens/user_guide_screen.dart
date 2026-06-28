@@ -441,19 +441,7 @@ class UserGuideSection extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text('Open',
-                  style: GoogleFonts.outfit(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.charcoal : Colors.white)),
-            ),
+
           ],
         ),
       ),

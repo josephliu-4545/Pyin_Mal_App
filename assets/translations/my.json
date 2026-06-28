@@ -26,9 +26,11 @@
     "coming_soon": "မကြာမီလာမည်"
   },
   "menu": {
+    "home": "ပင်မစာမျက်နှာ",
     "profile": "ပရိုဖိုင်",
+    "favorites": "အကြိုက်ဆုံးများ",
     "settings": "အပြင်အဆင်များ",
-    "about": "Pyin Mal အကြောင်း"
+    "about": "Ta Chat Nhate အကြောင်း"
   },
   "search": {
     "title": "ရှာဖွေရန်",

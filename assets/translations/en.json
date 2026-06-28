@@ -26,9 +26,11 @@
     "coming_soon": "Coming soon"
   },
   "menu": {
+    "home": "Home",
     "profile": "Profile",
+    "favorites": "Favourites",
     "settings": "Settings",
-    "about": "About Pyin Mal"
+    "about": "About Ta Chat Nhate"
   },
   "search": {
     "title": "Search",
