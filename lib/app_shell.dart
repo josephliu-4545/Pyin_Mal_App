@@ -275,18 +275,8 @@ class _HomeTabState extends State<_HomeTab> {
   late DateTime _saleEndsAt;
   Duration _saleRemaining = const Duration(hours: 2, minutes: 45, seconds: 30);
 
-  // Static promo slides — always shown
-  static const _staticAds = <(String, String, List<Color>, IconData, String, String, String)>[
-    ('New season drop', 'Up to 40% off select styles',
-        [Color(0xFF6B2737), Color(0xFFB0293F)], Icons.local_offer_rounded,
-        'assets/images/ad_sale.jpg', 'HOT DEAL', 'Shop now'),
-    ('AI styling, free', 'Get outfit ideas tailored to you',
-        [Color(0xFF1F3A5F), Color(0xFF3D6CA8)], Icons.auto_awesome_rounded,
-        'assets/images/ad_ai.jpg', 'NEW', 'Try now'),
-    ('Donate & earn', 'Give clothes, earn reward points',
-        [Color(0xFF2E6B4F), Color(0xFF4FA37A)], Icons.volunteer_activism_rounded,
-        'assets/images/ad_donate.jpg', 'REWARDS', 'Donate'),
-  ];
+  // Static promo slides — removed; carousel now shows shop slides only.
+  static const _staticAds = <(String, String, List<Color>, IconData, String, String, String)>[];
 
   // Shop slides — shops that have uploaded cover.jpg
   List<ShopInfo> _shopAdSlides = [];
