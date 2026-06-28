@@ -191,70 +191,82 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ],
 
-          // Top Header / Back Button
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
+          // Fixed Header and Scrollable Content
+          Column(
+            children: [
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      ClipOval(
-                        child: Image.asset(
-                          'pyin-mal-assets/assets/images/logo.png',
-                          width: 38,
-                          height: 38,
-                          fit: BoxFit.cover,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              ClipOval(
+                                child: Image.asset(
+                                  'pyin-mal-assets/assets/images/logo.png',
+                                  width: 38,
+                                  height: 38,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Ta Chat Nhate',
+                                style: GoogleFonts.rufina(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack),
+                              ),
+                            ],
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.close, size: 28, color: isDark ? Colors.white : AppColors.inkBlack),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Ta Chat Nhate',
-                        style: GoogleFonts.rufina(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.inkBlack),
-                      ),
+                      if (isMobile) ...[
+                        const SizedBox(height: 16),
+                        _buildMobileBrandHeader(isDark, accent),
+                      ],
                     ],
                   ),
-                  IconButton(
-                    icon: Icon(Icons.close, size: 28, color: isDark ? Colors.white : AppColors.inkBlack),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-
-          // Main Content
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 80),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (isMobile) _buildMobileBrandHeader(isDark, accent),
-                  
-                  Container(
-                    width: isMobile ? screenWidth * 0.9 : 800,
-                    height: isMobile ? null : 540,
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkWarm : AppColors.creamCard,
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
-                          blurRadius: 30,
-                          offset: const Offset(0, 10),
-                        )
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: isMobile ? screenWidth * 0.9 : 800,
+                          height: isMobile ? null : 540,
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+                            borderRadius: BorderRadius.circular(32),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+                                blurRadius: 30,
+                                offset: const Offset(0, 10),
+                              )
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(32),
+                            child: isMobile ? _buildMobileLayout(isDark, accent) : _buildDesktopLayout(isDark, accent),
+                          ),
+                        ),
                       ],
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(32),
-                      child: isMobile ? _buildMobileLayout(isDark, accent) : _buildDesktopLayout(isDark, accent),
-                    ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),

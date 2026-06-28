@@ -16,6 +16,7 @@ import 'package:pyin_mal_app/screens/try_on_screen.dart';
 import 'package:pyin_mal_app/screens/ai_chat_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/profile_screen.dart';
+import 'package:pyin_mal_app/screens/subscription_screen.dart';
 import 'package:pyin_mal_app/screens/scan_screen.dart';
 import 'package:pyin_mal_app/screens/body_scan_screen.dart';
 import 'package:pyin_mal_app/screens/donate_screen.dart';
@@ -557,6 +558,27 @@ class _HomeTabState extends State<_HomeTab> {
                     ),
                   );
                 },
+              ),
+            ),
+            // Subscription Plan Button
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const SubscriptionScreen())),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: headerChip,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.attach_money_rounded,
+                    color: AppColors.gold,
+                    size: 20,
+                  ),
+                ),
               ),
             ),
             // Profile Avatar — opens Profile (no longer a bottom tab)
