@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 
@@ -43,7 +44,7 @@ class _ResellChatScreenState extends State<ResellChatScreen> {
     // Seed with a greeting from the seller.
     _messages = [
       _ChatMessage(
-          'Hi! Thanks for your interest in "${widget.itemTitle}". Happy to answer any questions 😊',
+          'resell_chat.greeting'.tr(args: [widget.itemTitle]),
           false),
     ];
   }
@@ -67,7 +68,7 @@ class _ResellChatScreenState extends State<ResellChatScreen> {
     Future.delayed(const Duration(milliseconds: 900), () {
       if (!mounted) return;
       setState(() => _messages.add(_ChatMessage(
-          'Sure! It\'s in great condition and still available. Let me know if you\'d like to meet up.',
+          'resell_chat.reply'.tr(),
           false)));
       _scrollToEnd();
     });
@@ -139,7 +140,7 @@ class _ResellChatScreenState extends State<ResellChatScreen> {
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: ink)),
-                        Text('Usually replies within an hour',
+                        Text('resell_chat.replies_within'.tr(),
                             style:
                                 GoogleFonts.outfit(fontSize: 11, color: muted)),
                       ],
@@ -279,7 +280,7 @@ class _ResellChatScreenState extends State<ResellChatScreen> {
                       maxLines: 4,
                       style: GoogleFonts.outfit(fontSize: 14, color: ink),
                       decoration: InputDecoration(
-                        hintText: 'Message ${widget.seller}...',
+                        hintText: 'resell_chat.message_hint'.tr(args: [widget.seller]),
                         hintStyle: GoogleFonts.outfit(
                             fontSize: 14,
                             color: isDark

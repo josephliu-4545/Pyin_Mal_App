@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/resell_chat_screen.dart';
@@ -139,7 +140,7 @@ class _ResellScreenState extends State<ResellScreen> {
         backgroundColor: accent,
         foregroundColor: isDark ? AppColors.charcoal : Colors.white,
         icon: const Icon(Icons.add_a_photo_rounded, size: 18),
-        label: Text('Sell yours',
+        label: Text('resell.sell_yours'.tr(),
             style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
       ),
       body: SafeArea(
@@ -172,7 +173,7 @@ class _ResellScreenState extends State<ResellScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text('Resell',
+                    Text('resell.title'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -214,13 +215,13 @@ class _ResellScreenState extends State<ResellScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Buy & sell pre-loved fashion',
+                            Text('resell.hero_title'.tr(),
                                 style: GoogleFonts.outfit(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
                                     color: ink)),
                             const SizedBox(height: 3),
-                            Text('Give clothes a second life and earn a little back.',
+                            Text('resell.hero_desc'.tr(),
                                 style: GoogleFonts.outfit(
                                     fontSize: 12, height: 1.35, color: muted)),
                           ],
@@ -239,7 +240,7 @@ class _ResellScreenState extends State<ResellScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Community listings',
+                    Text('resell.community'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -313,7 +314,7 @@ class _ResellScreenState extends State<ResellScreen> {
               setSheet(() => photo = bytes);
             } catch (e) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Could not pick image: $e')),
+                SnackBar(content: Text('resell.pick_error'.tr(args: [e.toString()]))),
               );
             }
           }
@@ -343,13 +344,13 @@ class _ResellScreenState extends State<ResellScreen> {
                             borderRadius: BorderRadius.circular(2)),
                       ),
                     ),
-                    Text('List an item for resale',
+                    Text('resell.list_title'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: ink)),
                     const SizedBox(height: 4),
-                    Text('Add a photo, set your price, and post to the community.',
+                    Text('resell.list_desc'.tr(),
                         style: GoogleFonts.outfit(fontSize: 12, color: muted)),
                     const SizedBox(height: 16),
 
@@ -388,7 +389,7 @@ class _ResellScreenState extends State<ResellScreen> {
                                           borderRadius:
                                               BorderRadius.circular(20),
                                         ),
-                                        child: Text('Change',
+                                        child: Text('resell.change'.tr(),
                                             style: GoogleFonts.outfit(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w600,
@@ -404,7 +405,7 @@ class _ResellScreenState extends State<ResellScreen> {
                                   Icon(Icons.add_a_photo_rounded,
                                       color: accent, size: 28),
                                   const SizedBox(height: 6),
-                                  Text('Add photos',
+                                  Text('resell.add_photos'.tr(),
                                       style: GoogleFonts.outfit(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
@@ -414,21 +415,22 @@ class _ResellScreenState extends State<ResellScreen> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    _field(nameCtrl, 'Item name', isDark, accent),
+                    _field(nameCtrl, 'resell.item_name'.tr(), isDark, accent),
                     const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
-                            child: _field(priceCtrl, 'Price (e.g. 20,000)',
+                            child: _field(priceCtrl, 'resell.price_hint'.tr(),
                                 isDark, accent,
                                 keyboard: TextInputType.number)),
                         const SizedBox(width: 10),
                         Expanded(
-                            child: _field(sizeCtrl, 'Size', isDark, accent)),
+                            child: _field(
+                                sizeCtrl, 'resell.size'.tr(), isDark, accent)),
                       ],
                     ),
                     const SizedBox(height: 14),
-                    Text('Condition',
+                    Text('resell.condition'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -458,7 +460,7 @@ class _ResellScreenState extends State<ResellScreen> {
                                         : Colors.transparent,
                                     width: 1.5),
                               ),
-                              child: Text(c,
+                              child: Text('resell.conditions.$c'.tr(),
                                   style: GoogleFonts.outfit(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -476,15 +478,15 @@ class _ResellScreenState extends State<ResellScreen> {
                           final name = nameCtrl.text.trim();
                           if (name.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Please enter an item name')),
+                              SnackBar(
+                                  content: Text('resell.err_name'.tr())),
                             );
                             return;
                           }
                           // Normalise price -> "X MMK".
                           final rawPrice = priceCtrl.text.trim();
                           final priceLabel = rawPrice.isEmpty
-                              ? 'Negotiable'
+                              ? 'resell.negotiable'.tr()
                               : (rawPrice.toUpperCase().contains('MMK')
                                   ? rawPrice
                                   : '$rawPrice MMK');
@@ -497,18 +499,18 @@ class _ResellScreenState extends State<ResellScreen> {
                               image: '',
                               imageBytes: photo,
                               condition: condition,
-                              seller: 'You',
+                              seller: 'resell.you'.tr(),
                               size: sizeCtrl.text.trim().isEmpty
-                                  ? 'One size'
+                                  ? 'resell.one_size'.tr()
                                   : sizeCtrl.text.trim(),
                             ),
                           );
                           Navigator.pop(sheetCtx);
                           setState(() {}); // refresh grid
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Your item has been posted!'),
-                                duration: Duration(seconds: 2)),
+                            SnackBar(
+                                content: Text('resell.posted'.tr()),
+                                duration: const Duration(seconds: 2)),
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -520,7 +522,7 @@ class _ResellScreenState extends State<ResellScreen> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: Text('Post item',
+                        child: Text('resell.post_item'.tr(),
                             style: GoogleFonts.outfit(
                                 fontWeight: FontWeight.w700, fontSize: 14)),
                       ),
@@ -622,7 +624,7 @@ class _ResellScreenState extends State<ResellScreen> {
                           const Icon(Icons.cancel_rounded,
                               color: Color(0xFFE53935), size: 18),
                           const SizedBox(width: 8),
-                          Text('This item has been sold',
+                          Text('resell.sold_msg'.tr(),
                               style: GoogleFonts.outfit(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -657,14 +659,16 @@ class _ResellScreenState extends State<ResellScreen> {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      _tag('Size ${post.size}', muted, isDark),
+                      _tag('resell.size_tag'.tr(args: [post.size]), muted,
+                          isDark),
                       const SizedBox(width: 8),
-                      _tag(post.condition, conditionColor(post.condition),
-                          isDark,
+                      _tag('resell.conditions.${post.condition}'.tr(),
+                          conditionColor(post.condition), isDark,
                           filled: true),
                       if (post.isSoldOut) ...[
                         const SizedBox(width: 8),
-                        _tag('Sold Out', const Color(0xFFE53935), isDark,
+                        _tag('resell.sold_out'.tr(), const Color(0xFFE53935),
+                            isDark,
                             filled: true),
                       ],
                     ],
@@ -682,7 +686,7 @@ class _ResellScreenState extends State<ResellScreen> {
                                 color: accent)),
                       ),
                       const SizedBox(width: 8),
-                      Text('Sold by ${post.seller}',
+                      Text('resell.sold_by'.tr(args: [post.seller]),
                           style:
                               GoogleFonts.outfit(fontSize: 13, color: ink)),
                     ],
@@ -709,7 +713,7 @@ class _ResellScreenState extends State<ResellScreen> {
                           },
                           icon: const Icon(Icons.chat_bubble_outline_rounded,
                               size: 16),
-                          label: Text('Message',
+                          label: Text('resell.message'.tr(),
                               style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.w600, fontSize: 13)),
                           style: OutlinedButton.styleFrom(
@@ -750,8 +754,8 @@ class _ResellScreenState extends State<ResellScreen> {
                                   Navigator.pop(sheetCtx);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                        content:
-                                            Text('${post.title} added to cart'),
+                                        content: Text('resell.added_to_cart'
+                                            .tr(args: [post.title])),
                                         duration:
                                             const Duration(seconds: 2)),
                                   );
@@ -762,7 +766,9 @@ class _ResellScreenState extends State<ResellScreen> {
                                   : Icons.shopping_bag_rounded,
                               size: 16),
                           label: Text(
-                              post.isSoldOut ? 'Sold Out' : 'Buy now',
+                              post.isSoldOut
+                                  ? 'resell.sold_out'.tr()
+                                  : 'resell.buy_now'.tr(),
                               style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.w600, fontSize: 13)),
                           style: ElevatedButton.styleFrom(
@@ -892,7 +898,7 @@ class _ResellCard extends StatelessWidget {
                         color: cc,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(post.condition,
+                      child: Text('resell.conditions.${post.condition}'.tr(),
                           style: GoogleFonts.outfit(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -917,7 +923,7 @@ class _ResellCard extends StatelessWidget {
                               color: const Color(0xFFE53935),
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text('SOLD OUT',
+                            child: Text('resell.sold_out_caps'.tr(),
                                 style: GoogleFonts.outfit(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,

@@ -260,7 +260,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                   ),
                 ),
                 icon: const Icon(Icons.event_available_rounded),
-                label: Text('Book now'),
+                label: Text('haircut.book_now'.tr()),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isDark ? Colors.white : AppColors.inkBlack,
                   foregroundColor: isDark ? AppColors.charcoal : Colors.white,
@@ -403,7 +403,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                       ? (isDark ? AppColors.charcoal : Colors.white)
                       : ink),
               const SizedBox(width: 6),
-              Text(label,
+              Text('haircut.${label.toLowerCase()}'.tr(),
                   style: GoogleFonts.outfit(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -431,7 +431,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Try a hairstyle',
+              Text('haircut.try_hairstyle'.tr(),
                   style: GoogleFonts.rufina(
                       fontSize: 20, fontWeight: FontWeight.bold, color: ink)),
               if (_selectedHairstyle != null)
@@ -456,7 +456,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
-          child: Text('Discover styles that suit your face shape.',
+          child: Text('haircut.discover_subtitle'.tr(),
               style: GoogleFonts.outfit(fontSize: 13, color: muted)),
         ),
 
@@ -664,7 +664,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                   );
                 },
                 icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
-                label: Text('Preview on me',
+                label: Text('haircut.preview_on_me'.tr(),
                     style: GoogleFonts.outfit(
                         fontSize: 14, fontWeight: FontWeight.w700)),
                 style: ElevatedButton.styleFrom(
@@ -695,7 +695,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                   ),
                 ),
                 icon: const Icon(Icons.event_available_rounded, size: 18),
-                label: Text('Book now with this style',
+                label: Text('haircut.book_with_style'.tr(),
                     style: GoogleFonts.outfit(
                         fontSize: 14, fontWeight: FontWeight.w700)),
                 style: OutlinedButton.styleFrom(

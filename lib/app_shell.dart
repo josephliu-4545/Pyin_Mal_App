@@ -2114,8 +2114,8 @@ class _HomeTabState extends State<_HomeTab> {
                             isDark,
                           ),
                           _buildDrawerItem(
-                            Icons.info_outline_rounded,
-                            'menu.about'.tr(),
+                            Icons.help_outline_rounded,
+                            'menu.user_guide'.tr(),
                             () {
                               closeDrawer();
                               Future.delayed(
@@ -2125,6 +2125,24 @@ class _HomeTabState extends State<_HomeTab> {
                                   MaterialPageRoute(
                                       builder: (_) =>
                                           const UserGuideScreen()),
+                                ),
+                              );
+                            },
+                            isDark,
+                          ),
+                          _buildDrawerItem(
+                            Icons.info_outline_rounded,
+                            'menu.about'.tr(),
+                            () {
+                              closeDrawer();
+                              Future.delayed(
+                                const Duration(milliseconds: 200),
+                                () => showAboutDialog(
+                                  context: context,
+                                  applicationName: 'Ta Chat Nhate',
+                                  applicationVersion: '1.0.0',
+                                  applicationLegalese:
+                                      '© 2026 Ta Chat Nhate · Pyin Mal',
                                 ),
                               );
                             },

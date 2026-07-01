@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 
 class DeliveryScreen extends StatefulWidget {
@@ -46,13 +47,13 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Delivery',
+                    Text('delivery.title'.tr(),
                         style: GoogleFonts.rufina(
                             fontSize: 30,
                             fontWeight: FontWeight.bold,
                             color: ink)),
                     const SizedBox(height: 4),
-                    Text('Track your orders in real time',
+                    Text('delivery.subtitle'.tr(),
                         style: GoogleFonts.outfit(fontSize: 13, color: muted)),
                     const SizedBox(height: 18),
                   ],
@@ -72,8 +73,8 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                   ),
                   child: Row(
                     children: [
-                      _tabBtn('Active', 0, isDark, accent, ink),
-                      _tabBtn('History', 1, isDark, accent, ink),
+                      _tabBtn('delivery.active'.tr(), 0, isDark, accent, ink),
+                      _tabBtn('delivery.history'.tr(), 1, isDark, accent, ink),
                     ],
                   ),
                 ),
@@ -87,7 +88,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(40),
                   child: Center(
-                    child: Text('No orders here yet',
+                    child: Text('delivery.empty'.tr(),
                         style: GoogleFonts.outfit(fontSize: 13, color: muted)),
                   ),
                 ),
@@ -200,7 +201,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                   color: (delivered ? Colors.green : accent).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(delivered ? 'Done' : 'Live',
+                child: Text(delivered ? 'delivery.done'.tr() : 'delivery.live'.tr(),
                     style: GoogleFonts.outfit(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -251,7 +252,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                   const SizedBox(height: 5),
                   SizedBox(
                     width: 52,
-                    child: Text(_steps[idx],
+                    child: Text('delivery.steps.${_steps[idx]}'.tr(),
                         textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
                             fontSize: 9,
@@ -294,7 +295,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                       border: Border.all(color: accent, width: 1.5),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text('Track',
+                    child: Text('delivery.track'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -317,7 +318,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                       color: accent.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text('Reorder',
+                    child: Text('delivery.reorder'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,

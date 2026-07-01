@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
@@ -176,7 +177,7 @@ class _SaleScreenState extends State<SaleScreen> {
                                         color: Colors.white,
                                         size: 22),
                                     const SizedBox(width: 6),
-                                    Text('Flash Sale',
+                                    Text('sale.title'.tr(),
                                         style: GoogleFonts.rufina(
                                             fontSize: 24,
                                             fontWeight: FontWeight.bold,
@@ -184,7 +185,7 @@ class _SaleScreenState extends State<SaleScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                Text('Deals from shops across Pyin Mal',
+                                Text('sale.subtitle'.tr(),
                                     style: GoogleFonts.outfit(
                                         fontSize: 13,
                                         color: Colors.white.withOpacity(0.9))),
@@ -194,7 +195,7 @@ class _SaleScreenState extends State<SaleScreen> {
                           // Countdown box
                           Column(
                             children: [
-                              Text('Ends in',
+                              Text('sale.ends_in'.tr(),
                                   style: GoogleFonts.outfit(
                                       fontSize: 10,
                                       color: Colors.white.withOpacity(0.85))),
@@ -257,7 +258,7 @@ class _SaleScreenState extends State<SaleScreen> {
                                         : AppColors.creamAlt)),
                           ),
                           child: Center(
-                            child: Text(s,
+                            child: Text(s == 'All' ? 'sale.all'.tr() : s,
                                 style: GoogleFonts.outfit(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -276,7 +277,7 @@ class _SaleScreenState extends State<SaleScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                 child: Text(
-                  '${visible.length} items on sale',
+                  'sale.items_count'.tr(args: [visible.length.toString()]),
                   style: GoogleFonts.outfit(
                       fontSize: 13, fontWeight: FontWeight.w500, color: muted),
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 
 class _Service {
@@ -292,7 +293,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                         borderRadius: BorderRadius.circular(2)),
                   ),
                   const SizedBox(height: 14),
-                  Text('Booking details',
+                  Text('booking.details'.tr(),
                       style: GoogleFonts.rufina(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -308,36 +309,36 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                         controller: scroll,
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                         children: [
-                          _formLabel('Full name', ink),
+                          _formLabel('booking.full_name'.tr(), ink),
                           TextFormField(
                             controller: _nameCtrl,
                             style: GoogleFonts.outfit(fontSize: 14, color: ink),
-                            decoration:
-                                deco('Your name', Icons.person_outline_rounded),
+                            decoration: deco('booking.your_name'.tr(),
+                                Icons.person_outline_rounded),
                             validator: (v) => (v == null || v.trim().isEmpty)
-                                ? 'Please enter your name'
+                                ? 'booking.err_name'.tr()
                                 : null,
                           ),
                           const SizedBox(height: 14),
-                          _formLabel('Phone number', ink),
+                          _formLabel('booking.phone'.tr(), ink),
                           TextFormField(
                             controller: _phoneCtrl,
                             keyboardType: TextInputType.phone,
                             style: GoogleFonts.outfit(fontSize: 14, color: ink),
                             decoration: deco(
-                                '09xxxxxxxxx', Icons.phone_outlined),
+                                'booking.phone_hint'.tr(), Icons.phone_outlined),
                             validator: (v) {
                               if (v == null || v.trim().isEmpty) {
-                                return 'Please enter your phone number';
+                                return 'booking.err_phone'.tr();
                               }
                               if (v.trim().length < 7) {
-                                return 'Enter a valid phone number';
+                                return 'booking.err_phone_valid'.tr();
                               }
                               return null;
                             },
                           ),
                           const SizedBox(height: 14),
-                          _formLabel('Branch', ink),
+                          _formLabel('booking.branch'.tr(), ink),
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
@@ -374,7 +375,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                               Expanded(
                                 child: _pickerTile(
                                   label: date == null
-                                      ? 'Select date'
+                                      ? 'booking.select_date'.tr()
                                       : '${date!.day}/${date!.month}/${date!.year}',
                                   icon: Icons.calendar_today_rounded,
                                   filled: date != null,
@@ -401,7 +402,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                               Expanded(
                                 child: _pickerTile(
                                   label: time == null
-                                      ? 'Select time'
+                                      ? 'booking.select_time'.tr()
                                       : time!.format(sheetCtx),
                                   icon: Icons.access_time_rounded,
                                   filled: time != null,
@@ -424,12 +425,12 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                             ],
                           ),
                           const SizedBox(height: 14),
-                          _formLabel('Notes (optional)', ink),
+                          _formLabel('booking.notes'.tr(), ink),
                           TextFormField(
                             controller: _noteCtrl,
                             maxLines: 2,
                             style: GoogleFonts.outfit(fontSize: 14, color: ink),
-                            decoration: deco('Any request for the stylist',
+                            decoration: deco('booking.notes_hint'.tr(),
                                 Icons.edit_note_rounded),
                           ),
                           const SizedBox(height: 18),
@@ -444,7 +445,9 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                    '${selectedServices.length} service${selectedServices.length == 1 ? '' : 's'} selected',
+                                    'booking.services_selected'.tr(args: [
+                                      selectedServices.length.toString()
+                                    ]),
                                     style: GoogleFonts.outfit(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
@@ -476,7 +479,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('Total',
+                                    Text('booking.total'.tr(),
                                         style: GoogleFonts.outfit(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
@@ -499,9 +502,9 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                                 if (!formKey.currentState!.validate()) return;
                                 if (date == null || time == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
+                                    SnackBar(
                                         content: Text(
-                                            'Please pick a date and time')),
+                                            'booking.pick_datetime'.tr())),
                                   );
                                   return;
                                 }
@@ -514,7 +517,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                               },
                               icon: const Icon(
                                   Icons.event_available_rounded, size: 18),
-                              label: Text('Confirm booking',
+                              label: Text('booking.confirm'.tr(),
                                   style: GoogleFonts.outfit(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14)),
@@ -617,12 +620,12 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                 child: Icon(Icons.check_circle_rounded, color: accent, size: 34),
               ),
               const SizedBox(height: 16),
-              Text('Booking confirmed!',
+              Text('booking.confirmed'.tr(),
                   style: GoogleFonts.rufina(
                       fontSize: 20, fontWeight: FontWeight.bold, color: ink)),
               const SizedBox(height: 6),
               Text(
-                '$count service${count == 1 ? '' : 's'} at ${_salons[_activeSalon!].name}\n$branch\n${date.day}/${date.month}/${date.year} · ${time.format(context)}\nTotal ${_fmt(_total)} MMK',
+                '${'booking.services_selected'.tr(args: [count.toString()])} · ${_salons[_activeSalon!].name}\n$branch\n${date.day}/${date.month}/${date.year} · ${time.format(context)}\n${'booking.total'.tr()} ${_fmt(_total)} MMK',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(
                     fontSize: 13,
@@ -645,7 +648,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: Text('Done',
+                  child: Text('booking.done'.tr(),
                       style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
                 ),
               ),
@@ -699,7 +702,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text('Book a haircut',
+                    Text('booking.title'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -729,7 +732,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Chosen hairstyle',
+                              Text('booking.chosen_style'.tr(),
                                   style: GoogleFonts.outfit(
                                       fontSize: 11, color: muted)),
                               Text(widget.preselectedStyle!,
@@ -749,7 +752,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-                child: Text('Choose a salon & services',
+                child: Text('booking.choose_salon'.tr(),
                     style: GoogleFonts.outfit(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -837,7 +840,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                           const SizedBox(width: 6),
                           Flexible(
                             child: Text(
-                                '· ${salon.branches.length} branches',
+                                '· ${'booking.branch_count'.tr(args: [salon.branches.length.toString()])}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.outfit(
@@ -885,7 +888,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                     children: [
                       Icon(Icons.place_rounded, size: 13, color: accent),
                       const SizedBox(width: 5),
-                      Text('Branches',
+                      Text('booking.branches'.tr(),
                           style: GoogleFonts.outfit(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -943,7 +946,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                                 : const Color(0xFFF2F2F2)),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text(c,
+                      child: Text('booking.cat.$c'.tr(),
                           style: GoogleFonts.outfit(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -1045,7 +1048,7 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Total',
+                Text('booking.total'.tr(),
                     style: GoogleFonts.outfit(
                         fontSize: 11,
                         color: isDark ? AppColors.paleText : AppColors.inkGrey)),
@@ -1063,8 +1066,9 @@ class _HaircutBookingScreenState extends State<HaircutBookingScreen> {
                 icon: const Icon(Icons.event_available_rounded, size: 18),
                 label: Text(
                     hasSelection
-                        ? 'Confirm booking (${_selected.length})'
-                        : 'Select services',
+                        ? 'booking.confirm_count'
+                            .tr(args: [_selected.length.toString()])
+                        : 'booking.select_services'.tr(),
                     style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w700, fontSize: 14)),
                 style: ElevatedButton.styleFrom(

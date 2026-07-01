@@ -1484,7 +1484,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             children: [
               Icon(Icons.straighten_rounded, size: 18, color: accent),
               const SizedBox(width: 8),
-              Text('Size & Fit',
+              Text('size_guide.section_title'.tr(),
                   style: GoogleFonts.outfit(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -1498,7 +1498,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             child: OutlinedButton.icon(
               onPressed: () => _openSizeGuideSheet(0),
               icon: const Icon(Icons.straighten_rounded, size: 16),
-              label: Text('Size Guide',
+              label: Text('size_guide.size_guide'.tr(),
                   style: GoogleFonts.outfit(
                       fontSize: 13, fontWeight: FontWeight.w600)),
               style: OutlinedButton.styleFrom(
@@ -1517,7 +1517,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             children: [
               Icon(Icons.thumb_up_alt_rounded, size: 14, color: accent),
               const SizedBox(width: 6),
-              Text('94% found it true to size',
+              Text('size_guide.true_to_size'.tr(),
                   style: GoogleFonts.outfit(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -1525,9 +1525,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               const Spacer(),
               GestureDetector(
                 onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Thanks — we\'ll note your feedback')),
+                  SnackBar(content: Text('size_guide.feedback_thanks'.tr())),
                 ),
-                child: Text('Not your size?',
+                child: Text('size_guide.not_your_size'.tr(),
                     style: GoogleFonts.outfit(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -1582,7 +1582,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         borderRadius: BorderRadius.circular(2)),
                   ),
                   const SizedBox(height: 14),
-                  Text('Size Guide',
+                  Text('size_guide.size_guide'.tr(),
                       style: GoogleFonts.rufina(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -1599,10 +1599,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       child: Row(
                         children: [
-                          _sizeTab('Product Chart', 0, tab, accent, ink, isDark,
+                          _sizeTab('size_guide.product_chart'.tr(), 0, tab,
+                              accent, ink, isDark,
                               () => setSheet(() => tab = 0)),
-                          _sizeTab('Body Chart', 1, tab, accent, ink, isDark,
-                              () => setSheet(() => tab = 1)),
+                          _sizeTab('size_guide.body_chart'.tr(), 1, tab, accent,
+                              ink, isDark, () => setSheet(() => tab = 1)),
                         ],
                       ),
                     ),
@@ -1715,6 +1716,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     const headers = ['Size', 'Height', 'Bust', 'Waist', 'Hip'];
     final recommended = _recommendSize(bust, waist, hips);
 
+    // [value (English, used for logic), emoji]
     const shapes = [
       ['Hourglass', '⏳'],
       ['Triangle', '▽'],
@@ -1727,7 +1729,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── Reference table ──
-        Text('Body size reference (in)',
+        Text('size_guide.body_reference'.tr(),
             style: GoogleFonts.outfit(
                 fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
         const SizedBox(height: 12),
@@ -1791,12 +1793,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Text('*For reference only — depends on body type & fit preference.',
+        Text('size_guide.reference_only'.tr(),
             style: GoogleFonts.outfit(fontSize: 11, color: muted)),
         const SizedBox(height: 24),
 
         // ── Your Body Shape ──
-        Text('Your Body Shape',
+        Text('size_guide.your_body_shape'.tr(),
             style: GoogleFonts.outfit(
                 fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
         const SizedBox(height: 12),
@@ -1825,7 +1827,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             fontSize: 22,
                             color: sel ? accent : ink)),
                     const SizedBox(height: 6),
-                    Text(s[0],
+                    Text('size_guide.shapes.${s[0]}'.tr(),
                         textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
                             fontSize: 11,
@@ -1841,16 +1843,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         const SizedBox(height: 24),
 
         // ── Your Measurements ──
-        Text('Your Measurements',
+        Text('size_guide.your_measurements'.tr(),
             style: GoogleFonts.outfit(
                 fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
         const SizedBox(height: 12),
-        _measureSlider('Bust', bust, 28, 48, accent, ink, muted, isDark, onBust),
+        _measureSlider('size_guide.bust'.tr(), bust, 28, 48, accent, ink, muted,
+            isDark, onBust),
         const SizedBox(height: 14),
-        _measureSlider(
-            'Waist', waist, 22, 42, accent, ink, muted, isDark, onWaist),
+        _measureSlider('size_guide.waist'.tr(), waist, 22, 42, accent, ink,
+            muted, isDark, onWaist),
         const SizedBox(height: 14),
-        _measureSlider('Hips', hips, 30, 50, accent, ink, muted, isDark, onHips),
+        _measureSlider('size_guide.hips'.tr(), hips, 30, 50, accent, ink, muted,
+            isDark, onHips),
         const SizedBox(height: 24),
 
         // ── Recommendation ──
@@ -1869,7 +1873,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 children: [
                   Icon(Icons.thumb_up_alt_rounded, size: 18, color: accent),
                   const SizedBox(width: 8),
-                  Text('Best fit for you:  $recommended',
+                  Text('size_guide.best_fit'.tr(args: [recommended]),
                       style: GoogleFonts.outfit(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -1879,8 +1883,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               const SizedBox(height: 6),
               Text(
                 bodyShape == null
-                    ? 'Based on your measurements'
-                    : 'Based on your $bodyShape shape & measurements',
+                    ? 'size_guide.based_on'.tr()
+                    : 'size_guide.based_on_shape'.tr(
+                        args: ['size_guide.shapes.$bodyShape'.tr()]),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(fontSize: 12, color: ink),
               ),
@@ -1890,21 +1895,43 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         const SizedBox(height: 20),
 
         // ── Fit + buyer reviews ──
-        _fitBar('Fit Type', ['Skinny', 'Regular', 'Oversized'], 1, accent, ink,
-            muted, isDark),
+        _fitBar(
+            'size_guide.fit_type'.tr(),
+            [
+              'size_guide.fit_skinny'.tr(),
+              'size_guide.fit_regular'.tr(),
+              'size_guide.fit_oversized'.tr()
+            ],
+            1,
+            accent,
+            ink,
+            muted,
+            isDark),
         const SizedBox(height: 16),
-        _fitBar('Stretch', ['Non', 'Slight', 'Medium', 'High'], 1, accent, ink,
-            muted, isDark),
+        _fitBar(
+            'size_guide.stretch'.tr(),
+            [
+              'size_guide.stretch_non'.tr(),
+              'size_guide.stretch_slight'.tr(),
+              'size_guide.stretch_medium'.tr(),
+              'size_guide.stretch_high'.tr()
+            ],
+            1,
+            accent,
+            ink,
+            muted,
+            isDark),
         const SizedBox(height: 24),
-        Text('How buyers reviewed the fit',
+        Text('size_guide.how_reviewed'.tr(),
             style: GoogleFonts.outfit(
                 fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
         const SizedBox(height: 12),
-        _fitReview('Small', 3, accent, ink, muted, isDark),
+        _fitReview('size_guide.small'.tr(), 3, accent, ink, muted, isDark),
         const SizedBox(height: 8),
-        _fitReview('True to size', 94, accent, ink, muted, isDark),
+        _fitReview(
+            'size_guide.true_to_size_short'.tr(), 94, accent, ink, muted, isDark),
         const SizedBox(height: 8),
-        _fitReview('Large', 3, accent, ink, muted, isDark),
+        _fitReview('size_guide.large'.tr(), 3, accent, ink, muted, isDark),
       ],
     );
   }
@@ -2056,8 +2083,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       children: [
         Text(
           widget.shopName != null
-              ? 'Size chart from ${widget.shopName}'
-              : 'Shop size chart',
+              ? 'size_guide.chart_from'.tr(args: [widget.shopName!])
+              : 'size_guide.shop_chart'.tr(),
           style: GoogleFonts.outfit(
               fontSize: 13, fontWeight: FontWeight.w600, color: ink),
         ),
@@ -2090,7 +2117,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Switch to Body Chart to get your recommended size.',
+                  'size_guide.switch_hint'.tr(),
                   style: GoogleFonts.outfit(fontSize: 12, color: ink),
                 ),
               ),
@@ -2113,7 +2140,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         children: [
           Icon(Icons.image_not_supported_outlined, size: 40, color: muted),
           const SizedBox(height: 10),
-          Text('This shop hasn\'t uploaded a size chart yet',
+          Text('size_guide.no_chart'.tr(),
               style: GoogleFonts.outfit(fontSize: 12, color: muted)),
         ],
       ),
