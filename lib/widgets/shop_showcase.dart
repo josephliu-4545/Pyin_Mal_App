@@ -3,9 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:ui' show ImageFilter;
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/core/constants/shop_constants.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
+import 'package:pyin_mal_app/models/product.dart';
+import 'package:pyin_mal_app/data/product_repository.dart';
+import 'package:pyin_mal_app/services/cart_service.dart';
+import 'package:pyin_mal_app/widgets/cdn_image.dart';
 
 const _cdnPfx = 'https://cdn.jsdelivr.net/gh/josephliu-4545/pyin-mal-assets@main/';
 
@@ -484,7 +489,7 @@ class _ShopLookbookSectionState extends State<ShopLookbookSection> {
             itemBuilder: (_, i) {
               final l = looks[i];
               return GestureDetector(
-                onTap: () => _openLookbook(context, looks, i, widget.isDark),
+                onTap: () => _openWardrobe(context, l.shop, widget.isDark),
                 child: SizedBox(
                   width: 150,
                   child: Stack(
@@ -618,13 +623,20 @@ class _ShopLookbookSectionState extends State<ShopLookbookSection> {
   }
 }
 
-// ── Lookbook viewer ───────────────────────────────────────────────────────────
+// ── Product wardrobe viewer ───────────────────────────────────────────────────
 
-void _openLookbook(
-    BuildContext context,
-    List<({ShopInfo shop, String path})> looks,
-    int index,
-    bool isDark) {
+void _openWardrobe(BuildContext context, ShopInfo shop, bool isDark) {
+  final shopProducts = ProductRepository.allProducts
+      .where((p) => p.shopName == shop.name)
+      .toList();
+  final source =
+      shopProducts.isNotEmpty ? shopProducts : ProductRepository.allProducts;
+  if (source.isEmpty) {
+    _openShop(context, shop);
+    return;
+  }
+  final products = source.take(12).toList();
+
   Navigator.push(
     context,
     PageRouteBuilder(
@@ -633,7 +645,7 @@ void _openLookbook(
       transitionDuration: const Duration(milliseconds: 380),
       reverseTransitionDuration: const Duration(milliseconds: 280),
       pageBuilder: (_, __, ___) =>
-          _LookbookViewer(looks: looks, initialIndex: index, isDark: isDark),
+          _WardrobeViewer(products: products, shop: shop, isDark: isDark),
       transitionsBuilder: (_, anim, __, child) {
         final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
         return FadeTransition(
@@ -649,26 +661,26 @@ void _openLookbook(
   );
 }
 
-class _LookbookViewer extends StatefulWidget {
-  final List<({ShopInfo shop, String path})> looks;
-  final int initialIndex;
+class _WardrobeViewer extends StatefulWidget {
+  final List<Product> products;
+  final ShopInfo shop;
   final bool isDark;
-  const _LookbookViewer(
-      {required this.looks, required this.initialIndex, required this.isDark});
+  const _WardrobeViewer(
+      {required this.products, required this.shop, required this.isDark});
 
   @override
-  State<_LookbookViewer> createState() => _LookbookViewerState();
+  State<_WardrobeViewer> createState() => _WardrobeViewerState();
 }
 
-class _LookbookViewerState extends State<_LookbookViewer> {
+class _WardrobeViewerState extends State<_WardrobeViewer> {
   late final PageController _pc;
   late double _page;
 
   @override
   void initState() {
     super.initState();
-    _pc = PageController(viewportFraction: 0.66, initialPage: widget.initialIndex);
-    _page = widget.initialIndex.toDouble();
+    _pc = PageController(viewportFraction: 0.6);
+    _page = 0;
     _pc.addListener(() => setState(() => _page = _pc.page ?? _page));
   }
 
@@ -678,46 +690,62 @@ class _LookbookViewerState extends State<_LookbookViewer> {
     super.dispose();
   }
 
+  void _jumpTo(int i) {
+    _pc.animateToPage(i,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeOutCubic);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final current = _page.round().clamp(0, widget.looks.length - 1);
-    final currentShop = widget.looks[current].shop;
+    final current = _page.round().clamp(0, widget.products.length - 1);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                behavior: HitTestBehavior.opaque,
+      body: Stack(
+        children: [
+          // ── On-brand dark backdrop ──
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF2A2320), Color(0xFF17130F)],
+                  ),
+                ),
               ),
             ),
-            Column(
+          ),
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              behavior: HitTestBehavior.opaque,
+            ),
+          ),
+          SafeArea(
+            child: Column(
               children: [
+                // Top bar
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      const SizedBox(width: 40),
-                      Expanded(
-                        child: Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text('${current + 1} / ${widget.looks.length}',
-                                style: GoogleFonts.outfit(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white)),
-                          ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
                         ),
+                        child: Text('${current + 1} / ${widget.products.length}',
+                            style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white)),
                       ),
+                      const Spacer(),
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: Container(
@@ -734,31 +762,51 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                     ],
                   ),
                 ),
+                // Header
+                Text('MY WARDROBE',
+                    style: GoogleFonts.outfit(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 6,
+                        color: Colors.white)),
+                const SizedBox(height: 4),
+                Text('Drag to rotate · Tap to view',
+                    style: GoogleFonts.outfit(
+                        fontSize: 11.5,
+                        letterSpacing: 0.5,
+                        color: Colors.white.withOpacity(0.6))),
+                const SizedBox(height: 12),
+                // 3D wheel carousel
                 Expanded(
                   child: Stack(
                     children: [
                       PageView.builder(
                         controller: _pc,
-                        itemCount: widget.looks.length,
+                        itemCount: widget.products.length,
                         physics: const BouncingScrollPhysics(),
                         itemBuilder: (_, i) {
                           final diff = i - _page;
+                          final cd = diff.clamp(-1.5, 1.5);
                           final absd = diff.abs().clamp(0.0, 1.0);
-                          final scale = 1 - 0.22 * absd;
-                          final translateY = 46.0 * absd;
-                          final rotate = 0.20 * diff.clamp(-1.0, 1.0);
-                          final opacity = 1 - 0.45 * absd;
-                          final l = widget.looks[i];
+                          final isCenter = i == current;
+                          final rotateY = -cd * 0.55;
+                          final scale = isCenter ? 1.06 : (1 - 0.12 * absd);
+                          final opacity = 1 - 0.4 * absd;
                           return Center(
                             child: Transform(
                               alignment: Alignment.center,
                               transform: Matrix4.identity()
-                                ..translate(0.0, translateY)
-                                ..rotateZ(rotate)
+                                ..setEntry(3, 2, 1 / 1200) // perspective 1200px
+                                ..rotateY(rotateY)
                                 ..scale(scale),
                               child: Opacity(
                                 opacity: opacity.clamp(0.0, 1.0),
-                                child: _bigCard(l),
+                                child: GestureDetector(
+                                  onTap: () => isCenter
+                                      ? _openProductModal(widget.products[i])
+                                      : _jumpTo(i),
+                                  child: _glassCard(widget.products[i], isCenter),
+                                ),
                               ),
                             ),
                           );
@@ -773,7 +821,7 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                               children: [
                                 _chevron(Icons.chevron_left_rounded, current > 0),
                                 _chevron(Icons.chevron_right_rounded,
-                                    current < widget.looks.length - 1),
+                                    current < widget.products.length - 1),
                               ],
                             ),
                           ),
@@ -782,36 +830,9 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
-                if (widget.looks.length > 1)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.swipe_rounded,
-                          size: 14, color: Colors.white.withOpacity(0.6)),
-                      const SizedBox(width: 6),
-                      Text('Swipe to see more',
-                          style: GoogleFonts.outfit(
-                              fontSize: 11,
-                              color: Colors.white.withOpacity(0.6))),
-                    ],
-                  ),
-                const SizedBox(height: 12),
-                Text(currentShop.name,
-                    style: GoogleFonts.rufina(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
-                const SizedBox(height: 2),
-                Text(currentShop.tagline,
-                    style: GoogleFonts.outfit(
-                        fontSize: 12, color: Colors.white.withOpacity(0.7))),
-                const SizedBox(height: 14),
+                const SizedBox(height: 8),
                 GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                    _openShop(context, currentShop);
-                  },
+                  onTap: () => _openProductModal(widget.products[current]),
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
@@ -822,10 +843,10 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.storefront_rounded,
+                        const Icon(Icons.visibility_rounded,
                             size: 16, color: AppColors.inkBlack),
                         const SizedBox(width: 6),
-                        Text('Visit shop',
+                        Text('View item',
                             style: GoogleFonts.outfit(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -837,8 +858,8 @@ class _LookbookViewerState extends State<_LookbookViewer> {
                 const SizedBox(height: 24),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -859,35 +880,281 @@ class _LookbookViewerState extends State<_LookbookViewer> {
     );
   }
 
-  Widget _bigCard(({ShopInfo shop, String path}) l) {
+  // Frosted-glass hanger card showing the garment + name (+ price when active).
+  Widget _glassCard(Product p, bool isCenter) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: AspectRatio(
-          aspectRatio: 3 / 4,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.asset(
-                l.path,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.darkWarm,
-                  child: const Icon(Icons.checkroom_rounded,
-                      size: 48, color: Colors.white24),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 34,
+            height: 20,
+            child: CustomPaint(
+              painter: _HookPainter(Colors.white.withOpacity(0.75)),
+            ),
+          ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(
+                width: 168,
+                padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(isCenter ? 0.92 : 0.8),
+                  borderRadius: BorderRadius.circular(20),
+                  border:
+                      Border.all(color: Colors.white.withOpacity(0.7), width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isCenter
+                          ? Colors.white.withOpacity(0.4)
+                          : Colors.black.withOpacity(0.25),
+                      blurRadius: isCenter ? 30 : 14,
+                      offset: Offset(0, isCenter ? 0 : 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: AspectRatio(
+                        aspectRatio: 3 / 4,
+                        child: CdnImage(
+                          p.image,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: AppColors.creamAlt,
+                            child: const Icon(Icons.checkroom_rounded,
+                                size: 40, color: Colors.black26),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(p.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.outfit(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.inkBlack)),
+                    if (isCenter) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.inkBlack,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(p.price,
+                            style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white)),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.45),
-                    ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Product details modal (blur background, fade + scale in).
+  void _openProductModal(Product p) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'product',
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 260),
+      pageBuilder: (dialogCtx, _, __) => const SizedBox.shrink(),
+      transitionBuilder: (dialogCtx, anim, __, ___) {
+        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+        return Stack(
+          children: [
+            // Heavy background blur
+            FadeTransition(
+              opacity: anim,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(color: Colors.black.withOpacity(0.35)),
+              ),
+            ),
+            // Dismiss on tap outside
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => Navigator.pop(dialogCtx),
+                behavior: HitTestBehavior.opaque,
+              ),
+            ),
+            FadeTransition(
+              opacity: curved,
+              child: ScaleTransition(
+                scale: Tween(begin: 0.92, end: 1.0).animate(curved),
+                child: Center(
+                  child: _ProductModalCard(product: p),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// The floating product card shown when an item is selected.
+class _ProductModalCard extends StatefulWidget {
+  final Product product;
+  const _ProductModalCard({required this.product});
+
+  @override
+  State<_ProductModalCard> createState() => _ProductModalCardState();
+}
+
+class _ProductModalCardState extends State<_ProductModalCard> {
+  static const _sizes = ['S', 'M', 'L', 'XL'];
+  String _size = 'M';
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.product;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 44),
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 40,
+                offset: const Offset(0, 20),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.close_rounded,
+                      size: 22, color: Colors.black38),
+                ),
+              ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: SizedBox(
+                  width: 170,
+                  height: 210,
+                  child: CdnImage(
+                    p.image,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: AppColors.creamAlt,
+                      child: const Icon(Icons.checkroom_rounded,
+                          size: 44, color: Colors.black26),
+                    ),
                   ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(p.name,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF2E2E2E))),
+              const SizedBox(height: 2),
+              Text(p.category,
+                  style: GoogleFonts.outfit(
+                      fontSize: 12.5, color: Colors.grey.shade500)),
+              const SizedBox(height: 10),
+              Text(p.price,
+                  style: GoogleFonts.outfit(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.burgundy)),
+              const SizedBox(height: 14),
+              // Size selector
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: _sizes.map((s) {
+                  final sel = _size == s;
+                  return GestureDetector(
+                    onTap: () => setState(() => _size = s),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      margin: const EdgeInsets.symmetric(horizontal: 5),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: sel ? const Color(0xFF2E2E2E) : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: sel
+                                ? const Color(0xFF2E2E2E)
+                                : Colors.grey.shade300,
+                            width: 1.4),
+                      ),
+                      child: Text(s,
+                          style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: sel ? Colors.white : Colors.black54)),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 18),
+              // Add to Cart CTA (mustard/gold)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    CartService.instance.addToCart(CartItem(
+                      productId: p.id,
+                      name: p.name,
+                      price: p.price,
+                      image: p.image,
+                      brand: p.brand,
+                      size: _size,
+                    ));
+                    Navigator.pop(context); // modal
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        behavior: SnackBarBehavior.floating,
+                        content: Text('${p.name} added to cart'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: AppColors.inkBlack,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: Text('Add to Cart',
+                      style: GoogleFonts.outfit(
+                          fontSize: 15, fontWeight: FontWeight.w800)),
                 ),
               ),
             ],
@@ -896,4 +1163,33 @@ class _LookbookViewerState extends State<_LookbookViewer> {
       ),
     );
   }
+}
+
+// Draws a small clothes-hanger hook that appears to hang over the rail.
+class _HookPainter extends CustomPainter {
+  final Color color;
+  _HookPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final cx = size.width / 2;
+    final path = Path()
+      ..moveTo(cx, size.height)
+      ..lineTo(cx, size.height * 0.45);
+    path.arcToPoint(
+      Offset(cx - size.width * 0.28, size.height * 0.2),
+      radius: Radius.circular(size.width * 0.18),
+      clockwise: false,
+    );
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_HookPainter old) => old.color != color;
 }
