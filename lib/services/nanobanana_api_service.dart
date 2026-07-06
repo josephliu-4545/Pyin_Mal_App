@@ -1,18 +1,19 @@
 // lib/services/nanobanana_api_service.dart
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:image_picker/image_picker.dart';
+import 'image_host_service.dart';
 
 /// Virtual try-on / hair-style generation backed by NanoBanana.
 ///
-/// Images are uploaded to catbox.moe (a free, no-account image host that
-/// returns a public URL) because NanoBanana requires a real URL, not base64.
-/// The previous host (corsproxy.io → uguu.se) is dead: corsproxy now returns
-/// 403 "server-side requests not allowed on your plan" and uguu.se is offline.
+/// Images are uploaded to catbox.moe (via [ImageHostService], a free,
+/// no-account image host that returns a public URL) because NanoBanana
+/// requires a real URL, not base64. The previous host (corsproxy.io → uguu.se)
+/// is dead: corsproxy now returns 403 "server-side requests not allowed on
+/// your plan" and uguu.se is offline.
 class NanoBananaApiService {
   // API key loaded securely from .env file
   static String get _apiKey => dotenv.env['NANOBANANA_API_KEY'] ?? '';
@@ -20,76 +21,6 @@ class NanoBananaApiService {
       'https://api.nanobananaapi.ai/api/v1/nanobanana/generate';
   static const String _recordInfo =
       'https://api.nanobananaapi.ai/api/v1/nanobanana/record-info';
-
-  static const String _catboxUrl = 'https://catbox.moe/user/api.php';
-
-  /// Compress an XFile to a smaller JPEG.
-  static Future<Uint8List> _compressImage(
-    XFile file, {
-    int maxWidth = 500,
-    int maxHeight = 500,
-    int quality = 50,
-  }) async {
-    final raw = await file.readAsBytes();
-
-    // If the file is already tiny, return it unchanged.
-    if (raw.lengthInBytes <= 100 * 1024) return raw;
-
-    // Web platform can use the compressor directly.
-    if (kIsWeb) {
-      return await FlutterImageCompress.compressWithList(
-        raw,
-        minWidth: maxWidth,
-        minHeight: maxHeight,
-        quality: quality,
-        format: CompressFormat.jpeg,
-      );
-    }
-
-    // Windows currently has no native implementation – fall back to raw.
-    if (Platform.isWindows) return raw;
-
-    // Android / iOS / macOS – compress.
-    return await FlutterImageCompress.compressWithList(
-      raw,
-      minWidth: maxWidth,
-      minHeight: maxHeight,
-      quality: quality,
-      format: CompressFormat.jpeg,
-    );
-  }
-
-  // ── Image upload (catbox.moe) ───────────────────────────────────────────────
-
-  /// Uploads an image to catbox.moe and returns its public URL, or null on
-  /// failure. catbox returns the URL as a plain-text body.
-  static Future<String?> _uploadToTempStorage(
-    Uint8List bytes,
-    String name,
-  ) async {
-    try {
-      debugPrint('Uploading $name to catbox.moe...');
-      final request = http.MultipartRequest('POST', Uri.parse(_catboxUrl))
-        ..fields['reqtype'] = 'fileupload'
-        ..files.add(
-          http.MultipartFile.fromBytes('fileToUpload', bytes,
-              filename: '$name.jpg'),
-        );
-
-      final response = await http.Response.fromStream(await request.send());
-      final body = response.body.trim();
-
-      if (response.statusCode == 200 && body.startsWith('https://')) {
-        debugPrint('✅ $name uploaded: $body');
-        return body;
-      }
-      debugPrint('❗ Failed to upload $name: ${response.statusCode} - $body');
-      return null;
-    } catch (e) {
-      debugPrint('🚨 Exception uploading $name: $e');
-      return null;
-    }
-  }
 
   // ── Generation requests ─────────────────────────────────────────────────────
 
@@ -151,8 +82,8 @@ class NanoBananaApiService {
       final List<String> publicImageUrls = [];
       for (final entry in images.entries) {
         if (entry.value == null) continue;
-        final bytes = await _compressImage(entry.value!);
-        final url = await _uploadToTempStorage(bytes, entry.key);
+        final bytes = await ImageHostService.compress(entry.value!);
+        final url = await ImageHostService.upload(bytes, entry.key);
         if (url != null) publicImageUrls.add(url);
       }
 

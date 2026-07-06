@@ -20,6 +20,8 @@ import 'package:pyin_mal_app/models/clothing_item.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
 import 'package:pyin_mal_app/screens/ar_fitting_room_screen.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
+import 'package:pyin_mal_app/data/product_repository.dart';
+import 'package:pyin_mal_app/services/outfit_recommendation_service.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -85,6 +87,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   // Size recommendation from the user's saved Bodygram measurements.
   SizeRecommendation? _sizeRec;
+
+  // "Complete the Look" — complementary products (different category slot,
+  // e.g. pants/jackets/shoes when viewing a shirt — never another shirt).
+  late final List<Product> _completeTheLookItems = OutfitRecommendationService
+      .recommendationsFor(ProductRepository.getProductById(widget.productId) ??
+          Product(
+            id: widget.productId,
+            name: widget.name,
+            price: widget.price,
+            category: widget.category,
+            gender: 'Unisex',
+            brand: widget.brand,
+            shopName: widget.shopName,
+          ));
 
   // ── Photo gallery ─────────────────────────────────────────────────────────
   final PageController _galleryController = PageController();
@@ -1421,6 +1437,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
 
+                    // ── 8. COMPLETE THE LOOK ──────────────────────────────────
+                    if (_completeTheLookItems.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                        child: _buildCompleteTheLookSection(
+                            isDark, accent, cardBg),
+                      ),
+
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -1456,6 +1480,48 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  // ── "Complete the Look" — complementary products carousel ────────────────
+  Widget _buildCompleteTheLookSection(bool isDark, Color accent, Color cardBg) {
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? Colors.white38 : const Color(0xFF999999);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('product.complete_the_look'.tr(),
+            style: GoogleFonts.outfit(
+                fontSize: 16, fontWeight: FontWeight.w700, color: ink)),
+        const SizedBox(height: 3),
+        Text('product.complete_the_look_subtitle'.tr(),
+            style: GoogleFonts.outfit(fontSize: 12, color: muted)),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: 232,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: _completeTheLookItems.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) {
+              final p = _completeTheLookItems[i];
+              return _CompleteLookCard(
+                product: p,
+                isDark: isDark,
+                accent: accent,
+                cardBg: cardBg,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProductDetailScreen.fromProduct(p),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -2555,6 +2621,100 @@ class _NavBtn extends StatelessWidget {
             size: 20,
             color: iconColor ??
                 (isDark ? Colors.white : AppColors.inkBlack)),
+      ),
+    );
+  }
+}
+
+// ── Complete-the-look card ──────────────────────────────────────────────────
+class _CompleteLookCard extends StatelessWidget {
+  final Product product;
+  final bool isDark;
+  final Color accent;
+  final Color cardBg;
+  final VoidCallback onTap;
+
+  const _CompleteLookCard({
+    required this.product,
+    required this.isDark,
+    required this.accent,
+    required this.cardBg,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 140,
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+              child: SizedBox(
+                height: 150,
+                width: double.infinity,
+                child: CdnImage(
+                  product.image,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: isDark
+                        ? const Color(0xFF2A2421)
+                        : const Color(0xFFF2F2F2),
+                    child: Center(
+                      child: Icon(Icons.image_outlined,
+                          size: 28, color: isDark ? Colors.white24 : Colors.grey),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(product.category.toUpperCase(),
+                      style: GoogleFonts.outfit(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: accent,
+                        letterSpacing: 0.8,
+                      )),
+                  const SizedBox(height: 3),
+                  Text(product.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                      )),
+                  const SizedBox(height: 4),
+                  Text(product.price,
+                      style: GoogleFonts.outfit(
+                          fontSize: 13, fontWeight: FontWeight.w800, color: accent)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

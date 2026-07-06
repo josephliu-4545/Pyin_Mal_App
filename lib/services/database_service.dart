@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pyin_mal_app/models/user_profile.dart';
+import 'package:pyin_mal_app/models/wardrobe_item.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -93,6 +94,59 @@ class DatabaseService {
       },
       SetOptions(merge: true),
     );
+  }
+
+  // ── Digital wardrobe ─────────────────────────────────────────────────────────
+
+  /// Adds an item to the current user's wardrobe. Returns the new doc id, or
+  /// null if there's no signed-in user.
+  Future<String?> addWardrobeItem(WardrobeItem item) async {
+    if (_uid == null) return null;
+    final ref = await _db
+        .collection('users')
+        .doc(_uid)
+        .collection('wardrobe')
+        .add(item.toMap());
+    return ref.id;
+  }
+
+  /// Live stream of the current user's wardrobe, newest first.
+  Stream<List<WardrobeItem>> streamWardrobe() {
+    if (_uid == null) return Stream.value([]);
+    return _db
+        .collection('users')
+        .doc(_uid)
+        .collection('wardrobe')
+        .orderBy('addedAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => WardrobeItem.fromMap(d.data(), d.id))
+            .toList());
+  }
+
+  /// Marks a wardrobe item as worn (e.g. when tagged in an OOTD post or used
+  /// in a try-on) — increments the wear count and stamps the last-worn date.
+  Future<void> markWardrobeItemWorn(String itemId) async {
+    if (_uid == null) return;
+    await _db
+        .collection('users')
+        .doc(_uid)
+        .collection('wardrobe')
+        .doc(itemId)
+        .update({
+      'timesWorn': FieldValue.increment(1),
+      'lastWornAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> deleteWardrobeItem(String itemId) async {
+    if (_uid == null) return;
+    await _db
+        .collection('users')
+        .doc(_uid)
+        .collection('wardrobe')
+        .doc(itemId)
+        .delete();
   }
 
   // ── Tracking ───────────────────────────────────────────────────────────────
