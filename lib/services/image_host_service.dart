@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
 
 /// Shared image hosting for any feature that needs a public URL for a user
 /// photo (NanoBanana try-on, digital wardrobe, OOTD posts). catbox.moe is

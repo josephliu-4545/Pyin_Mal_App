@@ -650,6 +650,47 @@
     },
     "added_to_cart": "{} added to cart"
   },
+  "wardrobe": {
+    "title": "My Wardrobe",
+    "hero_title": "Your closet, digitized",
+    "hero_desc": "Snap what you own once — browse and try on combos anytime, no digging through drawers.",
+    "add_item": "Add item",
+    "take_photo": "Take a photo",
+    "choose_photo": "Choose from gallery",
+    "added": "Added to your wardrobe!",
+    "add_failed": "Couldn't add that item — try again.",
+    "empty": "Your wardrobe is empty. Add a photo of something you own, or it'll fill up automatically as you shop.",
+    "category_all": "All",
+    "categories": {
+      "top": "Top",
+      "bottom": "Bottom",
+      "shoes": "Shoes",
+      "outerwear": "Outerwear",
+      "dress": "Dress",
+      "accessory": "Accessory",
+      "other": "Other"
+    },
+    "times_worn": "Worn {} times",
+    "never_worn": "Not worn yet",
+    "try_on_this": "Try on this"
+  },
+  "community": {
+    "title": "Community",
+    "post_ootd": "Post OOTD",
+    "hero_title": "Outfit of the Day",
+    "hero_desc": "Share what you're wearing today and see what everyone else is styling.",
+    "empty": "No outfits posted yet. Be the first to share your OOTD!",
+    "post_title": "Post your outfit",
+    "post_desc": "Add a photo, tag what you're wearing, and share it with the community.",
+    "add_photo": "Add photo",
+    "caption_hint": "Say something about this look...",
+    "wearing": "What are you wearing?",
+    "post": "Post",
+    "posted": "Your outfit has been posted!",
+    "post_failed": "Couldn't post — try again.",
+    "items_tagged": "{} items tagged",
+    "likes": "{} likes"
+  },
   "resell_chat": {
     "greeting": "Hi! Thanks for your interest in \"{}\". Happy to answer any questions 😊",
     "reply": "Sure! It's in great condition and still available. Let me know if you'd like to meet up.",

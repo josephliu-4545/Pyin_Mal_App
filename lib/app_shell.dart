@@ -27,6 +27,8 @@ import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/screens/sale_screen.dart';
 import 'package:pyin_mal_app/screens/resell_screen.dart';
+import 'package:pyin_mal_app/screens/wardrobe_screen.dart';
+import 'package:pyin_mal_app/screens/community_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/core/guide_keys.dart';
@@ -339,6 +341,12 @@ class _HomeTabState extends State<_HomeTab> {
     ('Resell', Icons.sell_rounded,
         () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const ResellScreen()))),
+    ('My Wardrobe', Icons.checkroom_rounded,
+        () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const WardrobeScreen()))),
+    ('OOTD', Icons.auto_awesome_rounded,
+        () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const CommunityScreen()))),
   ];
 
   List<(String, IconData, VoidCallback)> get _quickFeatures =>

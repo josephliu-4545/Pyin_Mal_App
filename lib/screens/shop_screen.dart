@@ -900,7 +900,6 @@ class _ProductCard extends StatelessWidget {
           children: [
             // ── Image area ─────────────────────────────────────────────────
             Expanded(
-              flex: 7,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -1006,101 +1005,99 @@ class _ProductCard extends StatelessWidget {
             ),
 
             // ── Info area ──────────────────────────────────────────────────
-            Expanded(
-              flex: 4,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Brand + name
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product.brand.toUpperCase(),
-                          style: GoogleFonts.outfit(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: accent,
-                            letterSpacing: 1.0,
-                          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Brand + name
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.brand.toUpperCase(),
+                        style: GoogleFonts.outfit(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: accent,
+                          letterSpacing: 1.0,
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          product.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.outfit(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
-                            height: 1.25,
-                          ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        product.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                          height: 1.25,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
 
-                    // Stars + price row
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Stars
-                        Row(
-                          children: [
-                            ...List.generate(
-                              5,
-                              (_) => Icon(Icons.star_rounded,
-                                  size: 11, color: AppColors.gold),
+                  // Stars + price row
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Stars
+                      Row(
+                        children: [
+                          ...List.generate(
+                            5,
+                            (_) => Icon(Icons.star_rounded,
+                                size: 11, color: AppColors.gold),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '4.8',
+                            style: GoogleFonts.outfit(
+                              fontSize: 10,
+                              color: mutedColor,
+                              fontWeight: FontWeight.w500,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '4.8',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      // Price row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              product.price,
                               style: GoogleFonts.outfit(
-                                fontSize: 10,
-                                color: mutedColor,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 5),
-                        // Price row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                product.price,
-                                style: GoogleFonts.outfit(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  color: accent,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
                                 color: accent,
-                                borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(
-                                Icons.add_rounded,
-                                color: Colors.white,
-                                size: 18,
-                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                          ),
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: accent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.add_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],

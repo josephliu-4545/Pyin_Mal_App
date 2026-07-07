@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pyin_mal_app/models/user_profile.dart';
 import 'package:pyin_mal_app/models/wardrobe_item.dart';
+import 'package:pyin_mal_app/models/outfit_post.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -147,6 +148,94 @@ class DatabaseService {
         .collection('wardrobe')
         .doc(itemId)
         .delete();
+  }
+
+  /// One-shot fetch of the current user's wardrobe — used to populate the
+  /// "what are you wearing" tag picker when posting an OOTD.
+  Future<List<WardrobeItem>> getWardrobeItemsOnce() async {
+    if (_uid == null) return [];
+    final snap = await _db
+        .collection('users')
+        .doc(_uid)
+        .collection('wardrobe')
+        .orderBy('addedAt', descending: true)
+        .get();
+    return snap.docs.map((d) => WardrobeItem.fromMap(d.data(), d.id)).toList();
+  }
+
+  // ── Outfit of the day / community feed ──────────────────────────────────────
+
+  /// Posts an OOTD photo to the global community feed, tagging which
+  /// wardrobe items are being worn, and marks each tagged item as worn.
+  Future<String?> createOutfitPost({
+    required String imageUrl,
+    String? caption,
+    List<String> wardrobeItemIds = const [],
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final post = OutfitPost(
+      id: '',
+      userId: user.uid,
+      username: user.displayName ?? user.email?.split('@').first ?? 'User',
+      avatarUrl: user.photoURL,
+      imageUrl: imageUrl,
+      caption: caption,
+      wardrobeItemIds: wardrobeItemIds,
+      createdAt: DateTime.now(),
+    );
+
+    final ref = await _db.collection('outfitPosts').add(post.toMap());
+    for (final itemId in wardrobeItemIds) {
+      await markWardrobeItemWorn(itemId);
+    }
+    return ref.id;
+  }
+
+  /// Live stream of the global OOTD feed, newest first.
+  Stream<List<OutfitPost>> streamFeed({int limit = 100}) {
+    return _db
+        .collection('outfitPosts')
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => OutfitPost.fromMap(d.data(), d.id)).toList());
+  }
+
+  /// Whether the current user has liked [postId].
+  Future<bool> isLikedByMe(String postId) async {
+    if (_uid == null) return false;
+    final snap = await _db
+        .collection('outfitPosts')
+        .doc(postId)
+        .collection('likes')
+        .doc(_uid)
+        .get();
+    return snap.exists;
+  }
+
+  /// Likes/unlikes a post for the current user, keeping the denormalized
+  /// `likeCount` on the post doc in sync via a transaction so concurrent
+  /// likes can't race each other or double-count the same user.
+  Future<bool> toggleLike(String postId) async {
+    if (_uid == null) return false;
+    final postRef = _db.collection('outfitPosts').doc(postId);
+    final likeRef = postRef.collection('likes').doc(_uid);
+
+    return _db.runTransaction<bool>((tx) async {
+      final likeSnap = await tx.get(likeRef);
+      final nowLiked = !likeSnap.exists;
+      if (nowLiked) {
+        tx.set(likeRef, {'likedAt': FieldValue.serverTimestamp()});
+        tx.update(postRef, {'likeCount': FieldValue.increment(1)});
+      } else {
+        tx.delete(likeRef);
+        tx.update(postRef, {'likeCount': FieldValue.increment(-1)});
+      }
+      return nowLiked;
+    });
   }
 
   // ── Tracking ───────────────────────────────────────────────────────────────

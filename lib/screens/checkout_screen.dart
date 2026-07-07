@@ -8,6 +8,8 @@ import 'package:pyin_mal_app/screens/shop_screen.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/services/opencart_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
+import 'package:pyin_mal_app/services/wardrobe_service.dart';
+import 'package:pyin_mal_app/data/product_repository.dart';
 
 // ── Payment option model ──────────────────────────────────────────────────────
 enum _PayKind { wallet, card, cod }
@@ -131,6 +133,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       for (final item in CartService.instance.items) {
         final itemTotal = item.parsedPrice * item.quantity;
         await db.addPurchase(item.productId, itemTotal);
+
+        // Auto-add the purchased item to the user's digital wardrobe — the
+        // product's own image/category/brand are already known, so this
+        // skips the AI classification round-trip entirely. Never let a
+        // wardrobe write failure block order completion.
+        try {
+          final product = ProductRepository.getProductById(item.productId);
+          await WardrobeService.addFromCatalog(
+            imageUrl: item.image,
+            category: product?.category ?? 'other',
+            brand: item.brand,
+            productId: item.productId,
+          );
+        } catch (e) {
+          debugPrint('Wardrobe auto-add failed for ${item.productId}: $e');
+        }
       }
       CartService.instance.clearCart();
       _showSuccessDialog(orderId.toString());
