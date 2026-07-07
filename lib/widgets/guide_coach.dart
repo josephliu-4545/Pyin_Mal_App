@@ -21,6 +21,11 @@ class GuideStepTarget {
   /// If set, push this screen before showing the step (popped when leaving).
   final WidgetBuilder? pushBuilder;
 
+  /// If true, open the Home tab's custom menu overlay before locating [key]
+  /// — needed for targets (like the language switcher) that only exist in
+  /// the DOM while that overlay is open.
+  final bool openMenu;
+
   const GuideStepTarget({
     required this.title,
     required this.body,
@@ -31,6 +36,7 @@ class GuideStepTarget {
     this.key,
     this.tabIndex,
     this.pushBuilder,
+    this.openMenu = false,
   });
 }
 
@@ -44,6 +50,7 @@ class GuideController {
   static Route<dynamic>? _pushed;
   static VoidCallback? _onDone;
   static bool _running = false;
+  static bool _menuOpen = false;
 
   static bool get isRunning => _running;
 
@@ -68,6 +75,7 @@ class GuideController {
     _i = 0;
     _scene = null;
     _pushed = null;
+    _menuOpen = false;
     _onDone = onDone;
     _navigator = navigator;
     // Let any pop settle before the first step navigates.
@@ -76,7 +84,22 @@ class GuideController {
   }
 
   static Future<void> _enterScene(GuideStepTarget step) async {
-    if (step.sceneId == _scene) return;
+    // Close the custom menu overlay before moving on, unless this step also
+    // wants it open (avoids a pointless close-then-reopen flicker).
+    if (_menuOpen && !step.openMenu) {
+      GuideNav.closeMenu?.call();
+      GuideNav.closeMenu = null;
+      _menuOpen = false;
+    }
+
+    if (step.sceneId == _scene) {
+      if (step.openMenu && !_menuOpen) {
+        GuideNav.openMenu?.call();
+        _menuOpen = true;
+        await Future.delayed(const Duration(milliseconds: 380));
+      }
+      return;
+    }
     // Leave any pushed scene first.
     if (_pushed != null) {
       _navigator!.removeRoute(_pushed!);
@@ -90,6 +113,11 @@ class GuideController {
       _pushed = MaterialPageRoute(builder: step.pushBuilder!);
       _navigator!.push(_pushed!);
       await Future.delayed(const Duration(milliseconds: 420));
+    }
+    if (step.openMenu) {
+      GuideNav.openMenu?.call();
+      _menuOpen = true;
+      await Future.delayed(const Duration(milliseconds: 380));
     }
     _scene = step.sceneId;
   }
@@ -153,6 +181,11 @@ class GuideController {
     if (_pushed != null) {
       _navigator!.removeRoute(_pushed!);
       _pushed = null;
+    }
+    if (_menuOpen) {
+      GuideNav.closeMenu?.call();
+      GuideNav.closeMenu = null;
+      _menuOpen = false;
     }
     _running = false;
     final cb = _onDone;

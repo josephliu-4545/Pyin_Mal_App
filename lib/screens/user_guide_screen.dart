@@ -13,6 +13,7 @@ import 'package:pyin_mal_app/screens/haircut_screen.dart';
 import 'package:pyin_mal_app/screens/scan_screen.dart';
 import 'package:pyin_mal_app/screens/body_scan_screen.dart';
 import 'package:pyin_mal_app/screens/resell_screen.dart';
+import 'package:pyin_mal_app/screens/checkout_screen.dart';
 
 // ── Topic (for the list) + its targeted tour steps ───────────────────────────
 class GuideTopicInfo {
@@ -290,17 +291,19 @@ final List<GuideTopicInfo> kGuideTopics = [
     ],
     steps: [
       GuideStepTarget(
-        sceneId: 'home',
-        tabIndex: 0,
+        key: GuideKeys.shopCart,
+        sceneId: 'shop',
+        tabIndex: 1,
         color: _cartC,
-        where: 'Bottom of shopping screens',
-        title: 'View Cart bar',
+        where: 'Shop tab, top-right corner',
+        title: 'Your cart',
         body:
-            'When you add an item, a "View Cart" bar appears at the bottom with the count and total. Tap it to open your cart.',
+            'Tap the cart icon in the top-right of the Shop tab anytime to see what you\'ve added and the running total.',
       ),
       GuideStepTarget(
-        sceneId: 'home',
-        tabIndex: 0,
+        key: GuideKeys.checkoutPlaceOrder,
+        sceneId: 'checkout',
+        pushBuilder: (_) => const CheckoutScreen(),
         color: _cartC,
         where: 'Checkout screen',
         title: 'Checkout & payment',
@@ -410,10 +413,11 @@ final List<GuideTopicInfo> kGuideTopics = [
         key: GuideKeys.language,
         sceneId: 'home',
         tabIndex: 0,
+        openMenu: true,
         color: _appearC,
-        where: 'Home top bar',
+        where: 'Side menu',
         title: 'Language',
-        body: 'Switch between English and Burmese (မြန်မာ).',
+        body: 'Open the side menu and tap Language to switch between English and Burmese (မြန်မာ).',
       ),
     ],
   ),

@@ -4,6 +4,11 @@ import 'package:flutter/widgets.dart';
 class GuideNav {
   /// Set by MainShell — switches the visible tab (0=Home … 4=Delivery).
   static void Function(int index)? switchTab;
+
+  /// Set by the Home tab — opens/closes its custom slide-in menu overlay
+  /// (Settings, Language, User Guide…), which is only mounted while open.
+  static VoidCallback? openMenu;
+  static VoidCallback? closeMenu;
 }
 
 /// GlobalKeys attached to the real on-screen controls the tour spotlights.
@@ -22,10 +27,13 @@ class GuideKeys {
   // Shop tab
   static final shopSearch = GlobalKey(debugLabel: 'guide.shopSearch');
   static final shopCategories = GlobalKey(debugLabel: 'guide.shopCategories');
+  // Only ever attached to the single persistent shell instance of ShopScreen
+  // (not the ones pushed via Navigator elsewhere) to keep this GlobalKey unique.
   static final shopCart = GlobalKey(debugLabel: 'guide.shopCart');
 
   // Pushed screens
   static final productAddToCart = GlobalKey(debugLabel: 'guide.addToCart');
   static final productViewToggle = GlobalKey(debugLabel: 'guide.viewToggle');
   static final donateDirections = GlobalKey(debugLabel: 'guide.donateDirections');
+  static final checkoutPlaceOrder = GlobalKey(debugLabel: 'guide.checkoutPlaceOrder');
 }

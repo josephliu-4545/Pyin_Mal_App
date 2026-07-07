@@ -10,6 +10,7 @@ import 'package:pyin_mal_app/services/opencart_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/services/wardrobe_service.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
+import 'package:pyin_mal_app/core/guide_keys.dart';
 
 // ── Payment option model ──────────────────────────────────────────────────────
 enum _PayKind { wallet, card, cod }
@@ -349,6 +350,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 child: SizedBox(
                   height: 54,
                   child: ElevatedButton(
+                    key: GuideKeys.checkoutPlaceOrder,
                     onPressed: (_placing || cart.items.isEmpty) ? null : _placeOrder,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.gold,

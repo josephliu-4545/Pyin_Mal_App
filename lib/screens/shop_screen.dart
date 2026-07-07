@@ -23,7 +23,10 @@ class ShopScreen extends StatefulWidget {
   /// When false, the screen does not render its own cart bar — used when the
   /// shell provides a shared one (avoids showing two bars on the shop tab).
   final bool showCartBar;
-  const ShopScreen({super.key, this.showCartBar = true});
+  /// Only set on the single persistent shell instance of this screen (never
+  /// on the ones pushed via Navigator) — keeps this GlobalKey unique.
+  final Key? cartIconKey;
+  const ShopScreen({super.key, this.showCartBar = true, this.cartIconKey});
 
   @override
   State<ShopScreen> createState() => _ShopScreenState();
@@ -247,6 +250,7 @@ class _ShopScreenState extends State<ShopScreen> {
                           alignment: Alignment.center,
                           children: [
                             Container(
+                              key: widget.cartIconKey,
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(

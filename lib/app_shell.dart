@@ -134,7 +134,7 @@ class _MainShellState extends State<MainShell> {
         children: [
           _HomeTab(onTabRequested: _switchTab),
           // Shop tab relies on the shell-level cart bar (avoids a double bar).
-          const ShopScreen(showCartBar: false),
+          ShopScreen(showCartBar: false, cartIconKey: GuideKeys.shopCart),
           const HaircutScreen(),
           const FavoritesScreen(),
           const DeliveryScreen(),
@@ -360,6 +360,9 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   void initState() {
     super.initState();
+    // Let the guided tour open the custom menu overlay (Language lives there).
+    GuideNav.openMenu = () => _showMenuBottomSheet(
+        context, Theme.of(context).brightness == Brightness.dark);
     _loadShopAdSlides();
     _adTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (!_adController.hasClients) return;
@@ -1945,12 +1948,17 @@ class _HomeTabState extends State<_HomeTab> {
     final fadeAnim = Tween<double>(begin: 0.0, end: 1.0)
         .animate(CurvedAnimation(parent: ctrl, curve: Curves.easeOut));
 
+    bool closed = false;
     void closeDrawer() {
+      if (closed) return; // guard against a double-close (e.g. from the guide tour)
+      closed = true;
       ctrl.reverse().then((_) {
         entry.remove();
         ctrl.dispose();
       });
     }
+    // Let the guided tour close this overlay again once its step is done.
+    GuideNav.closeMenu = closeDrawer;
 
     entry = OverlayEntry(
       builder: (_) => AnimatedBuilder(
@@ -2120,6 +2128,7 @@ class _HomeTabState extends State<_HomeTab> {
                               );
                             },
                             isDark,
+                            itemKey: GuideKeys.language,
                           ),
                           _buildDrawerItem(
                             Icons.help_outline_rounded,
@@ -2209,8 +2218,10 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   Widget _buildDrawerItem(
-      IconData icon, String title, VoidCallback onTap, bool isDark) {
+      IconData icon, String title, VoidCallback onTap, bool isDark,
+      {Key? itemKey}) {
     return Padding(
+      key: itemKey,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: ListTile(
         shape:
