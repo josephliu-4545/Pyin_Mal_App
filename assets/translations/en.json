@@ -267,7 +267,11 @@
     "err_person": "Please upload a photo of the person!",
     "err_clothing": "Please upload at least one clothing item!",
     "err_api": "Failed to generate try-on image. Please check API settings.",
-    "error": "Error: {}"
+    "error": "Error: {}",
+    "complete_look": "Complete the look",
+    "complete_look_desc": "Pieces from the shop that match your new fit.",
+    "matching_pants": "Matching pants",
+    "matching_shoes": "Matching shoes"
   },
   "hair_try_on": {
     "title": "Virtual Hair Try-On",

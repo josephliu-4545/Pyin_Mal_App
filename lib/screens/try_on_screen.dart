@@ -9,6 +9,10 @@ import '../services/nanobanana_api_service.dart';
 import '../core/constants/api_constants.dart';
 import '../main.dart'; // For AppColors
 import '../services/try_on_service.dart';
+import '../models/product.dart';
+import '../data/product_repository.dart';
+import '../widgets/cdn_image.dart';
+import 'product_detail_screen.dart';
 
 class TryOnScreen extends StatefulWidget {
   final String? initialImageUrl;
@@ -676,6 +680,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                     ),
                   ),
                 ),
+                ..._buildMatchSections(),
               ],
             ),
           ),
@@ -684,4 +689,147 @@ class _TryOnScreenState extends State<TryOnScreen> {
     );
   }
 
+  // ── "Complete the look" — matching pants & shoes from the catalog ─────────
+
+  static const _bottomCats = {'Pants', 'Jeans', 'Skirt', 'Short'};
+  static const _shoeCats = {'Shoes', 'Sneakers', 'Footwear'};
+
+  List<Product> _matchesFor(Set<String> cats, {int count = 6}) {
+    final all = ProductRepository.allProducts;
+    final hits = all
+        .where((p) => cats.any(
+            (c) => p.category.toLowerCase().contains(c.toLowerCase())))
+        .toList();
+    return hits.take(count).toList();
+  }
+
+  List<Widget> _buildMatchSections() {
+    final sections = <Widget>[];
+    // Only suggest what the user did NOT already include in the try-on.
+    final needsBottom = _pantsPhotoBytes == null;
+    final needsShoes = _shoesPhotoBytes == null;
+
+    final bottoms = needsBottom ? _matchesFor(_bottomCats) : <Product>[];
+    final shoes = needsShoes ? _matchesFor(_shoeCats) : <Product>[];
+    if (bottoms.isEmpty && shoes.isEmpty) return sections;
+
+    sections.add(const SizedBox(height: 32));
+    sections.add(Row(
+      children: [
+        Icon(Icons.auto_awesome_rounded, size: 18, color: _accent),
+        const SizedBox(width: 8),
+        Text('try_on.complete_look'.tr(),
+            style: GoogleFonts.rufina(
+                fontSize: 20, fontWeight: FontWeight.bold, color: _ink)),
+      ],
+    ));
+    sections.add(const SizedBox(height: 4));
+    sections.add(Align(
+      alignment: Alignment.centerLeft,
+      child: Text('try_on.complete_look_desc'.tr(),
+          style: GoogleFonts.outfit(fontSize: 12, color: _muted)),
+    ));
+
+    if (bottoms.isNotEmpty) {
+      sections.add(const SizedBox(height: 18));
+      sections.add(_matchRow('try_on.matching_pants'.tr(),
+          Icons.airline_seat_legroom_normal_rounded, bottoms));
+    }
+    if (shoes.isNotEmpty) {
+      sections.add(const SizedBox(height: 18));
+      sections.add(_matchRow(
+          'try_on.matching_shoes'.tr(), Icons.ice_skating_rounded, shoes));
+    }
+    return sections;
+  }
+
+  Widget _matchRow(String title, IconData icon, List<Product> products) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 15, color: _muted),
+            const SizedBox(width: 6),
+            Text(title,
+                style: GoogleFonts.outfit(
+                    fontSize: 14, fontWeight: FontWeight.w700, color: _ink)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 208,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: products.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) => _matchCard(products[i]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _matchCard(Product p) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ProductDetailScreen.fromProduct(p)),
+      ),
+      child: Container(
+        width: 132,
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: _isDark ? AppColors.darkBorder : AppColors.creamAlt),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+              child: SizedBox(
+                height: 132,
+                width: double.infinity,
+                child: CdnImage(
+                  p.image,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: _isDark ? AppColors.charcoal : AppColors.creamAlt,
+                    child: Icon(Icons.checkroom_rounded,
+                        size: 30, color: _muted),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _ink)),
+                  const SizedBox(height: 3),
+                  Text(p.price,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _accent)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
