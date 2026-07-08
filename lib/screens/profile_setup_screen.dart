@@ -1,12 +1,16 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
-import 'package:pyin_mal_app/screens/onboarding_screen.dart';
+import 'package:pyin_mal_app/services/image_host_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-/// Collected after sign-up: body info + style preferences.
-/// On finish, saves to Firestore (best-effort) and continues to onboarding.
+/// Collected after sign-up: profile photo + body info + style preferences.
+/// On finish, saves everything to Firestore (best-effort) and drops the user
+/// straight into the app — there is no separate onboarding quiz.
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
 
@@ -17,8 +21,12 @@ class ProfileSetupScreen extends StatefulWidget {
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _db = DatabaseService();
   int _step = 0;
-  static const _totalSteps = 5;
+  static const _totalSteps = 6;
   bool _saving = false;
+
+  // ── Step 6: profile photo ───────────────────────────────────────────────
+  Uint8List? _photoBytes;
+  XFile? _photoFile;
 
   // ── Step 1: basics ──────────────────────────────────────────────────────
   String _gender = 'Female';
@@ -82,8 +90,44 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     }
   }
 
+  Future<void> _pickPhoto() async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _photoBytes = bytes;
+        _photoFile = picked;
+      });
+    } catch (_) {
+      // Ignore — the photo is optional.
+    }
+  }
+
   Future<void> _finish() async {
     setState(() => _saving = true);
+
+    // Upload the profile photo (best-effort) and attach it to the account so
+    // it shows as the user's avatar across the app and on their OOTD posts.
+    String? photoUrl;
+    if (_photoFile != null) {
+      try {
+        final bytes = await ImageHostService.compress(_photoFile!);
+        photoUrl = await ImageHostService.upload(
+            bytes, 'profile_${DateTime.now().millisecondsSinceEpoch}');
+        if (photoUrl != null) {
+          await FirebaseAuth.instance.currentUser?.updatePhotoURL(photoUrl);
+        }
+      } catch (_) {
+        // Best effort — a failed upload never blocks entering the app.
+      }
+    }
+
     try {
       await _db.saveProfileSetup({
         'gender': _gender,
@@ -98,6 +142,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             .toList(),
         'styles': _styles.toList(),
         'fit': _fit,
+        if (photoUrl != null) 'photoUrl': photoUrl,
         // Merge into the existing free-text preference list used by AI context.
         'preferences': [
           ..._outfitTypes,
@@ -109,10 +154,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       // Best effort — never block the user from entering the app.
     }
     if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-    );
+    // Straight into the app — no separate onboarding quiz.
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   void _next() {
@@ -270,9 +313,71 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         return _colorStep(isDark, accent, ink);
       case 4:
         return _styleStep(isDark, accent, ink);
+      case 5:
+        return _photoStep(isDark, accent, ink);
       default:
         return const SizedBox();
     }
+  }
+
+  // ── Step 6: profile photo ─────────────────────────────────────────────────
+  Widget _photoStep(bool isDark, Color accent, Color ink) {
+    final cardBg = isDark ? AppColors.darkWarm : Colors.white;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _heading('profile.add_photo'.tr(), 'profile.add_photo_desc'.tr(),
+            ink, isDark),
+        Center(
+          child: GestureDetector(
+            onTap: _pickPhoto,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                color: cardBg,
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: _photoBytes != null
+                        ? accent
+                        : (isDark ? AppColors.darkBorder : AppColors.creamAlt),
+                    width: 2),
+              ),
+              child: _photoBytes != null
+                  ? ClipOval(
+                      child: Image.memory(_photoBytes!,
+                          width: 160, height: 160, fit: BoxFit.cover),
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_a_photo_rounded, size: 40, color: muted),
+                        const SizedBox(height: 10),
+                        Text('profile.tap_to_add'.tr(),
+                            style: GoogleFonts.outfit(
+                                fontSize: 12, color: muted)),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+        if (_photoBytes != null) ...[
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton.icon(
+              onPressed: _pickPhoto,
+              icon: Icon(Icons.swap_horiz_rounded, size: 18, color: accent),
+              label: Text('profile.change_photo'.tr(),
+                  style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: accent)),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   // ── Section heading helper ───────────────────────────────────────────────

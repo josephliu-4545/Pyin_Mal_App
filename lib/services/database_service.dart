@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pyin_mal_app/models/user_profile.dart';
 import 'package:pyin_mal_app/models/wardrobe_item.dart';
 import 'package:pyin_mal_app/models/outfit_post.dart';
+import 'package:pyin_mal_app/models/body_measurements.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -310,14 +311,62 @@ class DatabaseService {
       List<String> recentSearches = searchesSnap.docs.map((d) => d.data()['query'] as String).toList();
       List<String> recentPurchases = purchasesSnap.docs.map((d) => d.data()['productId'] as String).toList();
 
-      // Fetch user profile to get survey preferences
+      // Fetch user profile: sign-up survey (body basics + style) and the
+      // latest Bodygram scan, so the stylist can size and style accurately.
       final userDoc = await _db.collection('users').doc(_uid).get();
-      List<String> surveyPreferences = [];
-      if (userDoc.exists && userDoc.data() != null) {
-        surveyPreferences = List<String>.from(userDoc.data()!['preferences'] ?? []);
-      }
+      final data = userDoc.data() ?? <String, dynamic>{};
+      final surveyPreferences = List<String>.from(data['preferences'] ?? []);
 
       String context = "";
+
+      // Body basics collected at sign-up (gender, age, height, weight, tone).
+      final basics = <String>[];
+      if (data['gender'] != null) basics.add('gender ${data['gender']}');
+      if (data['age'] != null) basics.add('age ${data['age']}');
+      if (data['heightCm'] != null) basics.add('height ${data['heightCm']}cm');
+      if (data['weightKg'] != null) basics.add('weight ${data['weightKg']}kg');
+      if (data['skinTone'] != null) basics.add('${data['skinTone']} skin tone');
+      if (basics.isNotEmpty) {
+        context += "User body basics: ${basics.join(', ')}.\n";
+      }
+
+      // Style survey (outfit types, style vibe, fit, favourite colours).
+      final outfitTypes = List<String>.from(data['outfitTypes'] ?? []);
+      if (outfitTypes.isNotEmpty) {
+        context += "Outfit types they wear: ${outfitTypes.join(', ')}.\n";
+      }
+      final styles = List<String>.from(data['styles'] ?? []);
+      if (styles.isNotEmpty) {
+        context += "Style vibe: ${styles.join(', ')}.\n";
+      }
+      if (data['fit'] != null) {
+        context += "Preferred fit: ${data['fit']}.\n";
+      }
+      final palette = List<String>.from(data['preferredColors'] ?? []);
+      if (palette.isNotEmpty) {
+        context += "Favourite colours (hex): ${palette.join(', ')}.\n";
+      }
+
+      // Real body measurements from the latest Bodygram scan, in cm — the
+      // ground truth for size recommendations.
+      final bm = data['bodyMeasurements'];
+      if (bm is Map) {
+        final measurements =
+            BodyMeasurements.fromMap(Map<String, dynamic>.from(bm));
+        final parts = <String>[];
+        for (final name in const ['bustGirth', 'waistGirth', 'hipGirth']) {
+          final cm = measurements.cm(name);
+          if (cm != null) {
+            parts.add(
+                '${name.replaceAll('Girth', '')} ${cm.toStringAsFixed(0)}cm');
+          }
+        }
+        if (parts.isNotEmpty) {
+          context +=
+              "Bodygram body measurements: ${parts.join(', ')}. Use these to recommend the correct clothing size.\n";
+        }
+      }
+
       if (surveyPreferences.isNotEmpty) {
         context += "User's stated style preferences (from onboarding survey): ${surveyPreferences.join(', ')}.\n";
       }

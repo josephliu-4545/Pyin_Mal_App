@@ -174,7 +174,11 @@
       "Oversized": "Oversized",
       "Relaxed": "Relaxed"
     },
-    "body_measurements": "Body Measurements"
+    "body_measurements": "Body Measurements",
+    "add_photo": "Add a profile photo",
+    "add_photo_desc": "Put a face to your style — this becomes your avatar.",
+    "tap_to_add": "Tap to add",
+    "change_photo": "Change photo"
   },
   "cart": {
     "login_prompt": "Please log in to checkout and earn points!",
