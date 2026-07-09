@@ -8,11 +8,10 @@ import 'image_host_service.dart';
 
 /// Virtual try-on / hair-style generation backed by NanoBanana.
 ///
-/// Images are uploaded to catbox.moe (via [ImageHostService], a free,
-/// no-account image host that returns a public URL) because NanoBanana
-/// requires a real URL, not base64. The previous host (corsproxy.io → uguu.se)
-/// is dead: corsproxy now returns 403 "server-side requests not allowed on
-/// your plan" and uguu.se is offline.
+/// Images are uploaded via [ImageHostService] (freeimage.host, a free
+/// no-account image host that returns a direct public URL) because NanoBanana
+/// requires a real URL, not base64. Earlier hosts are all dead: corsproxy.io
+/// returns 403, and uguu.se and catbox.moe are offline.
 class NanoBananaApiService {
   // API key loaded securely from .env file
   static String get _apiKey => dotenv.env['NANOBANANA_API_KEY'] ?? '';
@@ -159,7 +158,13 @@ class NanoBananaApiService {
         'shoes': shoesPhoto,
       },
       prompt:
-          'Virtual try-on of these clothes on this person. Create a realistic image.',
+          'Virtual try-on: dress the person from the first image in the '
+          'provided clothing items. Output a SINGLE realistic full-body photo '
+          'of ONLY that one person wearing the new outfit, standing centered '
+          'and facing the camera against a clean plain studio background. '
+          'Do NOT create a collage or grid. Do NOT show a before-and-after or '
+          'the original photo. Do NOT show the clothing items on their own. '
+          'Show exactly one person and nothing else.',
     );
   }
 

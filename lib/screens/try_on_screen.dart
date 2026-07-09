@@ -1,7 +1,6 @@
-import 'dart:typed_data';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -61,19 +60,38 @@ class _TryOnScreenState extends State<TryOnScreen> {
   }
 
   Future<void> _loadInitialImage() async {
-    if (widget.initialImageUrl == null || widget.initialImageUrl!.isEmpty) return;
+    debugPrint('👕 TryOn initial: url=${widget.initialImageUrl} '
+        'category=${widget.initialCategory}');
+    if (widget.initialImageUrl == null || widget.initialImageUrl!.isEmpty) {
+      debugPrint('👕 No initial item passed — opened without a product.');
+      return;
+    }
     try {
       String imageUrl = widget.initialImageUrl!;
       if (!imageUrl.startsWith('http')) {
-        final String cdnPath = imageUrl.replaceFirst('assets/images/', '');
+        // Product paths come in a few shapes, e.g. "assets/images/Male/..."
+        // or with a spurious repo prefix "pyin-mal-assets/assets/images/Male/...".
+        // cdnBaseUrl already ends in ".../assets/images/", so take everything
+        // AFTER the last "assets/images/" segment to avoid a doubled path.
+        const marker = 'assets/images/';
+        final idx = imageUrl.lastIndexOf(marker);
+        final cdnPath =
+            idx >= 0 ? imageUrl.substring(idx + marker.length) : imageUrl;
         imageUrl = '${ApiConstants.cdnBaseUrl}$cdnPath';
       }
       
-      // Encode URL to handle spaces in filenames
+      // Encode URL to handle spaces in filenames. Use package:http (not
+      // dart:io HttpClient, which throws on Flutter Web) so the item image
+      // downloads and pre-fills its slot on every platform.
       final encodedUrl = Uri.encodeFull(imageUrl);
-      final request = await HttpClient().getUrl(Uri.parse(encodedUrl));
-      final response = await request.close();
-      final bytes = await consolidateHttpClientResponseBytes(response);
+      debugPrint('👕 Downloading initial item from: $encodedUrl');
+      final response = await http.get(Uri.parse(encodedUrl));
+      if (response.statusCode != 200) {
+        debugPrint('❗ Failed to load initial image: HTTP ${response.statusCode}');
+        return;
+      }
+      final bytes = response.bodyBytes;
+      debugPrint('✅ Initial item downloaded (${bytes.length} bytes)');
       if (mounted) {
         setState(() {
           final cat = widget.initialCategory?.toLowerCase() ?? '';
