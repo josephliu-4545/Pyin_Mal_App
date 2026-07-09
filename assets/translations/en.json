@@ -352,7 +352,13 @@
     "create_account_title": "Create Style Account",
     "or_email_reg": "or use your email for registration",
     "name": "Name",
-    "sign_up": "SIGN UP"
+    "sign_up": "SIGN UP",
+    "err_email_in_use": "That email is already registered. Try signing in instead.",
+    "err_invalid_email": "That email address looks invalid.",
+    "err_weak_password": "Password must be at least 6 characters.",
+    "err_wrong_credentials": "Email or password is incorrect.",
+    "err_too_many": "Too many attempts. Please wait a moment and try again.",
+    "err_network": "Network error. Check your connection and try again."
   },
   "ai_chat": {
     "title": "AI Stylist",
