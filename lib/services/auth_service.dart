@@ -20,26 +20,30 @@ class AuthService {
         email: email, 
         password: password
       );
-      
+
       final User? user = result.user;
       if (user != null) {
-        // Update display name in Firebase Auth
-        await user.updateDisplayName(displayName);
-        
-        // Create user profile in Firestore
         final profile = UserProfile(
           id: user.uid,
           email: email,
           displayName: displayName,
           points: 0,
         );
-        
-        await _db.createUserProfile(profile);
-        // New account → run the guided tour once on first home view.
-        await _db.markGuidePending();
+        // The account is created at this point — profile/name writes are
+        // best-effort and must not make registration look like a failure.
+        try {
+          await user.updateDisplayName(displayName);
+          await _db.createUserProfile(profile);
+          // New account → run the guided tour once on first home view.
+          await _db.markGuidePending();
+        } catch (e) {
+          print('Post-registration profile setup error: $e');
+        }
         return profile;
       }
       return null;
+    } on FirebaseAuthException {
+      rethrow; // Let the UI show the real reason (email in use, weak password…)
     } catch (e) {
       print('Registration Error: $e');
       return null;
@@ -50,10 +54,12 @@ class AuthService {
   Future<User?> signInWithEmail(String email, String password) async {
     try {
       final UserCredential result = await _auth.signInWithEmailAndPassword(
-        email: email, 
+        email: email,
         password: password
       );
       return result.user;
+    } on FirebaseAuthException {
+      rethrow; // Let the UI show the real reason
     } catch (e) {
       print('Sign In Error: $e');
       return null;

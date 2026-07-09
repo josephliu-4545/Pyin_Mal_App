@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/profile_setup_screen.dart';
@@ -29,6 +30,28 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // Map Firebase auth error codes to a specific, readable message.
+  String _authErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        return 'login.err_email_in_use'.tr();
+      case 'invalid-email':
+        return 'login.err_invalid_email'.tr();
+      case 'weak-password':
+        return 'login.err_weak_password'.tr();
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'login.err_wrong_credentials'.tr();
+      case 'too-many-requests':
+        return 'login.err_too_many'.tr();
+      case 'network-request-failed':
+        return 'login.err_network'.tr();
+      default:
+        return e.message ?? 'login.err_register'.tr();
+    }
+  }
+
   void _submitAuth() async {
     setState(() => _isLoading = true);
 
@@ -42,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else {
         final profile = await _auth.registerWithEmail(
-          _emailController.text.trim(), 
+          _emailController.text.trim(),
           _passwordController.text,
           _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : 'Fashionista',
         );
@@ -53,6 +76,12 @@ class _LoginScreenState extends State<LoginScreen> {
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('login.err_register'.tr())));
         }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_authErrorMessage(e))),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
