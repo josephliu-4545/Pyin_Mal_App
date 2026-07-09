@@ -6,6 +6,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/resell_chat_screen.dart';
+import 'package:pyin_mal_app/screens/resell_inbox_screen.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 
 class ResellPost {
@@ -17,6 +18,7 @@ class ResellPost {
   final String seller;
   final String size;
   final bool isSoldOut;
+  final bool isMine; // posted by the current user
 
   const ResellPost({
     required this.title,
@@ -27,6 +29,7 @@ class ResellPost {
     required this.seller,
     required this.size,
     this.isSoldOut = false,
+    this.isMine = false,
   });
 
   ResellPost copyWith({bool? isSoldOut}) => ResellPost(
@@ -38,6 +41,7 @@ class ResellPost {
         seller: seller,
         size: size,
         isSoldOut: isSoldOut ?? this.isSoldOut,
+        isMine: isMine,
       );
 }
 
@@ -119,6 +123,9 @@ class ResellScreen extends StatefulWidget {
 }
 
 class _ResellScreenState extends State<ResellScreen> {
+  // false = all community listings, true = only the user's own posts
+  bool _showMine = false;
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -128,7 +135,9 @@ class _ResellScreenState extends State<ResellScreen> {
     final ink = isDark ? Colors.white : AppColors.inkBlack;
     final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
 
-    final posts = ResellStore.posts;
+    final posts = _showMine
+        ? ResellStore.posts.where((p) => p.isMine).toList()
+        : ResellStore.posts;
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount =
         screenWidth >= 1024 ? 4 : (screenWidth >= 640 ? 3 : 2);
@@ -178,6 +187,61 @@ class _ResellScreenState extends State<ResellScreen> {
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: ink)),
+                    const Spacer(),
+                    // Seller inbox — all buyer chats in one place
+                    GestureDetector(
+                      onTap: () async {
+                        await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const ResellInboxScreen()));
+                        if (mounted) setState(() {});
+                      },
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: cardBg,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black
+                                        .withOpacity(isDark ? 0.2 : 0.07),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2)),
+                              ],
+                            ),
+                            child: Icon(Icons.forum_rounded,
+                                size: 19, color: accent),
+                          ),
+                          if (ResellInboxStore.unreadCount > 0)
+                            Positioned(
+                              top: -2,
+                              right: -2,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFE53935),
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                    minWidth: 17, minHeight: 17),
+                                child: Text(
+                                  '${ResellInboxStore.unreadCount}',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -233,50 +297,111 @@ class _ResellScreenState extends State<ResellScreen> {
               ),
             ),
 
-            // Label
+            // Label + All / My posts toggle
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('resell.community'.tr(),
-                        style: GoogleFonts.outfit(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: ink)),
-                    Text('${posts.length} items',
-                        style:
-                            GoogleFonts.outfit(fontSize: 12, color: muted)),
+                    Expanded(
+                      child: Text(
+                          _showMine ? 'My posts' : 'resell.community'.tr(),
+                          style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: ink)),
+                    ),
+                    // Toggle pills
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white10 : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final mine in [false, true])
+                            GestureDetector(
+                              onTap: () =>
+                                  setState(() => _showMine = mine),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _showMine == mine
+                                      ? accent
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(mine ? 'My posts' : 'All',
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: _showMine == mine
+                                            ? (isDark
+                                                ? AppColors.charcoal
+                                                : Colors.white)
+                                            : ink)),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
 
-            // Grid
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  mainAxisSpacing: 14,
-                  crossAxisSpacing: 14,
-                  childAspectRatio: 0.66,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) => _ResellCard(
-                    post: posts[i],
-                    isDark: isDark,
-                    cardBg: cardBg,
-                    ink: ink,
-                    muted: muted,
-                    accent: accent,
-                    onTap: () => _openDetailSheet(posts[i], i, isDark, accent),
+            // Grid (or empty state for "My posts")
+            if (posts.isEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(40, 50, 40, 90),
+                  child: Column(
+                    children: [
+                      Icon(Icons.sell_outlined, size: 48, color: muted),
+                      const SizedBox(height: 14),
+                      Text('You haven\'t posted anything yet',
+                          style: GoogleFonts.outfit(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: ink)),
+                      const SizedBox(height: 6),
+                      Text(
+                          'Tap "Sell yours" below to list your first pre-loved item.',
+                          textAlign: TextAlign.center,
+                          style:
+                              GoogleFonts.outfit(fontSize: 12, color: muted)),
+                    ],
                   ),
-                  childCount: posts.length,
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
+                    childAspectRatio: 0.66,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) => _ResellCard(
+                      post: posts[i],
+                      isDark: isDark,
+                      cardBg: cardBg,
+                      ink: ink,
+                      muted: muted,
+                      accent: accent,
+                      onTap: () => _openDetailSheet(posts[i],
+                          ResellStore.posts.indexOf(posts[i]), isDark, accent),
+                    ),
+                    childCount: posts.length,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -296,6 +421,12 @@ class _ResellScreenState extends State<ResellScreen> {
     final sizeCtrl = TextEditingController();
     String condition = 'Like New';
     Uint8List? photo;
+    // Step 2 — pickup / delivery arrangement
+    int step = 0; // 0 = item details, 1 = pickup
+    final addressCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    String pickupMethod = 'pickup'; // 'pickup' | 'dropoff'
+    String timeSlot = 'morning'; // 'morning' | 'afternoon' | 'evening'
 
     showModalBottomSheet(
       context: context,
@@ -344,16 +475,44 @@ class _ResellScreenState extends State<ResellScreen> {
                             borderRadius: BorderRadius.circular(2)),
                       ),
                     ),
-                    Text('resell.list_title'.tr(),
+                    Text(
+                        step == 0
+                            ? 'resell.list_title'.tr()
+                            : 'Arrange delivery pickup',
                         style: GoogleFonts.outfit(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: ink)),
                     const SizedBox(height: 4),
-                    Text('resell.list_desc'.tr(),
+                    Text(
+                        step == 0
+                            ? 'resell.list_desc'.tr()
+                            : 'Tell us how the item gets to its buyer once sold.',
                         style: GoogleFonts.outfit(fontSize: 12, color: muted)),
+                    const SizedBox(height: 10),
+                    // Step indicator (1 · item, 2 · pickup)
+                    Row(
+                      children: List.generate(2, (i) {
+                        final active = i <= step;
+                        return Expanded(
+                          child: Container(
+                            height: 4,
+                            margin: EdgeInsets.only(right: i == 0 ? 6 : 0),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? accent
+                                  : (isDark
+                                      ? Colors.white12
+                                      : const Color(0xFFE8E4DF)),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
                     const SizedBox(height: 16),
 
+                    if (step == 0) ...[
                     // Photo picker (shows preview once chosen)
                     GestureDetector(
                       onTap: pickPhoto,
@@ -473,7 +632,7 @@ class _ResellScreenState extends State<ResellScreen> {
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         onPressed: () {
                           final name = nameCtrl.text.trim();
                           if (name.isEmpty) {
@@ -483,36 +642,12 @@ class _ResellScreenState extends State<ResellScreen> {
                             );
                             return;
                           }
-                          // Normalise price -> "X MMK".
-                          final rawPrice = priceCtrl.text.trim();
-                          final priceLabel = rawPrice.isEmpty
-                              ? 'resell.negotiable'.tr()
-                              : (rawPrice.toUpperCase().contains('MMK')
-                                  ? rawPrice
-                                  : '$rawPrice MMK');
-                          // Insert at the top so it shows first.
-                          ResellStore.posts.insert(
-                            0,
-                            ResellPost(
-                              title: name,
-                              price: priceLabel,
-                              image: '',
-                              imageBytes: photo,
-                              condition: condition,
-                              seller: 'resell.you'.tr(),
-                              size: sizeCtrl.text.trim().isEmpty
-                                  ? 'resell.one_size'.tr()
-                                  : sizeCtrl.text.trim(),
-                            ),
-                          );
-                          Navigator.pop(sheetCtx);
-                          setState(() {}); // refresh grid
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('resell.posted'.tr()),
-                                duration: const Duration(seconds: 2)),
-                          );
+                          setSheet(() => step = 1);
                         },
+                        icon: const Icon(Icons.local_shipping_rounded, size: 17),
+                        label: Text('Next: Delivery & pickup',
+                            style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w700, fontSize: 14)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: accent,
                           foregroundColor:
@@ -522,11 +657,234 @@ class _ResellScreenState extends State<ResellScreen> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: Text('resell.post_item'.tr(),
-                            style: GoogleFonts.outfit(
-                                fontWeight: FontWeight.w700, fontSize: 14)),
                       ),
                     ),
+                    ] else ...[
+                      // ── Step 2: pickup / delivery arrangement ──
+                      // Method chips
+                      Row(
+                        children: [
+                          for (final m in ['pickup', 'dropoff'])
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () =>
+                                    setSheet(() => pickupMethod = m),
+                                child: Container(
+                                  margin: EdgeInsets.only(
+                                      right: m == 'pickup' ? 8 : 0),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: pickupMethod == m
+                                        ? accent.withOpacity(0.14)
+                                        : (isDark
+                                            ? Colors.white10
+                                            : const Color(0xFFF4F4F4)),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: pickupMethod == m
+                                            ? accent
+                                            : Colors.transparent,
+                                        width: 1.5),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                          m == 'pickup'
+                                              ? Icons.local_shipping_rounded
+                                              : Icons.store_rounded,
+                                          size: 22,
+                                          color: pickupMethod == m
+                                              ? accent
+                                              : muted),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                          m == 'pickup'
+                                              ? 'Rider pickup'
+                                              : 'Drop off',
+                                          style: GoogleFonts.outfit(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              color: pickupMethod == m
+                                                  ? accent
+                                                  : ink)),
+                                      Text(
+                                          m == 'pickup'
+                                              ? 'We collect from your address'
+                                              : 'Bring it to a partner point',
+                                          textAlign: TextAlign.center,
+                                          style: GoogleFonts.outfit(
+                                              fontSize: 10, color: muted)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _field(phoneCtrl, 'Phone number (09xxxxxxxxx)', isDark,
+                          accent,
+                          keyboard: TextInputType.phone),
+                      if (pickupMethod == 'pickup') ...[
+                        const SizedBox(height: 10),
+                        _field(addressCtrl, 'Pickup address', isDark, accent),
+                        const SizedBox(height: 14),
+                        Text('Preferred pickup time',
+                            style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: muted)),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            for (final t in [
+                              'morning',
+                              'afternoon',
+                              'evening'
+                            ])
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      setSheet(() => timeSlot = t),
+                                  child: Container(
+                                    margin: EdgeInsets.only(
+                                        right: t == 'evening' ? 0 : 8),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10),
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: timeSlot == t
+                                          ? accent
+                                          : (isDark
+                                              ? Colors.white10
+                                              : const Color(0xFFF4F4F4)),
+                                      borderRadius:
+                                          BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                        t == 'morning'
+                                            ? '9–12 AM'
+                                            : (t == 'afternoon'
+                                                ? '12–4 PM'
+                                                : '4–7 PM'),
+                                        style: GoogleFonts.outfit(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: timeSlot == t
+                                                ? (isDark
+                                                    ? AppColors.charcoal
+                                                    : Colors.white)
+                                                : ink)),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          // Back
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => setSheet(() => step = 0),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 14),
+                                side: BorderSide(
+                                    color: isDark
+                                        ? Colors.white24
+                                        : const Color(0xFFCCCCCC)),
+                                foregroundColor: ink,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(12)),
+                              ),
+                              child: Text('Back',
+                                  style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14)),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          // Post
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (phoneCtrl.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(
+                                          content: Text(
+                                              'Please enter your phone number')));
+                                  return;
+                                }
+                                if (pickupMethod == 'pickup' &&
+                                    addressCtrl.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(
+                                          content: Text(
+                                              'Please enter a pickup address')));
+                                  return;
+                                }
+                                // Normalise price -> "X MMK".
+                                final rawPrice = priceCtrl.text.trim();
+                                final priceLabel = rawPrice.isEmpty
+                                    ? 'resell.negotiable'.tr()
+                                    : (rawPrice
+                                            .toUpperCase()
+                                            .contains('MMK')
+                                        ? rawPrice
+                                        : '$rawPrice MMK');
+                                // Insert at the top so it shows first.
+                                ResellStore.posts.insert(
+                                  0,
+                                  ResellPost(
+                                    title: nameCtrl.text.trim(),
+                                    price: priceLabel,
+                                    image: '',
+                                    imageBytes: photo,
+                                    condition: condition,
+                                    seller: 'resell.you'.tr(),
+                                    size: sizeCtrl.text.trim().isEmpty
+                                        ? 'resell.one_size'.tr()
+                                        : sizeCtrl.text.trim(),
+                                    isMine: true,
+                                  ),
+                                );
+                                Navigator.pop(sheetCtx);
+                                setState(() {}); // refresh grid
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(pickupMethod == 'pickup'
+                                          ? 'Item posted! A rider will collect it once it sells.'
+                                          : 'Item posted! Drop it off at a partner point once it sells.'),
+                                      duration:
+                                          const Duration(seconds: 3)),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: accent,
+                                foregroundColor: isDark
+                                    ? AppColors.charcoal
+                                    : Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 14),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(12)),
+                              ),
+                              child: Text('resell.post_item'.tr(),
+                                  style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

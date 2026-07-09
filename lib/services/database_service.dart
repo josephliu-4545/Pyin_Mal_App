@@ -284,6 +284,18 @@ class DatabaseService {
     await batch.commit();
   }
 
+  /// Live stream of the user's purchases, newest first (for Order History).
+  Stream<List<Map<String, dynamic>>> streamPurchases() {
+    if (_uid == null) return Stream.value(const []);
+    return _db
+        .collection('users')
+        .doc(_uid)
+        .collection('purchases')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
+  }
+
   // Fetch recent history for Gemini context
   Future<String> getRecentHistoryContext() async {
     if (_uid == null) return "";

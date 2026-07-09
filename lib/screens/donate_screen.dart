@@ -710,13 +710,301 @@ class _ShelterCard extends StatefulWidget {
 class _ShelterCardState extends State<_ShelterCard> {
   bool _pressed = false;
 
-  void _confirm(String action) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text('$action — ${widget.shelter.name}'),
-        duration: const Duration(seconds: 2),
-      ),
+  // Pickup form — for donors who can't travel, a rider collects the
+  // donation from their address and delivers it to the shelter.
+  void _openPickupForm() {
+    final isDark = widget.isDark;
+    final accent = widget.accent;
+    final cardBg = isDark ? AppColors.darkWarm : Colors.white;
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? Colors.white54 : const Color(0xFF888888);
+    final fieldBg = isDark ? Colors.white10 : const Color(0xFFF4F4F4);
+
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final addressCtrl = TextEditingController();
+    final noteCtrl = TextEditingController();
+    final selectedItems = <String>{'Clothes'};
+    String timeSlot = '9–12 AM';
+    DateTime? date;
+
+    InputDecoration deco(String hint, IconData icon) => InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.outfit(fontSize: 13, color: muted),
+          prefixIcon: Icon(icon, size: 18, color: accent),
+          filled: true,
+          fillColor: fieldBg,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: accent, width: 1.4),
+          ),
+        );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return StatefulBuilder(builder: (sheetCtx, setSheet) {
+          return Padding(
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetCtx).viewInsets.bottom),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 18),
+                        decoration: BoxDecoration(
+                            color: isDark ? Colors.white24 : Colors.black12,
+                            borderRadius: BorderRadius.circular(2)),
+                      ),
+                    ),
+                    Text('Donation pickup',
+                        style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: ink)),
+                    const SizedBox(height: 4),
+                    Text(
+                        'Can\'t make it there? A rider will collect your donation and deliver it to ${widget.shelter.name} for free.',
+                        style: GoogleFonts.outfit(
+                            fontSize: 12, height: 1.4, color: muted)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameCtrl,
+                      style: GoogleFonts.outfit(fontSize: 13, color: ink),
+                      decoration:
+                          deco('Your name', Icons.person_outline_rounded),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      style: GoogleFonts.outfit(fontSize: 13, color: ink),
+                      decoration: deco(
+                          'Phone number (09xxxxxxxxx)', Icons.phone_outlined),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: addressCtrl,
+                      style: GoogleFonts.outfit(fontSize: 13, color: ink),
+                      decoration:
+                          deco('Pickup address', Icons.place_outlined),
+                    ),
+                    const SizedBox(height: 14),
+                    Text('What are you donating?',
+                        style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: muted)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final item in [
+                          'Clothes',
+                          'Blankets',
+                          'Footwear',
+                          'Longyi',
+                          'Other'
+                        ])
+                          GestureDetector(
+                            onTap: () => setSheet(() {
+                              selectedItems.contains(item)
+                                  ? selectedItems.remove(item)
+                                  : selectedItems.add(item);
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 13, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: selectedItems.contains(item)
+                                    ? accent.withOpacity(0.14)
+                                    : fieldBg,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: selectedItems.contains(item)
+                                        ? accent
+                                        : Colors.transparent,
+                                    width: 1.4),
+                              ),
+                              child: Text(item,
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: selectedItems.contains(item)
+                                          ? accent
+                                          : ink)),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    // Date + time slot
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () async {
+                              final now = DateTime.now();
+                              final picked = await showDatePicker(
+                                context: sheetCtx,
+                                initialDate:
+                                    now.add(const Duration(days: 1)),
+                                firstDate: now,
+                                lastDate:
+                                    now.add(const Duration(days: 30)),
+                              );
+                              if (picked != null) {
+                                setSheet(() => date = picked);
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 13),
+                              decoration: BoxDecoration(
+                                color: fieldBg,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.calendar_today_rounded,
+                                      size: 16, color: accent),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                      date == null
+                                          ? 'Pickup date'
+                                          : '${date!.day}/${date!.month}/${date!.year}',
+                                      style: GoogleFonts.outfit(
+                                          fontSize: 12.5,
+                                          fontWeight: date != null
+                                              ? FontWeight.w600
+                                              : FontWeight.w400,
+                                          color:
+                                              date != null ? ink : muted)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        for (final t in ['9–12 AM', '12–4 PM', '4–7 PM'])
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setSheet(() => timeSlot = t),
+                              child: Container(
+                                margin: EdgeInsets.only(
+                                    right: t == '4–7 PM' ? 0 : 8),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 10),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color:
+                                      timeSlot == t ? accent : fieldBg,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(t,
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: timeSlot == t
+                                            ? (isDark
+                                                ? AppColors.charcoal
+                                                : Colors.white)
+                                            : ink)),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: noteCtrl,
+                      maxLines: 2,
+                      style: GoogleFonts.outfit(fontSize: 13, color: ink),
+                      decoration: deco('Notes for the rider (optional)',
+                          Icons.edit_note_rounded),
+                    ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          if (nameCtrl.text.trim().isEmpty ||
+                              phoneCtrl.text.trim().isEmpty ||
+                              addressCtrl.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text(
+                                      'Please fill in your name, phone and address')),
+                            );
+                            return;
+                          }
+                          if (date == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content:
+                                      Text('Please pick a pickup date')),
+                            );
+                            return;
+                          }
+                          Navigator.pop(sheetCtx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              behavior: SnackBarBehavior.floating,
+                              duration: const Duration(seconds: 3),
+                              content: Text(
+                                  'Pickup booked! A rider will collect your donation on ${date!.day}/${date!.month} ($timeSlot) and deliver it to ${widget.shelter.name}. +200 pts'),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.local_shipping_rounded,
+                            size: 17),
+                        label: Text('Confirm pickup',
+                            style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w700, fontSize: 14)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accent,
+                          foregroundColor:
+                              isDark ? AppColors.charcoal : Colors.white,
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 14),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+      },
     );
   }
 
@@ -890,9 +1178,7 @@ class _ShelterCardState extends State<_ShelterCard> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _confirm(s.pickup
-                          ? 'donate.pickup_from'.tr()
-                          : 'donate.drop_off_for'.tr()),
+                      onPressed: _openPickupForm,
                       icon: Icon(
                           s.pickup
                               ? Icons.local_shipping_rounded

@@ -178,7 +178,15 @@
     "add_photo": "Add a profile photo",
     "add_photo_desc": "Put a face to your style — this becomes your avatar.",
     "tap_to_add": "Tap to add",
-    "change_photo": "Change photo"
+    "change_photo": "Change photo",
+    "style_rank": "Style Rank",
+    "progress": "Progress",
+    "pts_to_next": "{} pts to next rank",
+    "max_rank": "Top rank reached!",
+    "account": "Account",
+    "settings": "Settings",
+    "order_history": "Order History",
+    "sign_out": "Sign out"
   },
   "cart": {
     "login_prompt": "Please log in to checkout and earn points!",
@@ -662,7 +670,25 @@
       "Good": "Good",
       "Fair": "Fair"
     },
-    "added_to_cart": "{} added to cart"
+    "added_to_cart": "{} added to cart",
+    "pickup_title": "Arrange delivery pickup",
+    "pickup_desc": "Tell us how the item gets to its buyer once sold.",
+    "next_pickup": "Next: Delivery & pickup",
+    "method_pickup": "Rider pickup",
+    "method_pickup_desc": "We collect from your address",
+    "method_dropoff": "Drop off",
+    "method_dropoff_desc": "Bring it to a partner point",
+    "phone_hint": "Phone number (09xxxxxxxxx)",
+    "address_hint": "Pickup address",
+    "pickup_time": "Preferred pickup time",
+    "slot_morning": "9–12 AM",
+    "slot_afternoon": "12–4 PM",
+    "slot_evening": "4–7 PM",
+    "back": "Back",
+    "err_phone": "Please enter your phone number",
+    "err_address": "Please enter a pickup address",
+    "posted_pickup": "Item posted! A rider will collect it once it sells.",
+    "posted_dropoff": "Item posted! Drop it off at a partner point once it sells."
   },
   "wardrobe": {
     "title": "My Wardrobe",
@@ -721,5 +747,42 @@
     "open_feature": "Open this feature",
     "no_preview": "No products to preview",
     "home_subtitle": "New here? Learn what every button does"
+  },
+  "order_history": {
+    "title": "Order History",
+    "empty_title": "No orders yet",
+    "empty_desc": "Your purchases will appear here after you place your first order.",
+    "orders_count": "{} items purchased",
+    "points_earned": "{} pts earned",
+    "unknown_item": "Item no longer available"
+  },
+  "notif": {
+    "title": "Notifications",
+    "mark_all": "Mark all read",
+    "all": "All",
+    "filter_shop": "Shop",
+    "filter_resell": "Resell",
+    "filter_donate": "Donate",
+    "filter_orders": "Orders",
+    "empty": "No notifications here yet",
+    "min_ago": "{} min ago",
+    "hr_ago": "{} hr ago",
+    "day_ago": "{} d ago",
+    "resell_msg_title": "New message on your listing",
+    "resell_msg_body": "Thida K. asked about \"NRF Deathwish Hoodie\" — \"Is it still available?\"",
+    "resell_like_title": "Your listing is getting attention",
+    "resell_like_body": "3 people liked \"NRF Deathwish Hoodie\" in the last hour.",
+    "order_title": "Your order is on the way",
+    "order_body": "Order #PM2048 has been picked up and is heading to you.",
+    "sale_title": "Flash Sale is live!",
+    "sale_body": "Up to 40% off from NRF Store and CLASSYDOCK — ends tonight.",
+    "new_drop_title": "New drop from CLASSYDOCK",
+    "new_drop_body": "Star Wear collection just landed. Be the first to try it on.",
+    "resell_sold_title": "Your item sold!",
+    "resell_sold_body": "\"ABCD Zip Up Hoodie\" was bought by Ko Zaw. Arrange the pickup now.",
+    "donate_title": "Donation pickup confirmed",
+    "donate_body": "Hninzigon Home for the Aged will receive your clothes tomorrow. +200 pts",
+    "points_title": "You earned reward points",
+    "points_body": "+640 pts from your last purchase. Keep styling!"
   }
 }

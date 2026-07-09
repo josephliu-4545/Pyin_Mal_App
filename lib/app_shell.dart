@@ -15,6 +15,7 @@ import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/model_preview_screen.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
 import 'package:pyin_mal_app/screens/ar_fitting_room_screen.dart';
+import 'package:pyin_mal_app/screens/notification_screen.dart';
 import 'package:pyin_mal_app/screens/ai_chat_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/profile_screen.dart';
@@ -29,6 +30,7 @@ import 'package:pyin_mal_app/screens/sale_screen.dart';
 import 'package:pyin_mal_app/screens/resell_screen.dart';
 import 'package:pyin_mal_app/screens/wardrobe_screen.dart';
 import 'package:pyin_mal_app/screens/community_screen.dart';
+import 'package:pyin_mal_app/screens/settings_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/core/guide_keys.dart';
@@ -423,6 +425,8 @@ class _HomeTabState extends State<_HomeTab> {
     final sections = <Widget>[
       _buildAdCarousel(isDark),
       const SizedBox(height: 24),
+      _buildAiHighlightSection(isDark),
+      const SizedBox(height: 24),
       _buildSaleSection(isDark),
       const SizedBox(height: 24),
       _buildResellSection(isDark),
@@ -507,21 +511,52 @@ class _HomeTabState extends State<_HomeTab> {
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: GestureDetector(
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No new notifications')),
-                ),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: headerChip,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.notifications_none_rounded,
-                    color: headerIcon,
-                    size: 20,
-                  ),
+                onTap: () async {
+                  await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const NotificationScreen()));
+                  if (mounted) setState(() {}); // refresh unread badge
+                },
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: headerChip,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.notifications_none_rounded,
+                        color: headerIcon,
+                        size: 20,
+                      ),
+                    ),
+                    if (NotificationStore.unreadCount > 0)
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE53935),
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                              minWidth: 17, minHeight: 17),
+                          child: Text(
+                            '${NotificationStore.unreadCount}',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.outfit(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -994,6 +1029,185 @@ class _HomeTabState extends State<_HomeTab> {
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: AppColors.inkBlack)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── AI/AR/Scan highlight section (shown on both home tabs) ────────────────
+  Widget _buildAiHighlightSection(bool isDark) {
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome_rounded,
+                  size: 18, color: isDark ? AppColors.gold : AppColors.burgundy),
+              const SizedBox(width: 8),
+              Text('Try before you buy',
+                  style: GoogleFonts.rufina(
+                      fontSize: 20, fontWeight: FontWeight.bold, color: ink)),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // One row — three equal feature cards
+          Row(
+            children: [
+              Expanded(
+                child: _aiFeatureCard(
+                  colors: const [Color(0xFF5D4A9C), Color(0xFF8B6FD8)],
+                  icon: Icons.checkroom_rounded,
+                  title: 'AI Try-On',
+                  desc: 'See it on your photo',
+                  image:
+                      'pyin-mal-assets/assets/images/Photo/featured style.jpg',
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const TryOnScreen())),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _aiFeatureCard(
+                  colors: const [Color(0xFF1F5F8B), Color(0xFF3D9BE9)],
+                  icon: Icons.view_in_ar_rounded,
+                  title: 'AR Try-On',
+                  desc: 'Live camera fitting',
+                  image:
+                      'pyin-mal-assets/assets/images/Hero/pyin mal studio1.jpg',
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ARFittingRoomScreen())),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _aiFeatureCard(
+                  colors: const [Color(0xFF2E6B4F), Color(0xFF52B788)],
+                  icon: Icons.document_scanner_rounded,
+                  title: 'Smart Scan',
+                  desc: 'Scan & find it here',
+                  image:
+                      'pyin-mal-assets/assets/images/Male/Nrf/Tee/b_ABCD TEE_p1.jpg',
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const ScanScreen())),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _aiFeatureCard({
+    required List<Color> colors,
+    required IconData icon,
+    required String title,
+    required String desc,
+    required String image,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 138,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+                color: colors.first.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 5)),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Feature photo
+              CdnImage(
+                image,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        colors: colors,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight),
+                  ),
+                ),
+              ),
+              // Colour scrim so the text stays readable and the trio keeps
+              // its purple / blue / green identity.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      colors.first.withOpacity(0.30),
+                      colors.first.withOpacity(0.85),
+                    ],
+                  ),
+                ),
+              ),
+              // Content
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, size: 16, color: Colors.white),
+                    ),
+                    const Spacer(),
+                    Text(title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white)),
+                    const SizedBox(height: 2),
+                    Text(desc,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            height: 1.25,
+                            color: Colors.white.withOpacity(0.9))),
+                    const SizedBox(height: 5),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Open',
+                            style: GoogleFonts.outfit(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white)),
+                        const SizedBox(width: 3),
+                        const Icon(Icons.arrow_forward_rounded,
+                            size: 11, color: Colors.white),
+                      ],
                     ),
                   ],
                 ),
@@ -2109,9 +2323,10 @@ class _HomeTabState extends State<_HomeTab> {
                               closeDrawer();
                               Future.delayed(
                                 const Duration(milliseconds: 200),
-                                () => ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Settings coming soon')),
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const SettingsScreen()),
                                 ),
                               );
                             },

@@ -10,8 +10,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/body_scan_screen.dart';
 import 'package:pyin_mal_app/screens/overlay_permission_screen.dart';
+import 'package:pyin_mal_app/screens/order_history_screen.dart';
 import 'package:pyin_mal_app/screens/subscription_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
+import 'package:pyin_mal_app/screens/settings_screen.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -191,20 +194,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Container(
                         width: 110, height: 110,
                         decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.04)),
-                      ),
-                    ),
-                    Positioned(
-                      top: 16, right: 20,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.gold.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'PYIN MAL',
-                          style: GoogleFonts.outfit(color: AppColors.charcoal, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
-                        ),
                       ),
                     ),
                     // Back button (top-left)
@@ -397,7 +386,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     isDark: isDark,
                     accent: accent,
                     isFirst: false,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                      );
+                    },
                   ),
                   Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.creamAlt, indent: 56),
                   _buildActionTile(
@@ -442,7 +436,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     isDark: isDark,
                     accent: accent,
                     isLast: true,
-                    onTap: () {},
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const OrderHistoryScreen())),
                   ),
                 ],
               ),
