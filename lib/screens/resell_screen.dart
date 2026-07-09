@@ -5,9 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
+import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/screens/resell_chat_screen.dart';
 import 'package:pyin_mal_app/screens/resell_inbox_screen.dart';
-import 'package:pyin_mal_app/services/cart_service.dart';
 
 class ResellPost {
   final String title;

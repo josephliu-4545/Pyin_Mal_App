@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/core/constants/api_constants.dart';
+import 'package:pyin_mal_app/core/constants/shop_constants.dart';
 import '../widgets/product_3d_viewer.dart';
 import '../widgets/cdn_image.dart';
 import '../models/product.dart';
@@ -1329,17 +1330,39 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                           child: Row(
                             children: [
-                              // Shop logo circle
-                              Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  color: accent.withOpacity(0.12),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(Icons.store_rounded,
-                                    color: accent, size: 28),
-                              ),
+                              // Shop logo circle — real logo like the Shops row
+                              Builder(builder: (context) {
+                                final shopInfo = ShopConstants.shops
+                                    .where((s) => s.name == widget.shopName)
+                                    .toList();
+                                final logo = shopInfo.isNotEmpty
+                                    ? shopInfo.first.logoAsset
+                                    : null;
+                                return Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: accent.withOpacity(0.12),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: isDark
+                                            ? Colors.white24
+                                            : Colors.black12),
+                                  ),
+                                  child: ClipOval(
+                                    child: logo != null
+                                        ? Image.asset(
+                                            logo,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                Icon(Icons.store_rounded,
+                                                    color: accent, size: 28),
+                                          )
+                                        : Icon(Icons.store_rounded,
+                                            color: accent, size: 28),
+                                  ),
+                                );
+                              }),
                               const SizedBox(width: 14),
                               Expanded(
                                 child: Column(
