@@ -69,13 +69,18 @@ class ImageHostService {
   /// An uploader takes the image bytes + a name and returns a direct public
   /// URL, or null if that host declined/failed.
   ///
-  /// imgbb is first because it's the only host that sends CORS headers
-  /// (`Access-Control-Allow-Origin: *`), so it's the ONLY one that works when
-  /// the app runs on Flutter Web — a browser blocks freeimage.host/pixhost with
-  /// "Failed to fetch". imgbb needs a free key (IMGBB_API_KEY); without it, it's
-  /// skipped and the native-only hosts are used (fine on Android/iOS/desktop).
+  /// Order matters on Flutter Web, where the browser enforces CORS: only hosts
+  /// that send `Access-Control-Allow-Origin` work there. Cloudinary and imgbb
+  /// do; freeimage.host/pixhost do NOT (browser blocks them with "Failed to
+  /// fetch") so they only work on Android/iOS/desktop.
+  ///
+  /// Cloudinary is first: it's a real account with a generous free quota that
+  /// tolerates volume, so it won't get abuse-banned the way imgbb's key did.
+  /// imgbb is the secondary web host (needs a fresh IMGBB_API_KEY). Each host
+  /// is skipped automatically when its .env config is absent.
   static final List<({String name, _Uploader upload})> _hosts = [
-    (name: 'imgbb', upload: _uploadImgbb), // skipped unless IMGBB_API_KEY set
+    (name: 'cloudinary', upload: _uploadCloudinary), // needs CLOUDINARY_* env
+    (name: 'imgbb', upload: _uploadImgbb), // needs IMGBB_API_KEY
     (name: 'freeimage.host', upload: _uploadFreeimage),
     (name: 'pixhost', upload: _uploadPixhost),
   ];
@@ -101,6 +106,37 @@ class ImageHostService {
 
   // ── Individual hosts ────────────────────────────────────────────────────────
 
+  /// Cloudinary unsigned upload: needs CLOUDINARY_CLOUD_NAME and an unsigned
+  /// CLOUDINARY_UPLOAD_PRESET in .env. Sends the image as a multipart file with
+  /// a slash-free filename (accounts in "dynamic folders" mode reject display
+  /// names containing slashes, which a base64 data-URI with no filename can
+  /// produce) and returns the direct URL at `secure_url`. Supports browser
+  /// CORS, so it works on Flutter Web.
+  static Future<String?> _uploadCloudinary(Uint8List bytes, String name) async {
+    final cloud = dotenv.env['CLOUDINARY_CLOUD_NAME'];
+    final preset = dotenv.env['CLOUDINARY_UPLOAD_PRESET'];
+    if (cloud == null || cloud.isEmpty || preset == null || preset.isEmpty) {
+      return null; // not configured → skip
+    }
+    debugPrint('cloudinary: uploading to "$cloud" preset "$preset"...');
+    final safeName = name.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('https://api.cloudinary.com/v1_1/$cloud/image/upload'),
+    )
+      ..fields['upload_preset'] = preset
+      ..files.add(http.MultipartFile.fromBytes('file', bytes,
+          filename: '$safeName.jpg'));
+
+    final response = await http.Response.fromStream(await request.send());
+    if (response.statusCode != 200) {
+      debugPrint('⚠️ cloudinary HTTP ${response.statusCode}: ${response.body}');
+      return null;
+    }
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return data['secure_url'] as String?;
+  }
+
   /// freeimage.host (Chevereto API): base64 in a form field, JSON back, direct
   /// URL at `image.url` (served from the iili.io CDN).
   static Future<String?> _uploadFreeimage(Uint8List bytes, String name) async {
@@ -122,12 +158,21 @@ class ImageHostService {
   /// account key). base64 image field, direct URL at `data.url`.
   static Future<String?> _uploadImgbb(Uint8List bytes, String name) async {
     final key = dotenv.env['IMGBB_API_KEY'];
-    if (key == null || key.isEmpty) return null; // not configured → skip
+    if (key == null || key.isEmpty) {
+      // Not "invalid key" — the value never made it into the parsed env map.
+      debugPrint('⚠️ imgbb skipped: IMGBB_API_KEY empty at runtime. '
+          'Parsed env keys = ${dotenv.env.keys.toList()}');
+      return null; // not configured → skip
+    }
+    debugPrint('imgbb: uploading with key length ${key.length}...');
     final response = await http.post(
       Uri.parse('https://api.imgbb.com/1/upload?key=$key'),
       body: {'image': base64Encode(bytes)},
     );
-    if (response.statusCode != 200) return null;
+    if (response.statusCode != 200) {
+      debugPrint('⚠️ imgbb HTTP ${response.statusCode}: ${response.body}');
+      return null;
+    }
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     return data['data']?['url'] as String?;
   }
