@@ -3,49 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pyin_mal_app/main.dart';
+import 'package:pyin_mal_app/models/resell_post.dart';
+import 'package:pyin_mal_app/services/database_service.dart';
+import 'package:pyin_mal_app/services/image_host_service.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/screens/resell_chat_screen.dart';
 import 'package:pyin_mal_app/screens/resell_inbox_screen.dart';
 
-class ResellPost {
-  final String title;
-  final String price;
-  final String image; // asset path (used when imageBytes is null)
-  final Uint8List? imageBytes; // uploaded photo
-  final String condition; // Like New / Good / Fair
-  final String seller;
-  final String size;
-  final bool isSoldOut;
-  final bool isMine; // posted by the current user
-
-  const ResellPost({
-    required this.title,
-    required this.price,
-    required this.image,
-    this.imageBytes,
-    required this.condition,
-    required this.seller,
-    required this.size,
-    this.isSoldOut = false,
-    this.isMine = false,
-  });
-
-  ResellPost copyWith({bool? isSoldOut}) => ResellPost(
-        title: title,
-        price: price,
-        image: image,
-        imageBytes: imageBytes,
-        condition: condition,
-        seller: seller,
-        size: size,
-        isSoldOut: isSoldOut ?? this.isSoldOut,
-        isMine: isMine,
-      );
-}
-
-/// In-memory store so user-posted items persist for the session.
+/// Demo seed listings shown to everyone alongside real, Firestore-backed
+/// community posts. These have no [ResellPost.id] so their sold-state is only
+/// toggled locally (they aren't stored in the database).
 class ResellStore {
   static final List<ResellPost> posts = [
     const ResellPost(
@@ -125,6 +95,8 @@ class ResellScreen extends StatefulWidget {
 class _ResellScreenState extends State<ResellScreen> {
   // false = all community listings, true = only the user's own posts
   bool _showMine = false;
+  final DatabaseService _db = DatabaseService();
+  String? get _uid => FirebaseAuth.instance.currentUser?.uid;
 
   @override
   Widget build(BuildContext context) {
@@ -135,9 +107,6 @@ class _ResellScreenState extends State<ResellScreen> {
     final ink = isDark ? Colors.white : AppColors.inkBlack;
     final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
 
-    final posts = _showMine
-        ? ResellStore.posts.where((p) => p.isMine).toList()
-        : ResellStore.posts;
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount =
         screenWidth >= 1024 ? 4 : (screenWidth >= 640 ? 3 : 2);
@@ -153,7 +122,16 @@ class _ResellScreenState extends State<ResellScreen> {
             style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
       ),
       body: SafeArea(
-        child: CustomScrollView(
+        child: StreamBuilder<List<ResellPost>>(
+          stream: _db.streamResellPosts(),
+          builder: (context, snapshot) {
+            // Live community listings first (newest), then the demo seed items.
+            final live = snapshot.data ?? const <ResellPost>[];
+            final all = [...live, ...ResellStore.posts];
+            final posts = _showMine
+                ? all.where((p) => p.isMineFor(_uid)).toList()
+                : all;
+            return CustomScrollView(
           slivers: [
             // Top bar
             SliverToBoxAdapter(
@@ -395,14 +373,16 @@ class _ResellScreenState extends State<ResellScreen> {
                       ink: ink,
                       muted: muted,
                       accent: accent,
-                      onTap: () => _openDetailSheet(posts[i],
-                          ResellStore.posts.indexOf(posts[i]), isDark, accent),
+                      onTap: () =>
+                          _openDetailSheet(posts[i], isDark, accent),
                     ),
                     childCount: posts.length,
                   ),
                 ),
               ),
           ],
+            );
+          },
         ),
       ),
     );
@@ -812,7 +792,7 @@ class _ResellScreenState extends State<ResellScreen> {
                           Expanded(
                             flex: 2,
                             child: ElevatedButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 if (phoneCtrl.text.trim().isEmpty) {
                                   ScaffoldMessenger.of(context)
                                       .showSnackBar(SnackBar(
@@ -837,32 +817,60 @@ class _ResellScreenState extends State<ResellScreen> {
                                             .contains('MMK')
                                         ? rawPrice
                                         : '$rawPrice MMK');
-                                // Insert at the top so it shows first.
-                                ResellStore.posts.insert(
-                                  0,
-                                  ResellPost(
-                                    title: nameCtrl.text.trim(),
-                                    price: priceLabel,
-                                    image: '',
-                                    imageBytes: photo,
-                                    condition: condition,
-                                    seller: 'resell.you'.tr(),
-                                    size: sizeCtrl.text.trim().isEmpty
-                                        ? 'resell.one_size'.tr()
-                                        : sizeCtrl.text.trim(),
-                                    isMine: true,
-                                  ),
-                                );
+                                // Capture values before the sheet closes / awaits.
+                                final messenger =
+                                    ScaffoldMessenger.of(context);
+                                final title = nameCtrl.text.trim();
+                                final size = sizeCtrl.text.trim().isEmpty
+                                    ? 'resell.one_size'.tr()
+                                    : sizeCtrl.text.trim();
+                                final phone = phoneCtrl.text.trim();
+                                final address = addressCtrl.text.trim();
+                                final localPhoto = photo;
+
                                 Navigator.pop(sheetCtx);
-                                setState(() {}); // refresh grid
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                messenger.showSnackBar(const SnackBar(
+                                    content: Text('Posting your item…')));
+
+                                // Host the photo so the listing is visible on
+                                // any device, then persist it to Firestore.
+                                String imageUrl = '';
+                                if (localPhoto != null) {
+                                  final url = await ImageHostService.upload(
+                                      localPhoto,
+                                      'resell_${DateTime.now().millisecondsSinceEpoch}');
+                                  if (url != null) imageUrl = url;
+                                }
+
+                                final id = await _db.createResellPost(
+                                  title: title,
+                                  price: priceLabel,
+                                  imageUrl: imageUrl,
+                                  condition: condition,
+                                  size: size,
+                                  phone: phone,
+                                  pickupMethod: pickupMethod,
+                                  address: pickupMethod == 'pickup'
+                                      ? address
+                                      : null,
+                                  timeSlot: pickupMethod == 'pickup'
+                                      ? timeSlot
+                                      : null,
+                                );
+
+                                if (!mounted) return;
+                                messenger.hideCurrentSnackBar();
+                                messenger.showSnackBar(
                                   SnackBar(
-                                      content: Text(pickupMethod == 'pickup'
-                                          ? 'Item posted! A rider will collect it once it sells.'
-                                          : 'Item posted! Drop it off at a partner point once it sells.'),
+                                      content: Text(id == null
+                                          ? 'Couldn\'t post — please sign in and try again.'
+                                          : (pickupMethod == 'pickup'
+                                              ? 'Item posted! A rider will collect it once it sells.'
+                                              : 'Item posted! Drop it off at a partner point once it sells.')),
                                       duration:
                                           const Duration(seconds: 3)),
                                 );
+                                // The live stream refreshes the grid on its own.
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: accent,
@@ -925,7 +933,7 @@ class _ResellScreenState extends State<ResellScreen> {
   }
 
   // ── Listing detail sheet ────────────────────────────────────────────────────
-  void _openDetailSheet(ResellPost post, int postIndex, bool isDark, Color accent) {
+  void _openDetailSheet(ResellPost post, bool isDark, Color accent) {
     final cardBg = isDark ? AppColors.darkWarm : Colors.white;
     final ink = isDark ? Colors.white : AppColors.inkBlack;
     final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
@@ -951,7 +959,7 @@ class _ResellScreenState extends State<ResellScreen> {
                 width: double.infinity,
                 child: post.imageBytes != null
                     ? Image.memory(post.imageBytes!, fit: BoxFit.cover)
-                    : CdnImage(post.image,
+                    : CdnImage(post.displaySrc,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                             color: isDark
@@ -1063,7 +1071,7 @@ class _ResellScreenState extends State<ResellScreen> {
                                   seller: post.seller,
                                   itemTitle: post.title,
                                   itemPrice: post.price,
-                                  itemImageAsset: post.image,
+                                  itemImageAsset: post.displaySrc,
                                   itemImageBytes: post.imageBytes,
                                 ),
                               ),
@@ -1091,26 +1099,35 @@ class _ResellScreenState extends State<ResellScreen> {
                         child: ElevatedButton.icon(
                           onPressed: post.isSoldOut
                               ? null
-                              : () {
+                              : () async {
                                   CartService.instance.addToCart(
                                     CartItem(
                                       productId:
                                           'resell_${post.title}_${post.seller}',
                                       name: post.title,
                                       price: post.price,
-                                      image: post.image,
+                                      image: post.displaySrc,
                                       brand: 'Resell · ${post.seller}',
                                       size: post.size,
                                     ),
                                   );
-                                  // Mark as sold out in the store.
-                                  setState(() {
-                                    ResellStore.posts[postIndex] =
-                                        ResellStore.posts[postIndex]
-                                            .copyWith(isSoldOut: true);
-                                  });
+                                  final messenger =
+                                      ScaffoldMessenger.of(context);
                                   Navigator.pop(sheetCtx);
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  // Mark sold: persisted for real listings, or
+                                  // locally for the demo seed items (no id).
+                                  if (post.id.isNotEmpty) {
+                                    await _db.markResellSold(post.id);
+                                  } else {
+                                    final idx = ResellStore.posts.indexOf(post);
+                                    if (idx != -1) {
+                                      ResellStore.posts[idx] = ResellStore
+                                          .posts[idx]
+                                          .copyWith(isSoldOut: true);
+                                    }
+                                    if (mounted) setState(() {});
+                                  }
+                                  messenger.showSnackBar(
                                     SnackBar(
                                         content: Text('resell.added_to_cart'
                                             .tr(args: [post.title])),
@@ -1236,7 +1253,7 @@ class _ResellCard extends StatelessWidget {
                                 Colors.transparent, BlendMode.multiply),
                         child: post.imageBytes != null
                             ? Image.memory(post.imageBytes!, fit: BoxFit.cover)
-                            : CdnImage(post.image,
+                            : CdnImage(post.displaySrc,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Container(
                                     color: isDark
