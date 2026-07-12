@@ -1,4 +1,26 @@
 {
+  "measure": {
+    "tab_scan": "AI Scan",
+    "tab_manual": "Measure Yourself",
+    "intro_title": "Prefer not to use AI?",
+    "intro": "Measure yourself with a tape and enter the numbers below. Nothing leaves your phone except the measurements you choose to save — great if your size changes often.",
+    "how_to": "HOW TO MEASURE",
+    "tip": "Use a soft tape measure over light clothing. Keep the tape snug but not tight, and level all the way around. All values are in centimetres (cm).",
+    "save_btn": "Save my measurements",
+    "saved": "Measurements saved to your profile",
+    "empty_error": "Enter at least one measurement first.",
+    "source_manual": "Entered by hand",
+    "how": {
+      "neckGirth": "Around the base of your neck, where a shirt collar sits.",
+      "acrossBackShoulderWidth": "Across your upper back, from one shoulder tip to the other.",
+      "bustGirth": "Around the fullest part of your chest/bust, tape level.",
+      "waistGirth": "Around the narrowest part of your waist, roughly at the navel.",
+      "hipGirth": "Around the fullest part of your hips and seat.",
+      "backNeckPointToWristLengthR": "From the base of your neck, over the shoulder, down to the wrist.",
+      "thighGirthR": "Around the fullest part of one thigh.",
+      "insideLegLengthR": "From the crotch straight down to the ankle (inseam)."
+    }
+  },
   "nav": {
     "home": "Home",
     "shop": "Shop",
@@ -784,5 +806,27 @@
     "donate_body": "Hninzigon Home for the Aged will receive your clothes tomorrow. +200 pts",
     "points_title": "You earned reward points",
     "points_body": "+640 pts from your last purchase. Keep styling!"
+  },
+  "capture": {
+    "guided_camera": "Guided camera (auto timer)",
+    "guided_camera_sub": "Follow the on-screen body guide; it snaps automatically when you're in the right pose.",
+    "hint_no_body": "Step into frame — full body visible",
+    "hint_step_back": "Step back so your feet are in view",
+    "hint_head": "Move so your head is in the frame",
+    "hint_center": "Move to the center of the frame",
+    "hint_face": "Turn to face the camera",
+    "hint_turn_side": "Turn to show your right side",
+    "hint_arms_out": "Move your arms away from your body",
+    "hint_arms_lower": "Lower your arms a little",
+    "hint_arms_down": "Relax your arms down by your sides",
+    "hint_hold": "Perfect — hold still!",
+    "hold_still": "Hold still…",
+    "cancel": "Cancel",
+    "retake": "Retake",
+    "use_photo": "Use photo",
+    "shutter_hint": "Tap to start the timer now",
+    "permission": "Camera permission is needed to take your scan photos.",
+    "open_settings": "Open settings",
+    "go_back": "Go back"
   }
 }
