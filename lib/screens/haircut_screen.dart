@@ -646,36 +646,65 @@ class _HaircutScreenState extends State<HaircutScreen> {
           ),
         ),
 
-        // Apply button (only when a look is selected)
+        // Apply button & Try on button (only when a look is selected)
         if (_selectedHairstyle != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ARHairFilterScreen(
-                        initialHairstylePath: _selectedHairstyle,
-                      ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ARHairFilterScreen(
+                            initialHairstylePath: _selectedHairstyle,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
+                    label: Text('haircut.preview_on_me'.tr(),
+                        style: GoogleFonts.outfit(
+                            fontSize: 14, fontWeight: FontWeight.w700)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
-                  );
-                },
-                icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
-                label: Text('haircut.preview_on_me'.tr(),
-                    style: GoogleFonts.outfit(
-                        fontSize: 14, fontWeight: FontWeight.w700)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accent,
-                  foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => HairTryOnScreen(
+                            initialHairstylePath: _selectedHairstyle,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.face_retouching_natural_rounded, size: 18),
+                    label: Text('product.try_on'.tr(),
+                        style: GoogleFonts.outfit(
+                            fontSize: 14, fontWeight: FontWeight.w700)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: accent,
+                      side: BorderSide(color: accent, width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         // Book now with the chosen hairstyle

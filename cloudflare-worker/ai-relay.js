@@ -63,6 +63,32 @@ export default {
       return json({ error: "Invalid JSON body" }, 400);
     }
 
+    // ── Image upload relay ────────────────────────────────────────────────
+    // The browser can't reach the free image hosts directly (no CORS / IP
+    // bans), so the app POSTs { upload: true, name, image: <base64> } here
+    // and the Worker forwards it to freeimage.host from Cloudflare's edge.
+    // Responds { url: "https://iili.io/...." }.
+    if (payload.upload === true) {
+      if (!payload.image) return json({ error: "image (base64) is required" }, 400);
+      try {
+        const form = new URLSearchParams();
+        form.set("key", env.FREEIMAGE_KEY || "6d207e02198a847aa98d0a2a901485a5");
+        form.set("format", "json");
+        form.set("source", payload.image);
+        const up = await fetch("https://freeimage.host/api/1/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: form.toString(),
+        });
+        const data = await up.json();
+        const url = data && data.image && data.image.url;
+        if (!url) return json({ error: "host declined", detail: data }, 502);
+        return json({ url }, 200);
+      } catch (e) {
+        return json({ error: "Upload relay failed: " + e.message }, 502);
+      }
+    }
+
     const model = payload.model || "gemini-2.5-flash";
     const body = payload.body;
     if (!body) return json({ error: "body is required" }, 400);

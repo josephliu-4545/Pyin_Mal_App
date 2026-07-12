@@ -1,6 +1,5 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -8,8 +7,9 @@ import '../services/nanobanana_api_service.dart';
 
 class HairTryOnScreen extends StatefulWidget {
   final String? initialPrompt;
+  final String? initialHairstylePath;
 
-  const HairTryOnScreen({super.key, this.initialPrompt});
+  const HairTryOnScreen({super.key, this.initialPrompt, this.initialHairstylePath});
 
   @override
   State<HairTryOnScreen> createState() => _HairTryOnScreenState();
@@ -27,6 +27,27 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
   String? _resultImageUrl;
 
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialHairstyle();
+  }
+
+  Future<void> _loadInitialHairstyle() async {
+    if (widget.initialHairstylePath != null && widget.initialHairstylePath!.isNotEmpty) {
+      try {
+        final byteData = await rootBundle.load(widget.initialHairstylePath!);
+        final bytes = byteData.buffer.asUint8List();
+        setState(() {
+          _hairPhotoBytes = bytes;
+          _hairPhoto = XFile.fromData(bytes, name: widget.initialHairstylePath!.split('/').last);
+        });
+      } catch (e) {
+        debugPrint('Failed to load initial hairstyle from assets: $e');
+      }
+    }
+  }
 
   Future<void> _pickImage(
     void Function(XFile file, Uint8List bytes) onPicked,

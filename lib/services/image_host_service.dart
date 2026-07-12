@@ -75,7 +75,11 @@ class ImageHostService {
   /// "Failed to fetch". imgbb needs a free key (IMGBB_API_KEY); without it, it's
   /// skipped and the native-only hosts are used (fine on Android/iOS/desktop).
   static final List<({String name, _Uploader upload})> _hosts = [
+    // Own Cloudflare relay first: works everywhere (CORS *) and from any
+    // region. Skipped automatically when AI_RELAY_URL isn't configured.
+    (name: 'relay', upload: _uploadViaRelay),
     (name: 'imgbb', upload: _uploadImgbb), // skipped unless IMGBB_API_KEY set
+    (name: 'tmpfiles.org', upload: _uploadTmpfiles), // keyless + CORS-open (web OK)
     (name: 'freeimage.host', upload: _uploadFreeimage),
     (name: 'pixhost', upload: _uploadPixhost),
   ];
@@ -100,6 +104,27 @@ class ImageHostService {
   }
 
   // ── Individual hosts ────────────────────────────────────────────────────────
+
+  /// Own Cloudflare Worker relay (cloudflare-worker/ai-relay.js): forwards the
+  /// base64 image to freeimage.host from Cloudflare's edge. This is the only
+  /// path that works on Flutter Web from networks where the public hosts are
+  /// CORS-blocked or IP-banned. Skipped when AI_RELAY_URL isn't configured.
+  static Future<String?> _uploadViaRelay(Uint8List bytes, String name) async {
+    final relay = dotenv.env['AI_RELAY_URL'] ?? '';
+    if (relay.isEmpty || relay.contains('your-subdomain')) return null;
+    final response = await http.post(
+      Uri.parse(relay),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'upload': true,
+        'name': name,
+        'image': base64Encode(bytes),
+      }),
+    );
+    if (response.statusCode != 200) return null;
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return data['url'] as String?;
+  }
 
   /// freeimage.host (Chevereto API): base64 in a form field, JSON back, direct
   /// URL at `image.url` (served from the iili.io CDN).
@@ -130,6 +155,29 @@ class ImageHostService {
     if (response.statusCode != 200) return null;
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     return data['data']?['url'] as String?;
+  }
+
+  /// tmpfiles.org: keyless multipart upload with permissive CORS, so it works
+  /// from Flutter Web where freeimage.host/pixhost are blocked by the browser.
+  /// Files live for 60 minutes — plenty for NanoBanana to fetch them.
+  /// The API returns a viewer URL (`https://tmpfiles.org/123/x.jpg`); the
+  /// direct image URL inserts `/dl/` after the host.
+  static Future<String?> _uploadTmpfiles(Uint8List bytes, String name) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('https://tmpfiles.org/api/v1/upload'),
+    )..files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: '$name.jpg'));
+
+    final response = await http.Response.fromStream(await request.send());
+    if (response.statusCode != 200) return null;
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final viewer = data['data']?['url'] as String?;
+    if (viewer == null) return null;
+    return viewer
+        .replaceFirst('http://', 'https://')
+        .replaceFirst('tmpfiles.org/', 'tmpfiles.org/dl/');
   }
 
   /// pixhost: multipart upload. The API returns only a viewer `show_url` and a

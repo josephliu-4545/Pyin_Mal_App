@@ -1150,16 +1150,16 @@ class _HomeTabState extends State<_HomeTab> {
                   ),
                 ),
               ),
-              // Colour scrim so the text stays readable and the trio keeps
-              // its purple / blue / green identity.
+              // Neutral bottom scrim — keeps the photo's own colours while
+              // making the white text readable.
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      colors.first.withOpacity(0.30),
-                      colors.first.withOpacity(0.85),
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.65),
                     ],
                   ),
                 ),
