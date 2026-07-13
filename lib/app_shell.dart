@@ -1709,7 +1709,7 @@ class _HomeTabState extends State<_HomeTab> {
                                 child: post.imageBytes != null
                                     ? Image.memory(post.imageBytes!,
                                         fit: BoxFit.cover)
-                                    : CdnImage(post.image,
+                                    : CdnImage(post.displaySrc,
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) => Container(
                                             color: isDark

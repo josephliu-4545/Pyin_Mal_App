@@ -444,181 +444,214 @@ class ShopLookbookSection extends StatefulWidget {
 }
 
 class _ShopLookbookSectionState extends State<ShopLookbookSection> {
-  List<({ShopInfo shop, String path})> _looks = [];
+  bool _loaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadLooks();
-  }
-
-  Future<void> _loadLooks() async {
-    final assets = await _loadManifestAssets();
-    final looks = <({ShopInfo shop, String path})>[];
-    for (final s in ShopConstants.shops) {
-      for (var i = 1; i <= 3; i++) {
-        final path = s.lookAsset(i);
-        if (assets.contains(path)) looks.add((shop: s, path: path));
-      }
-    }
-    if (mounted) setState(() => _looks = looks);
+    // Products power the per-shop trending collections.
+    ProductRepository.load().then((_) {
+      if (mounted) setState(() => _loaded = true);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // If no looks uploaded yet, show placeholders using all shops (look_1 path)
-    final looks = _looks.isNotEmpty
-        ? _looks
-        : [
-            for (final s in ShopConstants.shops)
-              (shop: s, path: s.lookAsset(1)),
-          ];
+    // One collection per shop: that shop's most popular / trending pieces.
+    final collections = <({ShopInfo shop, List<Product> products})>[
+      for (final s in ShopConstants.shops)
+        (
+          shop: s,
+          products: ProductRepository.allProducts
+              .where((p) => p.shopName == s.name)
+              .take(4)
+              .toList(),
+        ),
+    ].where((c) => c.products.isNotEmpty).toList();
+
+    if (!_loaded && collections.isEmpty) return const SizedBox.shrink();
+    if (collections.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader(
-            'Shop Lookbook', 'Styles straight from the shops', widget.isDark),
+        _sectionHeader('Shop Lookbook',
+            'Trending collections from every shop', widget.isDark),
         const SizedBox(height: 14),
         SizedBox(
-          height: 180,
+          height: 210,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            itemCount: looks.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemCount: collections.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, i) {
-              final l = looks[i];
-              return GestureDetector(
-                onTap: () => _openWardrobe(context, l.shop, widget.isDark),
-                child: SizedBox(
-                  width: 150,
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        top: 6, right: 0, bottom: 6, left: 10,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: (widget.isDark ? Colors.white : Colors.black)
-                                .withOpacity(0.10),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 3, right: 5, bottom: 3, left: 5,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: (widget.isDark ? Colors.white : Colors.black)
-                                .withOpacity(0.16),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: SizedBox(
-                            width: 140,
-                            height: 180,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Image.asset(
-                                  l.path,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    color: widget.isDark
-                                        ? AppColors.darkWarm
-                                        : AppColors.creamAlt,
-                                    child: Icon(Icons.checkroom_rounded,
-                                        size: 30,
-                                        color: widget.isDark
-                                            ? Colors.white24
-                                            : Colors.black26),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 8, right: 8,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 7, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.55),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.collections_rounded,
-                                            size: 11, color: Colors.white),
-                                        const SizedBox(width: 3),
-                                        Text('${looks.length}',
-                                            style: GoogleFonts.outfit(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w700,
-                                                color: Colors.white)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Align(
-                                  alignment: Alignment.bottomLeft,
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.fromLTRB(10, 18, 10, 8),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Colors.transparent,
-                                          Colors.black.withOpacity(0.7),
-                                        ],
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(l.shop.name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: GoogleFonts.outfit(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white)),
-                                        const SizedBox(height: 2),
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(Icons.touch_app_rounded,
-                                                size: 10, color: Colors.white70),
-                                            const SizedBox(width: 3),
-                                            Text('Tap to view',
-                                                style: GoogleFonts.outfit(
-                                                    fontSize: 9,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Colors.white70)),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              final c = collections[i];
+              return _CollectionCard(
+                shop: c.shop,
+                products: c.products,
+                isDark: widget.isDark,
+                onTap: () => _openWardrobe(context, c.shop, widget.isDark),
               );
             },
           ),
         ),
       ],
+    );
+  }
+}
+
+// One shop's trending collection: a 2×2 collage of its top pieces.
+class _CollectionCard extends StatelessWidget {
+  final ShopInfo shop;
+  final List<Product> products;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _CollectionCard({
+    required this.shop,
+    required this.products,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  Widget _tile(Product? p) {
+    if (p == null) {
+      return Container(
+        color: isDark ? Colors.white10 : const Color(0xFFF0EDE8),
+        child: Icon(Icons.checkroom_rounded,
+            size: 20, color: isDark ? Colors.white24 : Colors.black26),
+      );
+    }
+    return CdnImage(
+      p.image,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(
+        color: isDark ? Colors.white10 : const Color(0xFFF0EDE8),
+        child: Icon(Icons.checkroom_rounded,
+            size: 20, color: isDark ? Colors.white24 : Colors.black26),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cardBg = isDark ? AppColors.darkWarm : Colors.white;
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 158,
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+              color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 2×2 product collage + TRENDING badge
+            Expanded(
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(17)),
+                    child: Column(
+                      children: [
+                        for (var row = 0; row < 2; row++)
+                          Expanded(
+                            child: Row(
+                              children: [
+                                for (var col = 0; col < 2; col++)
+                                  Expanded(
+                                    child: Padding(
+                                      padding: EdgeInsets.only(
+                                          right: col == 0 ? 1 : 0,
+                                          bottom: row == 0 ? 1 : 0),
+                                      child: _tile(
+                                          row * 2 + col < products.length
+                                              ? products[row * 2 + col]
+                                              : null),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.local_fire_department_rounded,
+                              size: 10, color: Color(0xFFFF7043)),
+                          const SizedBox(width: 3),
+                          Text('TRENDING',
+                              style: GoogleFonts.outfit(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.6,
+                                  color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Shop name + item count
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(shop.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: ink)),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(Icons.style_rounded, size: 10, color: muted),
+                      const SizedBox(width: 3),
+                      Text('${products.length} trending pieces',
+                          style: GoogleFonts.outfit(
+                              fontSize: 10, color: muted)),
+                      const Spacer(),
+                      Icon(Icons.arrow_forward_rounded,
+                          size: 12, color: muted),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

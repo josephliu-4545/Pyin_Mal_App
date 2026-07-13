@@ -132,9 +132,8 @@ class _HaircutScreenState extends State<HaircutScreen> {
             // 1. Premium Hero Section
             _buildHero(context, isMobile, isDesktop, isDark, accent),
 
-            // 2. Face Shape Selector
-            if (_hairGender == 'Women')
-              _buildFaceShapeSelector(isDark, accent),
+            // 2. Face Shape Selector (both Women and Men)
+            _buildFaceShapeSelector(isDark, accent),
 
             // 2b. Hairstyle Try-On Gallery (category tabs + selectable cards)
             _buildHairstyleGallery(isDark, accent),
@@ -284,8 +283,6 @@ class _HaircutScreenState extends State<HaircutScreen> {
       {'name': 'Round Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/R.jpg'},
       {'name': 'Square Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/S.jpg'},
       {'name': 'Diamond Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/D.jpg'},
-      {'name': 'Heart Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/H.jpg'},
-      {'name': 'Triangle Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/T.jpg'},
     ];
 
     return Column(
@@ -764,6 +761,23 @@ class _HaircutScreenState extends State<HaircutScreen> {
   }
 
   Widget _buildHairstyleSection(BuildContext context, bool isMobile, bool isDark, Color accent) {
+    // Recommendations come from the real hairstyle assets for the current
+    // gender — spread across the catalog so the picks feel varied.
+    final genderPath = _hairGender == 'Women' ? 'Female' : 'Male';
+    final pool = _allAssetPaths
+        .where((p) =>
+            p.startsWith('pyin-mal-assets/assets/images/Hair/$genderPath/'))
+        .toList();
+    final recommended = <String>[];
+    if (pool.isNotEmpty) {
+      final step = (pool.length / 6).ceil().clamp(1, pool.length);
+      for (var i = 0; i < pool.length && recommended.length < 6; i += step) {
+        recommended.add(pool[i]);
+      }
+    }
+
+    if (recommended.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -788,138 +802,169 @@ class _HaircutScreenState extends State<HaircutScreen> {
           ),
         ),
         SizedBox(
-          height: 320,
-          child: ListView(
+          height: 300,
+          child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             scrollDirection: Axis.horizontal,
-            children: [
-              _buildHairstyleCard(
-                'Classic Undercut',
-                'Sharp sides with a textured top for a versatile modern look.',
-                'assets/images/HairStyle/Male/Diamond Face/Diamond - Undercut.jpg',
-                'Professional',
-                isDark, accent,
-              ),
-              _buildHairstyleCard(
-                'Textured Crop',
-                'Low maintenance style that works perfectly with active lifestyles.',
-                'assets/images/HairStyle/Male/Diamond Face/Diamond  - Textured Crop.jpg',
-                'Casual',
-                isDark, accent,
-              ),
-              _buildHairstyleCard(
-                'Long Textured Top',
-                'Flowing layers with a clean fade for a sophisticated vintage vibe.',
-                'assets/images/HairStyle/Male/Round Face/Round - Longer Textured Top + Fade.jpg',
-                'Elegant',
-                isDark, accent,
-              ),
-            ],
+            itemCount: recommended.length,
+            itemBuilder: (_, i) =>
+                _buildRecommendedCard(recommended[i], isDark, accent),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildHairstyleCard(String title, String desc, String img, String tag, bool isDark, Color accent) {
-    return Container(
-      width: 260,
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                  child: CdnImage(
-                    img,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    errorBuilder: (c, e, s) => Container(color: Colors.grey[300], child: const Icon(Icons.image, size: 50)),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: accent.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(8),
+  Widget _buildRecommendedCard(String path, bool isDark, Color accent) {
+    final name = _extractHairstyleName(path);
+    final fav = _favHairstyles.contains(path);
+    final sel = _selectedHairstyle == path;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedHairstyle = path),
+      child: Container(
+        width: 210,
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+              color: sel ? accent : Colors.transparent, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(22)),
+                    child: CdnImage(
+                      path,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (c, e, s) => Container(
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.image, size: 50)),
                     ),
-                    child: Text(
-                      tag,
-                      style: GoogleFonts.outfit(
-                        color: isDark ? AppColors.charcoal : Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                  ),
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: accent.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Trending',
+                        style: GoogleFonts.outfit(
+                          color: isDark ? AppColors.charcoal : Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.3),
-                      shape: BoxShape.circle,
+                  // Favourite heart — same list as the gallery hearts
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: GestureDetector(
+                      onTap: () => setState(() {
+                        fav
+                            ? _favHairstyles.remove(path)
+                            : _favHairstyles.add(path);
+                      }),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          fav
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          size: 17,
+                          color: fav
+                              ? const Color(0xFFE53935)
+                              : Colors.black54,
+                        ),
+                      ),
                     ),
-                    child: const Icon(Icons.bookmark_outline, color: Colors.white, size: 18),
                   ),
-                ),
-              ],
+                  if (sel)
+                    Positioned(
+                      bottom: 10,
+                      right: 10,
+                      child: Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: accent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.check_rounded,
+                            size: 16,
+                            color:
+                                isDark ? AppColors.charcoal : Colors.white),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: isDark ? Colors.white : AppColors.inkBlack,
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: isDark ? Colors.white : AppColors.inkBlack,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  desc,
-                  style: GoogleFonts.outfit(
-                    color: isDark ? AppColors.paleText : AppColors.inkGrey,
-                    fontSize: 12,
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.star, color: AppColors.gold, size: 14),
+                      const SizedBox(width: 4),
+                      Text('Best Match',
+                          style: GoogleFonts.outfit(
+                              color: AppColors.gold,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12)),
+                      const Spacer(),
+                      Text('Tap to select',
+                          style: GoogleFonts.outfit(
+                              fontSize: 10,
+                              color: isDark
+                                  ? AppColors.paleText
+                                  : AppColors.inkGrey)),
+                    ],
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.star, color: AppColors.gold, size: 14),
-                    const SizedBox(width: 4),
-                    Text('Best Match', style: GoogleFonts.outfit(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
-          )
-        ],
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

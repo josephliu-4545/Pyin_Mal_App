@@ -5,15 +5,16 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/models/wardrobe_item.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/services/wardrobe_service.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 
-/// Renders a wardrobe item's image whether it's a full URL (manual uploads,
-/// hosted on catbox.moe) or a relative/CDN-style asset path (items added
-/// automatically from a shop purchase) — CdnImage only handles the latter.
+/// Renders a wardrobe item's image whether it's a full URL (manual uploads)
+/// or a relative/CDN-style asset path (items added automatically from a shop
+/// purchase) — CdnImage only handles the latter.
 Widget _wardrobeImage(String url, {BoxFit fit = BoxFit.cover}) {
   if (url.startsWith('http')) {
     return CachedNetworkImage(
@@ -45,7 +46,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   void initState() {
     super.initState();
     // viewportFraction controls how close the cards are to each other
-    _pageController = PageController(viewportFraction: 0.45);
+    _pageController = PageController(viewportFraction: 0.52);
     _pageController.addListener(() {
       setState(() {
         _currentPage = _pageController.page ?? 0.0;
@@ -59,25 +60,33 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     super.dispose();
   }
 
+  // Theme helpers — follows the app's light / dark themes.
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get _accent => _isDark ? AppColors.gold : AppColors.burgundy;
+  Color get _bg => _isDark ? AppColors.charcoal : const Color(0xFFF5F2EE);
+  Color get _surface => _isDark ? AppColors.darkWarm : Colors.white;
+  Color get _ink => _isDark ? Colors.white : AppColors.inkBlack;
+  Color get _muted => _isDark ? AppColors.paleText : AppColors.inkGrey;
+
   @override
   Widget build(BuildContext context) {
-    // Matching the video's light blue background aesthetic
-    const bg = Color(0xFFA1D6E2);
-
     return Scaffold(
-      backgroundColor: bg,
-      floatingActionButton: FloatingActionButton(
+      backgroundColor: _bg,
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _adding ? null : _openAddSheet,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        child: _adding
-            ? const SizedBox(
+        backgroundColor: _accent,
+        foregroundColor: _isDark ? AppColors.charcoal : Colors.white,
+        icon: _adding
+            ? SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.black),
+                    strokeWidth: 2,
+                    color: _isDark ? AppColors.charcoal : Colors.white),
               )
-            : const Icon(Icons.add_a_photo_rounded),
+            : const Icon(Icons.add_a_photo_rounded, size: 18),
+        label: Text('Add item',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
       ),
       body: SafeArea(
         child: StreamBuilder<List<WardrobeItem>>(
@@ -87,65 +96,114 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
 
             return Column(
               children: [
-                const SizedBox(height: 40),
-                // Video Header
+                // ── Top bar ──
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Row(
+                    children: [
+                      if (Navigator.of(context).canPop())
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: _surface,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black
+                                        .withOpacity(_isDark ? 0.2 : 0.07),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2)),
+                              ],
+                            ),
+                            child: Icon(Icons.arrow_back_ios_rounded,
+                                size: 18, color: _ink),
+                          ),
+                        ),
+                      const Spacer(),
+                      if (items.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _accent.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                              '${items.length} item${items.length == 1 ? '' : 's'}',
+                              style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: _accent)),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                // ── Header ──
                 Text(
                   'MY WARDROBE',
                   style: GoogleFonts.outfit(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 4.0,
-                    color: Colors.black87,
+                    color: _ink,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  'Drag to rotate · Click to view',
+                  items.isEmpty
+                      ? 'Your closet, digitized'
+                      : 'Drag to rotate · Tap to view',
                   style: GoogleFonts.outfit(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: Colors.black54,
-                    letterSpacing: 1.2,
+                    color: _muted,
+                    letterSpacing: 1.1,
                   ),
                 ),
                 const Spacer(),
-                
-                // 3D Carousel View
+
+                // ── Carousel / empty state ──
                 if (items.isEmpty)
-                  Center(
-                    child: Text('wardrobe.empty'.tr(),
-                        style: GoogleFonts.outfit(color: Colors.black54)),
-                  )
+                  _emptyState()
                 else
                   SizedBox(
-                    height: 380, // Height of the cards
+                    height: 380,
                     child: PageView.builder(
                       controller: _pageController,
                       itemCount: items.length,
                       physics: const BouncingScrollPhysics(),
                       itemBuilder: (context, index) {
-                        // Calculate 3D transformation logic based on scroll position
+                        // 3D transformation based on scroll position
                         final value = (_currentPage - index);
-                        final rotationY = value * 0.8; // Y-axis rotation
-                        final zTranslate = -value.abs() * 200; // Push side items back
-                        final scale = (1 - (value.abs() * 0.15)).clamp(0.6, 1.0); // Scale down side items
+                        final rotationY = value * 0.8;
+                        final zTranslate = -value.abs() * 200;
+                        final scale =
+                            (1 - (value.abs() * 0.15)).clamp(0.6, 1.0);
 
                         final matrix = Matrix4.identity()
-                          ..setEntry(3, 2, 0.001) // Adds 3D perspective
+                          ..setEntry(3, 2, 0.001)
                           ..translate(0.0, 0.0, zTranslate)
-                          ..rotateY(-rotationY) // Negative to rotate naturally with swipe
+                          ..rotateY(-rotationY)
                           ..scale(scale);
 
                         return Transform(
                           transform: matrix,
                           alignment: FractionalOffset.center,
-                          child: _Wardrobe3DCard(
+                          child: _WardrobeCard(
                             item: items[index],
                             isActive: value.abs() < 0.3,
+                            isDark: _isDark,
+                            accent: _accent,
+                            surface: _surface,
+                            ink: _ink,
+                            muted: _muted,
                             onTap: () {
-                              // If tapped when centered, open modal. Otherwise, scroll to it.
                               if (value.abs() < 0.5) {
-                                _open3DModal(items[index]);
+                                _openItemModal(items[index]);
                               } else {
                                 _pageController.animateToPage(
                                   index,
@@ -160,6 +218,21 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     ),
                   ),
                 const Spacer(),
+                // Hint under the carousel
+                if (items.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.swipe_rounded, size: 14, color: _muted),
+                        const SizedBox(width: 6),
+                        Text('Everything you buy is added automatically',
+                            style: GoogleFonts.outfit(
+                                fontSize: 11, color: _muted)),
+                      ],
+                    ),
+                  ),
               ],
             );
           },
@@ -168,31 +241,107 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     );
   }
 
-  // Maintains your existing photo upload logic
+  // ── Empty state ─────────────────────────────────────────────────────────────
+  Widget _emptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+              color: _isDark ? AppColors.darkBorder : AppColors.creamAlt),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(_isDark ? 0.25 : 0.06),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: _accent.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.checkroom_rounded, size: 34, color: _accent),
+            ),
+            const SizedBox(height: 18),
+            Text('Your wardrobe is empty',
+                style: GoogleFonts.rufina(
+                    fontSize: 20, fontWeight: FontWeight.bold, color: _ink)),
+            const SizedBox(height: 8),
+            Text(
+              'Snap a photo of something you own, or shop the app — every purchase hangs itself here automatically.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                  fontSize: 12.5, height: 1.45, color: _muted),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _adding ? null : _openAddSheet,
+                icon: const Icon(Icons.add_a_photo_rounded, size: 17),
+                label: Text('Add your first item',
+                    style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700, fontSize: 14)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _accent,
+                  foregroundColor: _isDark ? AppColors.charcoal : Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Add photo sheet ─────────────────────────────────────────────────────────
   Future<void> _openAddSheet() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       builder: (sheetCtx) {
         return Container(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                    color: _isDark ? Colors.white24 : Colors.black12,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
               ListTile(
-                leading: const Icon(Icons.camera_alt_rounded, color: Colors.black),
+                leading: Icon(Icons.camera_alt_rounded, color: _accent),
                 title: Text('wardrobe.take_photo'.tr(),
-                    style: GoogleFonts.outfit(color: Colors.black)),
+                    style: GoogleFonts.outfit(color: _ink)),
                 onTap: () => Navigator.pop(sheetCtx, ImageSource.camera),
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library_rounded, color: Colors.black),
+                leading: Icon(Icons.photo_library_rounded, color: _accent),
                 title: Text('wardrobe.choose_photo'.tr(),
-                    style: GoogleFonts.outfit(color: Colors.black)),
+                    style: GoogleFonts.outfit(color: _ink)),
                 onTap: () => Navigator.pop(sheetCtx, ImageSource.gallery),
               ),
             ],
@@ -202,8 +351,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     );
     if (source == null) return;
 
-    final picked = await ImagePicker().pickImage(
-        source: source, maxWidth: 1200, imageQuality: 85);
+    final picked = await ImagePicker()
+        .pickImage(source: source, maxWidth: 1200, imageQuality: 85);
     if (picked == null) return;
 
     setState(() => _adding = true);
@@ -220,22 +369,26 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     );
   }
 
-  // The blurred modal pop-up shown in the video
-  void _open3DModal(WardrobeItem item) {
+  // ── Item modal (blurred backdrop) ───────────────────────────────────────────
+  void _openItemModal(WardrobeItem item) {
     showDialog(
       context: context,
-      barrierColor: Colors.transparent, // Background blur handles the dimming
-      builder: (context) {
+      barrierColor: Colors.transparent,
+      builder: (dialogCtx) {
         return Stack(
           children: [
-            // Blur Effect over the entire screen
             BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+              filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
               child: Container(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withOpacity(_isDark ? 0.3 : 0.15),
               ),
             ),
-            // The Modal Dialog
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => Navigator.pop(dialogCtx),
+                behavior: HitTestBehavior.opaque,
+              ),
+            ),
             Center(
               child: Material(
                 color: Colors.transparent,
@@ -243,93 +396,82 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                   width: 300,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    color: _surface,
+                    borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 36,
+                        offset: const Offset(0, 14),
                       ),
                     ],
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Top Right Close Button
                       Align(
                         alignment: Alignment.topRight,
                         child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: const Icon(Icons.close, size: 20, color: Colors.grey),
+                          onTap: () => Navigator.pop(dialogCtx),
+                          child: Icon(Icons.close_rounded,
+                              size: 20,
+                              color:
+                                  _isDark ? Colors.white54 : Colors.black38),
                         ),
                       ),
-                      // Item Image
-                      SizedBox(
-                        height: 180,
-                        child: _wardrobeImage(item.imageUrl, fit: BoxFit.contain),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: SizedBox(
+                          height: 200,
+                          width: double.infinity,
+                          child: _wardrobeImage(item.imageUrl,
+                              fit: BoxFit.contain),
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      // Title & Brand
                       Text(
                         item.brand?.isNotEmpty == true
                             ? item.brand!
                             : 'wardrobe.categories.${item.category}'.tr(),
+                        textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
-                          fontSize: 20,
+                          fontSize: 19,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: _ink,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'wardrobe.categories.${item.category}'.tr(),
-                        style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          color: Colors.grey,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _accent.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'wardrobe.categories.${item.category}'.tr(),
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: _accent,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      // Dummy Price matching the video
-                      Text(
-                        '\$69',
-                        style: GoogleFonts.outfit(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black87,
+                      if (item.timesWorn > 0) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          'Worn ${item.timesWorn} time${item.timesWorn == 1 ? '' : 's'}',
+                          style:
+                              GoogleFonts.outfit(fontSize: 12, color: _muted),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Size Selector (S, M, L, XL)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: ['S', 'M', 'L', 'XL'].map((size) {
-                          return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 6),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: size == 'M' ? Colors.grey[200] : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              size,
-                              style: GoogleFonts.outfit(
-                                fontWeight: FontWeight.bold,
-                                color: size == 'M' ? Colors.black : Colors.grey,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 24),
-                      // Add to Cart Button (Matches video's yellow button)
+                      ],
+                      const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
                         height: 48,
-                        child: ElevatedButton(
+                        child: ElevatedButton.icon(
                           onPressed: () {
-                            Navigator.pop(context); // Close modal
+                            Navigator.pop(dialogCtx);
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -340,19 +482,22 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                               ),
                             );
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE5C05C), // Mustard Yellow
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            'Try On / Add to Cart',
+                          icon: const Icon(Icons.auto_fix_high_rounded,
+                              size: 17),
+                          label: Text(
+                            'Try it on',
                             style: GoogleFonts.outfit(
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                              fontSize: 15,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _accent,
+                            foregroundColor:
+                                _isDark ? AppColors.charcoal : Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
                             ),
                           ),
                         ),
@@ -369,15 +514,25 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   }
 }
 
-// Visual Card for the 3D Carousel
-class _Wardrobe3DCard extends StatelessWidget {
+// ── Visual card for the 3D carousel ───────────────────────────────────────────
+class _WardrobeCard extends StatelessWidget {
   final WardrobeItem item;
   final bool isActive;
+  final bool isDark;
+  final Color accent;
+  final Color surface;
+  final Color ink;
+  final Color muted;
   final VoidCallback onTap;
 
-  const _Wardrobe3DCard({
+  const _WardrobeCard({
     required this.item,
     required this.isActive,
+    required this.isDark,
+    required this.accent,
+    required this.surface,
+    required this.ink,
+    required this.muted,
     required this.onTap,
   });
 
@@ -385,66 +540,79 @@ class _Wardrobe3DCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.85), // Frosted glass look
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            if (isActive) // Glow effect for center item
-              BoxShadow(
-                color: Colors.white.withOpacity(0.6),
-                blurRadius: 20,
-                spreadRadius: 5,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Hanger hook above the card
+          Icon(Icons.circle_outlined,
+              size: 12, color: ink.withOpacity(isActive ? 0.55 : 0.25)),
+          Container(
+            width: 2,
+            height: 10,
+            color: ink.withOpacity(isActive ? 0.4 : 0.18),
+          ),
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                    color: isActive ? accent : Colors.transparent,
+                    width: 1.6),
+                boxShadow: [
+                  if (isActive)
+                    BoxShadow(
+                      color: accent.withOpacity(0.35),
+                      blurRadius: 22,
+                      spreadRadius: 2,
+                    ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: _wardrobeImage(item.imageUrl, fit: BoxFit.contain),
-              ),
-            ),
-            Expanded(
-              flex: 1,
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    item.brand?.isNotEmpty == true
-                        ? item.brand!
-                        : 'wardrobe.categories.${item.category}'.tr(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.outfit(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                  Expanded(
+                    flex: 3,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: _wardrobeImage(item.imageUrl, fit: BoxFit.contain),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  // Dummy price to match the video aesthetic
-                  Text(
-                    '\$69',
-                    style: GoogleFonts.outfit(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 14),
+                    child: Column(
+                      children: [
+                        Text(
+                          item.brand?.isNotEmpty == true
+                              ? item.brand!
+                              : 'wardrobe.categories.${item.category}'.tr(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: ink,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'wardrobe.categories.${item.category}'.tr(),
+                          style: GoogleFonts.outfit(
+                              fontSize: 11, color: muted),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -22,6 +22,37 @@ class CdnImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Already a full URL (e.g. a user-uploaded resell/OOTD photo hosted on
+    // Cloudinary/imgbb) — load it directly instead of prefixing the CDN base.
+    if (assetPath.startsWith('http://') || assetPath.startsWith('https://')) {
+      return CachedNetworkImage(
+        imageUrl: assetPath,
+        width: width,
+        height: height,
+        fit: fit,
+        color: color,
+        placeholder: (context, url) => SizedBox(
+          width: width,
+          height: height,
+          child: const Center(
+            child:
+                CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
+          ),
+        ),
+        errorWidget: (context, url, error) {
+          if (errorBuilder != null) {
+            return errorBuilder!(context, error ?? 'Error', StackTrace.empty);
+          }
+          return SizedBox(
+            width: width,
+            height: height,
+            child:
+                const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+          );
+        },
+      );
+    }
+
     // Local bundled assets — use Image.asset directly
     if (assetPath.contains('logo') || assetPath.contains('splash') ||
         assetPath.startsWith('pyin-mal-assets/') ||

@@ -7,6 +7,8 @@ import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/models/body_measurements.dart';
 import 'package:pyin_mal_app/services/bodygram_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
+import 'package:pyin_mal_app/services/pose_guide_validator.dart';
+import 'package:pyin_mal_app/screens/pose_guide_camera_screen.dart';
 
 /// Bodygram body scan: front + right-side photo plus height/weight/age/gender
 /// → precise body measurements, saved to the user profile for sizing.
@@ -17,9 +19,12 @@ class BodyScanScreen extends StatefulWidget {
   State<BodyScanScreen> createState() => _BodyScanScreenState();
 }
 
-class _BodyScanScreenState extends State<BodyScanScreen> {
+class _BodyScanScreenState extends State<BodyScanScreen>
+    with SingleTickerProviderStateMixin {
   final _db = DatabaseService();
   final _picker = ImagePicker();
+
+  late final TabController _tabs;
 
   String _gender = 'female'; // Bodygram accepts only male / female
   final _ageCtrl = TextEditingController(text: '22');
@@ -32,17 +37,38 @@ class _BodyScanScreenState extends State<BodyScanScreen> {
   bool _busy = false;
   BodyMeasurements? _result;
 
+  /// Measurements a user can realistically take themselves with a tape,
+  /// keyed by Bodygram's names so manual entries feed sizing the same way.
+  static const _manualKeys = [
+    'neckGirth',
+    'acrossBackShoulderWidth',
+    'bustGirth',
+    'waistGirth',
+    'hipGirth',
+    'backNeckPointToWristLengthR',
+    'thighGirthR',
+    'insideLegLengthR',
+  ];
+  final Map<String, TextEditingController> _manualCtrls = {
+    for (final k in _manualKeys) k: TextEditingController(),
+  };
+
   @override
   void initState() {
     super.initState();
+    _tabs = TabController(length: 2, vsync: this);
     _prefillFromProfile();
   }
 
   @override
   void dispose() {
+    _tabs.dispose();
     _ageCtrl.dispose();
     _heightCtrl.dispose();
     _weightCtrl.dispose();
+    for (final c in _manualCtrls.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -58,13 +84,57 @@ class _BodyScanScreenState extends State<BodyScanScreen> {
         final saved = data['bodyMeasurements'];
         if (saved is Map) {
           _result = BodyMeasurements.fromMap(Map<String, dynamic>.from(saved));
+          _fillManualFromResult();
         }
       });
     } catch (_) {} // prefill is best-effort
   }
 
+  /// Prefill the manual-entry fields from whatever measurements are on file
+  /// (whether they came from a scan or a previous manual entry).
+  void _fillManualFromResult() {
+    if (_result == null) return;
+    for (final k in _manualKeys) {
+      final cm = _result!.cm(k);
+      if (cm != null) _manualCtrls[k]!.text = cm.toStringAsFixed(1);
+    }
+  }
+
+  /// Save the hand-entered measurements to the profile, same store as a scan.
+  Future<void> _saveManual() async {
+    final valuesMm = <String, double>{};
+    for (final k in _manualKeys) {
+      final cm = double.tryParse(_manualCtrls[k]!.text.trim());
+      if (cm != null && cm > 0) valuesMm[k] = cm * 10.0; // cm → mm
+    }
+    if (valuesMm.isEmpty) {
+      _showError('measure.empty_error'.tr());
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      final result = BodyMeasurements(
+        scanId: 'manual-${DateTime.now().millisecondsSinceEpoch}',
+        source: 'manual',
+        valuesMm: valuesMm,
+        measuredAt: DateTime.now(),
+      );
+      await _db.saveBodyMeasurements(result.toMap());
+      if (!mounted) return;
+      setState(() => _result = result);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('measure.saved'.tr())),
+      );
+    } catch (e) {
+      _showError('bodygram.generic_error'.tr());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _pickPhoto(bool isFront) async {
-    final source = await showModalBottomSheet<ImageSource>(
+    final choice = await showModalBottomSheet<String>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -75,30 +145,53 @@ class _BodyScanScreenState extends State<BodyScanScreen> {
           children: [
             const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: Text('bodygram.take_photo'.tr(), style: GoogleFonts.outfit()),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              leading: const Icon(Icons.center_focus_strong_outlined),
+              title: Text('capture.guided_camera'.tr(),
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+              subtitle: Text('capture.guided_camera_sub'.tr(),
+                  style: GoogleFonts.outfit(fontSize: 12)),
+              onTap: () => Navigator.pop(ctx, 'guided'),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
               title: Text('bodygram.from_gallery'.tr(), style: GoogleFonts.outfit()),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             const SizedBox(height: 8),
           ],
         ),
       ),
     );
-    if (source == null) return;
+    if (choice == null) return;
+
+    if (choice == 'guided') {
+      if (!mounted) return;
+      final bytes = await Navigator.push<Uint8List?>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PoseGuideCameraScreen(
+            shot: isFront ? BodyShot.front : BodyShot.side,
+          ),
+        ),
+      );
+      if (bytes == null || !mounted) return;
+      setState(() {
+        if (isFront) {
+          _frontPhoto = bytes;
+        } else {
+          _rightPhoto = bytes;
+        }
+      });
+      return;
+    }
 
     try {
       // imageQuality forces JPEG re-encode — Bodygram requires JPEG.
       final file = await _picker.pickImage(
-        source: source,
+        source: ImageSource.gallery,
         maxWidth: 1920,
         maxHeight: 1920,
         imageQuality: 92,
-        preferredCameraDevice: CameraDevice.rear,
       );
       if (file == null) return;
       final bytes = await file.readAsBytes();
@@ -172,168 +265,369 @@ class _BodyScanScreenState extends State<BodyScanScreen> {
     final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
     final card = isDark ? AppColors.darkWarm : AppColors.creamCard;
     final border = isDark ? AppColors.darkBorder : AppColors.creamAlt;
-    final hasPhotos = _frontPhoto != null && _rightPhoto != null;
 
     return Scaffold(
       appBar: AppBar(
         title: Text('bodygram.title'.tr(),
             style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        children: [
-          Text('bodygram.subtitle'.tr(),
-              style: GoogleFonts.outfit(fontSize: 14, color: muted, height: 1.4)),
-          const SizedBox(height: 20),
-
-          // ── Stats ─────────────────────────────────────────────────────
-          _sectionLabel('bodygram.about_you'.tr(), muted),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: card,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: border),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    _genderChip('female', 'bodygram.female'.tr(), ink),
-                    const SizedBox(width: 10),
-                    _genderChip('male', 'bodygram.male'.tr(), ink),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    _statField(_ageCtrl, 'profile.age'.tr(), 'profile.yrs'.tr(), ink, muted, border),
-                    const SizedBox(width: 10),
-                    _statField(_heightCtrl, 'profile.height'.tr(), 'profile.cm'.tr(), ink, muted, border),
-                    const SizedBox(width: 10),
-                    _statField(_weightCtrl, 'profile.weight'.tr(), 'profile.kg'.tr(), ink, muted, border),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // ── Photos ────────────────────────────────────────────────────
-          _sectionLabel('bodygram.photos'.tr(), muted),
-          Row(
-            children: [
-              _photoCard(
-                isFront: true,
-                bytes: _frontPhoto,
-                label: 'bodygram.front_photo'.tr(),
-                icon: Icons.accessibility_new_rounded,
-                card: card, border: border, muted: muted,
-              ),
-              const SizedBox(width: 12),
-              _photoCard(
-                isFront: false,
-                bytes: _rightPhoto,
-                label: 'bodygram.right_photo'.tr(),
-                icon: Icons.directions_walk_rounded,
-                card: card, border: border, muted: muted,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(isDark ? 0.12 : 0.18),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.tips_and_updates_outlined,
-                    size: 18, color: AppColors.gold),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text('bodygram.tips'.tr(),
-                      style: GoogleFonts.outfit(
-                          fontSize: 12.5, color: muted, height: 1.5)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // ── Action ────────────────────────────────────────────────────
-          SizedBox(
-            height: 54,
-            child: FilledButton(
-              onPressed: _busy ? null : _scan,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.burgundy,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-              ),
-              child: _busy
-                  ? const SizedBox(
-                      width: 22, height: 22,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2.5, color: Colors.white),
-                    )
-                  : Text(
-                      hasPhotos
-                          ? 'bodygram.scan_btn'.tr()
-                          : 'bodygram.estimate_btn'.tr(),
-                      style: GoogleFonts.outfit(
-                          fontSize: 16, fontWeight: FontWeight.bold,
-                          color: Colors.white),
-                    ),
-            ),
-          ),
-          if (!hasPhotos)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text('bodygram.estimate_hint'.tr(),
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(fontSize: 12, color: muted)),
-            ),
-
-          // ── Results ───────────────────────────────────────────────────
-          if (_result != null) ...[
-            const SizedBox(height: 28),
-            _sectionLabel('bodygram.results'.tr(), muted),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                children: [
-                  Icon(
-                    _result!.source == 'statsEstimation'
-                        ? Icons.calculate_outlined
-                        : Icons.photo_camera_outlined,
-                    size: 14, color: AppColors.gold,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(_scanInfoLabel(),
-                      style: GoogleFonts.outfit(fontSize: 12, color: muted)),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: card,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: border),
-              ),
-              child: Column(
-                children: [
-                  for (final name in _orderedMeasurementNames())
-                    _measureRow(name, _result!.cm(name)!, ink, muted, border),
-                ],
-              ),
-            ),
+        bottom: TabBar(
+          controller: _tabs,
+          indicatorColor: AppColors.burgundy,
+          labelColor: ink,
+          unselectedLabelColor: muted,
+          labelStyle:
+              GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14),
+          tabs: [
+            Tab(text: 'measure.tab_scan'.tr()),
+            Tab(text: 'measure.tab_manual'.tr()),
           ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabs,
+        children: [
+          _buildScanTab(isDark, ink, muted, card, border),
+          _buildManualTab(isDark, ink, muted, card, border),
         ],
       ),
     );
+  }
+
+  // ── Tab 1: AI body scan (Bodygram) ──────────────────────────────────────────
+  Widget _buildScanTab(
+      bool isDark, Color ink, Color muted, Color card, Color border) {
+    final hasPhotos = _frontPhoto != null && _rightPhoto != null;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      children: [
+        Text('bodygram.subtitle'.tr(),
+            style: GoogleFonts.outfit(fontSize: 14, color: muted, height: 1.4)),
+        const SizedBox(height: 20),
+
+        // ── Stats ─────────────────────────────────────────────────────
+        _sectionLabel('bodygram.about_you'.tr(), muted),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: card,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: border),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  _genderChip('female', 'bodygram.female'.tr(), ink),
+                  const SizedBox(width: 10),
+                  _genderChip('male', 'bodygram.male'.tr(), ink),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  _statField(_ageCtrl, 'profile.age'.tr(), 'profile.yrs'.tr(), ink, muted, border),
+                  const SizedBox(width: 10),
+                  _statField(_heightCtrl, 'profile.height'.tr(), 'profile.cm'.tr(), ink, muted, border),
+                  const SizedBox(width: 10),
+                  _statField(_weightCtrl, 'profile.weight'.tr(), 'profile.kg'.tr(), ink, muted, border),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── Photos ────────────────────────────────────────────────────
+        _sectionLabel('bodygram.photos'.tr(), muted),
+        Row(
+          children: [
+            _photoCard(
+              isFront: true,
+              bytes: _frontPhoto,
+              label: 'bodygram.front_photo'.tr(),
+              icon: Icons.accessibility_new_rounded,
+              card: card, border: border, muted: muted,
+            ),
+            const SizedBox(width: 12),
+            _photoCard(
+              isFront: false,
+              bytes: _rightPhoto,
+              label: 'bodygram.right_photo'.tr(),
+              icon: Icons.directions_walk_rounded,
+              card: card, border: border, muted: muted,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.gold.withOpacity(isDark ? 0.12 : 0.18),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.tips_and_updates_outlined,
+                  size: 18, color: AppColors.gold),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text('bodygram.tips'.tr(),
+                    style: GoogleFonts.outfit(
+                        fontSize: 12.5, color: muted, height: 1.5)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── Action ────────────────────────────────────────────────────
+        SizedBox(
+          height: 54,
+          child: FilledButton(
+            onPressed: _busy ? null : _scan,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.burgundy,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+            ),
+            child: _busy
+                ? const SizedBox(
+                    width: 22, height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.5, color: Colors.white),
+                  )
+                : Text(
+                    hasPhotos
+                        ? 'bodygram.scan_btn'.tr()
+                        : 'bodygram.estimate_btn'.tr(),
+                    style: GoogleFonts.outfit(
+                        fontSize: 16, fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  ),
+          ),
+        ),
+        if (!hasPhotos)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text('bodygram.estimate_hint'.tr(),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(fontSize: 12, color: muted)),
+          ),
+
+        ..._resultsSection(ink, muted, card, border),
+      ],
+    );
+  }
+
+  // ── Tab 2: Measure yourself (manual, no AI / no photos) ─────────────────────
+  Widget _buildManualTab(
+      bool isDark, Color ink, Color muted, Color card, Color border) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      children: [
+        // Privacy-first intro
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.gold.withOpacity(isDark ? 0.12 : 0.18),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.lock_outline_rounded,
+                  size: 18, color: AppColors.gold),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('measure.intro_title'.tr(),
+                        style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: ink)),
+                    const SizedBox(height: 4),
+                    Text('measure.intro'.tr(),
+                        style: GoogleFonts.outfit(
+                            fontSize: 12.5, color: muted, height: 1.5)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        _sectionLabel('measure.how_to'.tr(), muted),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.straighten_rounded, size: 16, color: muted),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('measure.tip'.tr(),
+                    style: GoogleFonts.outfit(
+                        fontSize: 12.5, color: muted, height: 1.5)),
+              ),
+            ],
+          ),
+        ),
+
+        for (int i = 0; i < _manualKeys.length; i++)
+          _manualRow(i + 1, _manualKeys[i], ink, muted, card, border),
+
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 54,
+          child: FilledButton(
+            onPressed: _busy ? null : _saveManual,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.burgundy,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+            ),
+            child: _busy
+                ? const SizedBox(
+                    width: 22, height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.5, color: Colors.white),
+                  )
+                : Text('measure.save_btn'.tr(),
+                    style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+          ),
+        ),
+
+        ..._resultsSection(ink, muted, card, border),
+      ],
+    );
+  }
+
+  /// A single "how to measure X" row with a cm input. Shared shape with the
+  /// scan results so both tabs feel like one feature.
+  Widget _manualRow(int num, String key, Color ink, Color muted, Color card,
+      Color border) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 26,
+            height: 26,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+                color: AppColors.burgundy, shape: BoxShape.circle),
+            child: Text('$num',
+                style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('bodygram.m.$key'.tr(),
+                    style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: ink)),
+                const SizedBox(height: 3),
+                Text('measure.how.$key'.tr(),
+                    style: GoogleFonts.outfit(
+                        fontSize: 12, color: muted, height: 1.4)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 80,
+            child: TextField(
+              controller: _manualCtrls[key],
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                  fontSize: 15, fontWeight: FontWeight.w600, color: ink),
+              decoration: InputDecoration(
+                suffixText: 'cm',
+                isDense: true,
+                suffixStyle: GoogleFonts.outfit(fontSize: 11, color: muted),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: AppColors.gold),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Saved-measurements block, shared by both tabs (updates when either a scan
+  /// or a manual save sets [_result]).
+  List<Widget> _resultsSection(
+      Color ink, Color muted, Color card, Color border) {
+    if (_result == null) return const [];
+    return [
+      const SizedBox(height: 28),
+      _sectionLabel('bodygram.results'.tr(), muted),
+      Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(
+          children: [
+            Icon(_resultSourceIcon(), size: 14, color: AppColors.gold),
+            const SizedBox(width: 6),
+            Text(_scanInfoLabel(),
+                style: GoogleFonts.outfit(fontSize: 12, color: muted)),
+          ],
+        ),
+      ),
+      Container(
+        decoration: BoxDecoration(
+          color: card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: border),
+        ),
+        child: Column(
+          children: [
+            for (final name in _orderedMeasurementNames())
+              _measureRow(name, _result!.cm(name)!, ink, muted, border),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  IconData _resultSourceIcon() {
+    switch (_result!.source) {
+      case 'statsEstimation':
+        return Icons.calculate_outlined;
+      case 'manual':
+        return Icons.straighten_rounded;
+      default:
+        return Icons.photo_camera_outlined;
+    }
   }
 
   Widget _sectionLabel(String text, Color muted) => Padding(
@@ -460,9 +754,17 @@ class _BodyScanScreenState extends State<BodyScanScreen> {
 
   /// e.g. "Photo scan · 11.06.2026"
   String _scanInfoLabel() {
-    final src = _result!.source == 'statsEstimation'
-        ? 'bodygram.source_stats'.tr()
-        : 'bodygram.source_photo'.tr();
+    final String src;
+    switch (_result!.source) {
+      case 'statsEstimation':
+        src = 'bodygram.source_stats'.tr();
+        break;
+      case 'manual':
+        src = 'measure.source_manual'.tr();
+        break;
+      default:
+        src = 'bodygram.source_photo'.tr();
+    }
     final d = _result!.measuredAt;
     if (d == null) return src;
     final date = '${d.day.toString().padLeft(2, '0')}.'

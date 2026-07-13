@@ -4,6 +4,7 @@ import 'package:pyin_mal_app/models/user_profile.dart';
 import 'package:pyin_mal_app/models/wardrobe_item.dart';
 import 'package:pyin_mal_app/models/outfit_post.dart';
 import 'package:pyin_mal_app/models/body_measurements.dart';
+import 'package:pyin_mal_app/models/resell_post.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -237,6 +238,67 @@ class DatabaseService {
       }
       return nowLiked;
     });
+  }
+
+  // ── Resell marketplace ──────────────────────────────────────────────────────
+
+  /// Lists a pre-loved item in the shared `resellPosts` collection so it
+  /// persists across restarts and is visible to every user. [imageUrl] must be
+  /// a public URL obtained from ImageHostService.upload(). Returns the new doc
+  /// id, or null when there's no signed-in user.
+  Future<String?> createResellPost({
+    required String title,
+    required String price,
+    required String imageUrl,
+    required String condition,
+    required String size,
+    String? phone,
+    String pickupMethod = 'pickup',
+    String? address,
+    String? timeSlot,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final sellerName = (user.displayName?.trim().isNotEmpty ?? false)
+        ? user.displayName!.trim()
+        : (user.email?.split('@').first ?? 'Seller');
+
+    final ref = await _db.collection('resellPosts').add({
+      'title': title,
+      'price': price,
+      'imageUrl': imageUrl,
+      'condition': condition,
+      'size': size,
+      'seller': sellerName,
+      'sellerId': user.uid,
+      'isSoldOut': false,
+      // Delivery arrangement captured at post time (seller-only info).
+      'phone': phone,
+      'pickupMethod': pickupMethod,
+      'address': address,
+      'timeSlot': timeSlot,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return ref.id;
+  }
+
+  /// Live stream of community resell listings, newest first.
+  Stream<List<ResellPost>> streamResellPosts({int limit = 100}) {
+    return _db
+        .collection('resellPosts')
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => ResellPost.fromMap(d.data(), d.id))
+            .toList());
+  }
+
+  /// Marks a listing sold once a buyer checks out.
+  Future<void> markResellSold(String postId) async {
+    if (postId.isEmpty) return;
+    await _db.collection('resellPosts').doc(postId).update({'isSoldOut': true});
   }
 
   // ── Tracking ───────────────────────────────────────────────────────────────

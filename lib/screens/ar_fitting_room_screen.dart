@@ -13,7 +13,7 @@ import '../models/clothing_item.dart';
 import '../services/cart_service.dart';
 import '../services/pose_detection_service.dart';
 import '../services/screenshot_service.dart';
-import '../widgets/clothing_overlay.dart';
+import '../widgets/warped_clothing_overlay.dart';
 import '../widgets/clothing_selector.dart';
 import '../widgets/try_on_controls.dart';
 
@@ -408,9 +408,10 @@ class _ARFittingRoomScreenState extends State<ARFittingRoomScreen>
                 fit: StackFit.expand,
                 children: [
                   _buildCameraPreview(),
-                  ClothingOverlay(
+                  WarpedClothingOverlay(
                     pose: _poseResult,
                     assetPath: _selectedItem.assetPath,
+                    anchors: _selectedItem.anchors,
                     tintColor: _selectedColor?.color ?? Colors.transparent,
                   ),
                 ],

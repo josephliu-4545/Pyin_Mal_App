@@ -35,16 +35,38 @@ class ARLandmark {
 class PoseResult {
   final ARLandmark? leftShoulder; // MLKit index 11
   final ARLandmark? rightShoulder; // MLKit index 12
+  final ARLandmark? leftElbow; // MLKit index 13 — needed for sleeve warp
+  final ARLandmark? rightElbow; // MLKit index 14
+  final ARLandmark? leftWrist; // MLKit index 15 — cuff/long-sleeve warp
+  final ARLandmark? rightWrist; // MLKit index 16
   final ARLandmark? leftHip; // MLKit index 23
   final ARLandmark? rightHip; // MLKit index 24
   final ARLandmark? nose; // MLKit index 0 (for framing)
+  // Lower body + ears — used by the body-scan pose guide for full-body
+  // framing and front-vs-profile checks. Optional; the AR try-on ignores them.
+  final ARLandmark? leftKnee; // MLKit index 25
+  final ARLandmark? rightKnee; // MLKit index 26
+  final ARLandmark? leftAnkle; // MLKit index 27
+  final ARLandmark? rightAnkle; // MLKit index 28
+  final ARLandmark? leftEar; // MLKit index 7
+  final ARLandmark? rightEar; // MLKit index 8
 
   const PoseResult({
     this.leftShoulder,
     this.rightShoulder,
+    this.leftElbow,
+    this.rightElbow,
+    this.leftWrist,
+    this.rightWrist,
     this.leftHip,
     this.rightHip,
     this.nose,
+    this.leftKnee,
+    this.rightKnee,
+    this.leftAnkle,
+    this.rightAnkle,
+    this.leftEar,
+    this.rightEar,
   });
 
   /// True if we have the four corner landmarks above confidence threshold.
@@ -145,9 +167,19 @@ class PoseDetectionService {
       return PoseResult(
         leftShoulder: toLandmark(PoseLandmarkType.leftShoulder),
         rightShoulder: toLandmark(PoseLandmarkType.rightShoulder),
+        leftElbow: toLandmark(PoseLandmarkType.leftElbow),
+        rightElbow: toLandmark(PoseLandmarkType.rightElbow),
+        leftWrist: toLandmark(PoseLandmarkType.leftWrist),
+        rightWrist: toLandmark(PoseLandmarkType.rightWrist),
         leftHip: toLandmark(PoseLandmarkType.leftHip),
         rightHip: toLandmark(PoseLandmarkType.rightHip),
         nose: toLandmark(PoseLandmarkType.nose),
+        leftKnee: toLandmark(PoseLandmarkType.leftKnee),
+        rightKnee: toLandmark(PoseLandmarkType.rightKnee),
+        leftAnkle: toLandmark(PoseLandmarkType.leftAnkle),
+        rightAnkle: toLandmark(PoseLandmarkType.rightAnkle),
+        leftEar: toLandmark(PoseLandmarkType.leftEar),
+        rightEar: toLandmark(PoseLandmarkType.rightEar),
       );
     } catch (e) {
       debugPrint('[PoseDetection] Error: $e');
@@ -169,12 +201,25 @@ class PoseDetectionService {
     final sway = math.sin(_mockTime) * 0.02; // gentle left-right sway
     final bob = math.sin(_mockTime * 1.3) * 0.01; // slight up-down
 
+    // Arms swing a little more than the torso so the sleeve warp is visible.
+    final armSwing = math.sin(_mockTime * 0.9) * 0.05;
+
     return PoseResult(
       // Shoulders sit at ~35% from top, spread ~30% either side of center
       leftShoulder: ARLandmark(
           x: 0.35 + sway, y: 0.35 + bob, likelihood: 0.95),
       rightShoulder: ARLandmark(
           x: 0.65 + sway, y: 0.35 + bob, likelihood: 0.95),
+      // Elbows out to the sides, ~48% down
+      leftElbow: ARLandmark(
+          x: 0.26 + sway - armSwing, y: 0.48 + bob, likelihood: 0.90),
+      rightElbow: ARLandmark(
+          x: 0.74 + sway + armSwing, y: 0.48 + bob, likelihood: 0.90),
+      // Wrists ~58% down
+      leftWrist: ARLandmark(
+          x: 0.22 + sway - armSwing, y: 0.58 + bob, likelihood: 0.85),
+      rightWrist: ARLandmark(
+          x: 0.78 + sway + armSwing, y: 0.58 + bob, likelihood: 0.85),
       // Hips sit at ~60% from top
       leftHip:
           ARLandmark(x: 0.38 + sway, y: 0.60 + bob, likelihood: 0.92),
