@@ -22,6 +22,9 @@ class _HaircutScreenState extends State<HaircutScreen> {
   String _hairGender = 'Women'; // 'Women' | 'Men'
   String _hairCategory = 'Hot';
   String? _selectedHairstyle; // Selected asset path
+  // Which section the selection came from: 'gallery' | 'recommended'.
+  // Controls where the Preview / Try On / Book buttons appear.
+  String _selectionSource = 'gallery';
   final Set<String> _favHairstyles = {}; // Fav asset paths
 
   static const _womenCategories = [
@@ -539,7 +542,10 @@ class _HaircutScreenState extends State<HaircutScreen> {
               final sel = _selectedHairstyle == path;
               final fav = _favHairstyles.contains(path);
               return GestureDetector(
-                onTap: () => setState(() => _selectedHairstyle = path),
+                onTap: () => setState(() {
+                  _selectedHairstyle = path;
+                  _selectionSource = 'gallery';
+                }),
                 child: Column(
                   children: [
                     AnimatedContainer(
@@ -643,97 +649,106 @@ class _HaircutScreenState extends State<HaircutScreen> {
           ),
         ),
 
-        // Apply button & Try on button (only when a look is selected)
-        if (_selectedHairstyle != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ARHairFilterScreen(
-                            initialHairstylePath: _selectedHairstyle,
-                          ),
+        // Action buttons appear here only when the pick came from this gallery
+        if (_selectedHairstyle != null && _selectionSource == 'gallery')
+          _selectedStyleActions(isDark, accent),
+      ],
+    );
+  }
+
+  // Preview on me / Try On / Book — shown under whichever section the
+  // selected hairstyle was picked from.
+  Widget _selectedStyleActions(bool isDark, Color accent) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ARHairFilterScreen(
+                          initialHairstylePath: _selectedHairstyle,
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
-                    label: Text('haircut.preview_on_me'.tr(),
-                        style: GoogleFonts.outfit(
-                            fontSize: 14, fontWeight: FontWeight.w700)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accent,
-                      foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
+                  label: Text('haircut.preview_on_me'.tr(),
+                      style: GoogleFonts.outfit(
+                          fontSize: 14, fontWeight: FontWeight.w700)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => HairTryOnScreen(
-                            initialHairstylePath: _selectedHairstyle,
-                          ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HairTryOnScreen(
+                          initialHairstylePath: _selectedHairstyle,
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.face_retouching_natural_rounded, size: 18),
-                    label: Text('product.try_on'.tr(),
-                        style: GoogleFonts.outfit(
-                            fontSize: 14, fontWeight: FontWeight.w700)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: accent,
-                      side: BorderSide(color: accent, width: 1.5),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.face_retouching_natural_rounded, size: 18),
+                  label: Text('product.try_on'.tr(),
+                      style: GoogleFonts.outfit(
+                          fontSize: 14, fontWeight: FontWeight.w700)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: accent,
+                    side: BorderSide(color: accent, width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
         // Book now with the chosen hairstyle
-        if (_selectedHairstyle != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => HaircutBookingScreen(
-                      preselectedStyle:
-                          _extractHairstyleName(_selectedHairstyle!),
-                    ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HaircutBookingScreen(
+                    preselectedStyle:
+                        _extractHairstyleName(_selectedHairstyle!),
                   ),
                 ),
-                icon: const Icon(Icons.event_available_rounded, size: 18),
-                label: Text('haircut.book_with_style'.tr(),
-                    style: GoogleFonts.outfit(
-                        fontSize: 14, fontWeight: FontWeight.w700)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: accent,
-                  side: BorderSide(color: accent, width: 1.5),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                ),
+              ),
+              icon: const Icon(Icons.event_available_rounded, size: 18),
+              label: Text('haircut.book_with_style'.tr(),
+                  style: GoogleFonts.outfit(
+                      fontSize: 14, fontWeight: FontWeight.w700)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: accent,
+                side: BorderSide(color: accent, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
               ),
             ),
           ),
+        ),
       ],
     );
   }
@@ -811,6 +826,9 @@ class _HaircutScreenState extends State<HaircutScreen> {
                 _buildRecommendedCard(recommended[i], isDark, accent),
           ),
         ),
+        // Action buttons appear here only when the pick came from this section
+        if (_selectedHairstyle != null && _selectionSource == 'recommended')
+          _selectedStyleActions(isDark, accent),
       ],
     );
   }
@@ -821,7 +839,10 @@ class _HaircutScreenState extends State<HaircutScreen> {
     final sel = _selectedHairstyle == path;
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedHairstyle = path),
+      onTap: () => setState(() {
+        _selectedHairstyle = path;
+        _selectionSource = 'recommended';
+      }),
       child: Container(
         width: 210,
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),

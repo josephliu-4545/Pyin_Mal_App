@@ -179,6 +179,11 @@ flutter:
     - pyin-mal-assets/assets/images/shops/nami/
     - pyin-mal-assets/assets/images/shops/oro/
     - pyin-mal-assets/assets/images/shops/sew_in_style/
+    - pyin-mal-assets/assets/images/Shops/V47/
+    - pyin-mal-assets/assets/images/Shops/VIP salon/
+    - pyin-mal-assets/assets/images/Shops/T8/
+    - pyin-mal-assets/assets/images/Shops/Tony Tun Tun/
+    - pyin-mal-assets/assets/images/Shops/the neighbour hood project/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

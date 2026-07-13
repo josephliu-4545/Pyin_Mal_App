@@ -221,7 +221,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                 // Hint under the carousel
                 if (items.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
+                    // Keep the hint clear of the floating "Add item" button
+                    padding: const EdgeInsets.only(bottom: 88),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

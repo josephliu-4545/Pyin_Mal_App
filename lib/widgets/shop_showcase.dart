@@ -7,9 +7,9 @@ import 'dart:ui' show ImageFilter;
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/core/constants/shop_constants.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
+import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
-import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 
 const _cdnPfx = 'https://cdn.jsdelivr.net/gh/josephliu-4545/pyin-mal-assets@main/';
@@ -712,7 +712,7 @@ class _WardrobeViewerState extends State<_WardrobeViewer> {
   @override
   void initState() {
     super.initState();
-    _pc = PageController(viewportFraction: 0.6);
+    _pc = PageController(viewportFraction: 0.78);
     _page = 0;
     _pc.addListener(() => setState(() => _page = _pc.page ?? _page));
   }
@@ -796,14 +796,15 @@ class _WardrobeViewerState extends State<_WardrobeViewer> {
                   ),
                 ),
                 // Header
-                Text('MY WARDROBE',
+                Text(widget.shop.name.toUpperCase(),
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 6,
                         color: Colors.white)),
                 const SizedBox(height: 4),
-                Text('Drag to rotate · Tap to view',
+                Text('Swipe to browse · Tap to shop',
                     style: GoogleFonts.outfit(
                         fontSize: 11.5,
                         letterSpacing: 0.5,
@@ -818,28 +819,29 @@ class _WardrobeViewerState extends State<_WardrobeViewer> {
                         itemCount: widget.products.length,
                         physics: const BouncingScrollPhysics(),
                         itemBuilder: (_, i) {
-                          final diff = i - _page;
-                          final cd = diff.clamp(-1.5, 1.5);
-                          final absd = diff.abs().clamp(0.0, 1.0);
+                          // Same 3D rail motion as the My Wardrobe screen.
+                          final value = _page - i;
                           final isCenter = i == current;
-                          final rotateY = -cd * 0.55;
-                          final scale = isCenter ? 1.06 : (1 - 0.12 * absd);
-                          final opacity = 1 - 0.4 * absd;
+                          final rotationY = value * 0.8;
+                          final zTranslate = -value.abs() * 200;
+                          final scale =
+                              (1 - (value.abs() * 0.15)).clamp(0.6, 1.0);
+
+                          final matrix = Matrix4.identity()
+                            ..setEntry(3, 2, 0.001)
+                            ..translate(0.0, 0.0, zTranslate)
+                            ..rotateY(-rotationY)
+                            ..scale(scale);
+
                           return Center(
                             child: Transform(
-                              alignment: Alignment.center,
-                              transform: Matrix4.identity()
-                                ..setEntry(3, 2, 1 / 1200) // perspective 1200px
-                                ..rotateY(rotateY)
-                                ..scale(scale),
-                              child: Opacity(
-                                opacity: opacity.clamp(0.0, 1.0),
-                                child: GestureDetector(
-                                  onTap: () => isCenter
-                                      ? _openProductModal(widget.products[i])
-                                      : _jumpTo(i),
-                                  child: _glassCard(widget.products[i], isCenter),
-                                ),
+                              alignment: FractionalOffset.center,
+                              transform: matrix,
+                              child: GestureDetector(
+                                onTap: () => isCenter
+                                    ? _openProductDetail(widget.products[i])
+                                    : _jumpTo(i),
+                                child: _glassCard(widget.products[i], isCenter),
                               ),
                             ),
                           );
@@ -865,7 +867,7 @@ class _WardrobeViewerState extends State<_WardrobeViewer> {
                 ),
                 const SizedBox(height: 8),
                 GestureDetector(
-                  onTap: () => _openProductModal(widget.products[current]),
+                  onTap: () => _openProductDetail(widget.products[current]),
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
@@ -932,8 +934,8 @@ class _WardrobeViewerState extends State<_WardrobeViewer> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
               child: Container(
-                width: 168,
-                padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+                width: 240,
+                padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(isCenter ? 0.92 : 0.8),
                   borderRadius: BorderRadius.circular(20),
@@ -973,7 +975,7 @@ class _WardrobeViewerState extends State<_WardrobeViewer> {
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
-                            fontSize: 12.5,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w700,
                             color: AppColors.inkBlack)),
                     if (isCenter) ...[
@@ -1002,198 +1004,12 @@ class _WardrobeViewerState extends State<_WardrobeViewer> {
     );
   }
 
-  // Product details modal (blur background, fade + scale in).
-  void _openProductModal(Product p) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'product',
-      barrierColor: Colors.transparent,
-      transitionDuration: const Duration(milliseconds: 260),
-      pageBuilder: (dialogCtx, _, __) => const SizedBox.shrink(),
-      transitionBuilder: (dialogCtx, anim, __, ___) {
-        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
-        return Stack(
-          children: [
-            // Heavy background blur
-            FadeTransition(
-              opacity: anim,
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(color: Colors.black.withOpacity(0.35)),
-              ),
-            ),
-            // Dismiss on tap outside
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () => Navigator.pop(dialogCtx),
-                behavior: HitTestBehavior.opaque,
-              ),
-            ),
-            FadeTransition(
-              opacity: curved,
-              child: ScaleTransition(
-                scale: Tween(begin: 0.92, end: 1.0).animate(curved),
-                child: Center(
-                  child: _ProductModalCard(product: p),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-// The floating product card shown when an item is selected.
-class _ProductModalCard extends StatefulWidget {
-  final Product product;
-  const _ProductModalCard({required this.product});
-
-  @override
-  State<_ProductModalCard> createState() => _ProductModalCardState();
-}
-
-class _ProductModalCardState extends State<_ProductModalCard> {
-  static const _sizes = ['S', 'M', 'L', 'XL'];
-  String _size = 'M';
-
-  @override
-  Widget build(BuildContext context) {
-    final p = widget.product;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 44),
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 40,
-                offset: const Offset(0, 20),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.close_rounded,
-                      size: 22, color: Colors.black38),
-                ),
-              ),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: SizedBox(
-                  width: 170,
-                  height: 210,
-                  child: CdnImage(
-                    p.image,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: AppColors.creamAlt,
-                      child: const Icon(Icons.checkroom_rounded,
-                          size: 44, color: Colors.black26),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(p.name,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF2E2E2E))),
-              const SizedBox(height: 2),
-              Text(p.category,
-                  style: GoogleFonts.outfit(
-                      fontSize: 12.5, color: Colors.grey.shade500)),
-              const SizedBox(height: 10),
-              Text(p.price,
-                  style: GoogleFonts.outfit(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.burgundy)),
-              const SizedBox(height: 14),
-              // Size selector
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: _sizes.map((s) {
-                  final sel = _size == s;
-                  return GestureDetector(
-                    onTap: () => setState(() => _size = s),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      margin: const EdgeInsets.symmetric(horizontal: 5),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: sel ? const Color(0xFF2E2E2E) : Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: sel
-                                ? const Color(0xFF2E2E2E)
-                                : Colors.grey.shade300,
-                            width: 1.4),
-                      ),
-                      child: Text(s,
-                          style: GoogleFonts.outfit(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: sel ? Colors.white : Colors.black54)),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 18),
-              // Add to Cart CTA (mustard/gold)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    CartService.instance.addToCart(CartItem(
-                      productId: p.id,
-                      name: p.name,
-                      price: p.price,
-                      image: p.image,
-                      brand: p.brand,
-                      size: _size,
-                    ));
-                    Navigator.pop(context); // modal
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        behavior: SnackBarBehavior.floating,
-                        content: Text('${p.name} added to cart'),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gold,
-                    foregroundColor: AppColors.inkBlack,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: Text('Add to Cart',
-                      style: GoogleFonts.outfit(
-                          fontSize: 15, fontWeight: FontWeight.w800)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+  // Open the full product detail screen for this item.
+  void _openProductDetail(Product p) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (_) => ProductDetailScreen.fromProduct(p)),
     );
   }
 }

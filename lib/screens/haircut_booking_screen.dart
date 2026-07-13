@@ -18,6 +18,8 @@ class _Salon {
   final int reviews;
   final List<String> tags;
   final IconData icon;
+  /// Bundled logo image (falls back to [icon] if it fails to load).
+  final String? logo;
   final List<_Service> services;
   const _Salon({
     required this.name,
@@ -26,9 +28,12 @@ class _Salon {
     required this.reviews,
     required this.tags,
     required this.icon,
+    this.logo,
     required this.services,
   });
 }
+
+const _shopsDir = 'pyin-mal-assets/assets/images/Shops';
 
 const _salons = <_Salon>[
   _Salon(
@@ -37,6 +42,7 @@ const _salons = <_Salon>[
     rating: 4.8, reviews: 312,
     tags: ['Premium', 'Online booking', '4 branches'],
     icon: Icons.content_cut_rounded,
+    logo: '$_shopsDir/V47/logo.png',
     services: [
       _Service('Signature Haircut', 'Precision cut with scissor work', 'Haircut', 18000),
       _Service('Skin Fade', 'Sharp clean skin fade', 'Haircut', 20000),
@@ -56,6 +62,7 @@ const _salons = <_Salon>[
     rating: 4.7, reviews: 268,
     tags: ['Luxury', 'Online booking', '4 branches'],
     icon: Icons.diamond_rounded,
+    logo: '$_shopsDir/VIP salon/logo.png',
     services: [
       _Service('VIP Haircut', 'Premium tailored cut', 'Haircut', 22000),
       _Service('Executive Fade', 'Detailed skin fade', 'Haircut', 25000),
@@ -75,6 +82,7 @@ const _salons = <_Salon>[
     rating: 4.8, reviews: 401,
     tags: ['Trendy', 'Fast', '4 branches'],
     icon: Icons.brush_rounded,
+    logo: '$_shopsDir/T8/logo.png',
     services: [
       _Service('Trend Cut', 'On-trend modern cut', 'Haircut', 16000),
       _Service('Two Block', 'Korean two-block style', 'Haircut', 18000),
@@ -94,6 +102,7 @@ const _salons = <_Salon>[
     rating: 4.9, reviews: 540,
     tags: ['Celebrity stylist', 'Luxury', '5 branches'],
     icon: Icons.workspace_premium_rounded,
+    logo: '$_shopsDir/Tony Tun Tun/logo.png',
     services: [
       _Service('Designer Haircut', 'Signature designer cut', 'Haircut', 30000),
       _Service('Creative Cut', 'Custom creative cut', 'Haircut', 35000),
@@ -113,6 +122,7 @@ const _salons = <_Salon>[
     rating: 4.7, reviews: 223,
     tags: ['Barbershop', 'Walk-in', '4 branches'],
     icon: Icons.storefront_rounded,
+    logo: '$_shopsDir/the neighbour hood project/logo.png',
     services: [
       _Service('Classic Haircut', 'Precision cut with scissor work', 'Haircut', 12000),
       _Service('Buzz Cut', 'Clean all-over buzz', 'Haircut', 10000),
@@ -227,7 +237,11 @@ class HaircutBookingScreen extends StatelessWidget {
                             color: accent.withValues(alpha: 0.13), shape: BoxShape.circle,
                             border: Border.all(color: accent.withValues(alpha: 0.35), width: 1.5),
                           ),
-                          child: Icon(salon.icon, color: accent, size: 32),
+                          clipBehavior: Clip.antiAlias,
+                          child: salon.logo != null
+                              ? Image.asset(salon.logo!, fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Icon(salon.icon, color: accent, size: 32))
+                              : Icon(salon.icon, color: accent, size: 32),
                         ),
                         const SizedBox(height: 12),
                         Padding(
@@ -658,8 +672,12 @@ class _SalonServicesScreenState extends State<_SalonServicesScreen> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
                     Container(width: 50, height: 50,
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
-                      child: Icon(_salon.icon, color: accent, size: 26)),
+                      child: _salon.logo != null
+                          ? Image.asset(_salon.logo!, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Icon(_salon.icon, color: accent, size: 26))
+                          : Icon(_salon.icon, color: accent, size: 26)),
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(_salon.name, style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700, color: ink)),
