@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -257,15 +258,23 @@ class _PoseGuideCameraScreenState extends State<PoseGuideCameraScreen>
         Center(
           child: AspectRatio(
             aspectRatio: 1 / cam.value.aspectRatio,
-            child: CameraPreview(cam),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CameraPreview(cam),
+                // Body outline guide over camera preview
+                CustomPaint(
+                  painter: PoseGuidePainter(shot: widget.shot, ok: _check.ok),
+                ),
+              ],
+            ),
           ),
         ),
 
-        // Body outline guide
-        Positioned.fill(
-          child: CustomPaint(
-            painter: PoseGuidePainter(shot: widget.shot, ok: _check.ok),
-          ),
+        // Bottom UI (Hint Pill + Controls)
+        Positioned(
+          left: 0, right: 0, bottom: 0,
+          child: _buildBottomUI(counting),
         ),
 
         // Countdown number
@@ -284,59 +293,127 @@ class _PoseGuideCameraScreenState extends State<PoseGuideCameraScreen>
             ),
           ),
 
-        // Live hint pill
-        Positioned(
-          left: 0, right: 0, bottom: 150,
-          child: Center(child: _hintPill(counting)),
-        ),
-
         _buildTopBar(),
-        if (!counting) _buildBottomControls(),
-        if (counting)
-          Positioned(
-            left: 0, right: 0, bottom: 48,
-            child: Center(
-              child: TextButton(
+      ],
+    );
+  }
+
+  Widget _buildBottomUI(bool counting) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        // Add a subtle gradient at the bottom so UI elements are always legible
+        // even if the background is complex.
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.black.withOpacity(0.4),
+              Colors.black.withOpacity(0.8),
+            ],
+            stops: const [0.0, 0.4, 1.0],
+          ),
+        ),
+        padding: const EdgeInsets.only(top: 20, bottom: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Live hint pill
+            _hintPill(counting),
+            
+            const SizedBox(height: 16),
+            
+            if (!counting) ...[
+              // Timer selector
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (final s in [3, 5, 10]) _timerChip(s),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Manual shutter (fallback if someone else is holding the phone)
+              GestureDetector(
+                onTap: _beginCountdown,
+                child: Container(
+                  width: 66, height: 66,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.transparent,
+                    border: Border.all(color: Colors.white, width: 3),
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 54, height: 54,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                      child: const Icon(Icons.timer_rounded,
+                          color: Colors.black87, size: 24),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text('capture.shutter_hint'.tr(),
+                  style: GoogleFonts.outfit(
+                      color: Colors.white70, fontSize: 12)),
+            ] else ...[
+              const SizedBox(height: 24),
+              TextButton(
                 onPressed: _cancelCountdown,
                 child: Text('capture.cancel'.tr(),
                     style: GoogleFonts.outfit(
-                        color: Colors.white, fontSize: 15)),
+                        color: Colors.white, fontSize: 16)),
               ),
-            ),
-          ),
-      ],
+              const SizedBox(height: 16),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
   Widget _hintPill(bool counting) {
     final ok = _check.ok;
     final text = counting ? 'capture.hold_still'.tr() : _check.hintKey.tr();
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 32),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      decoration: BoxDecoration(
-        color: (ok ? const Color(0xFF16803D) : Colors.black).withOpacity(0.72),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-            color: ok
-                ? const Color(0xFF4ADE80)
-                : Colors.white.withOpacity(0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(ok ? Icons.check_circle_rounded : Icons.accessibility_new_rounded,
-              size: 18, color: Colors.white),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(text,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: (ok ? const Color(0xFF16803D) : const Color(0xFF111111)).withOpacity(0.85),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                  color: ok
+                      ? const Color(0xFF4ADE80).withOpacity(0.6)
+                      : Colors.white.withOpacity(0.2)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(ok ? Icons.check_circle_rounded : Icons.accessibility_new_rounded,
+                    size: 18, color: ok ? const Color(0xFF4ADE80) : Colors.white),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(text,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -376,67 +453,36 @@ class _PoseGuideCameraScreenState extends State<PoseGuideCameraScreen>
     );
   }
 
-  Widget _buildBottomControls() {
-    return Positioned(
-      left: 0, right: 0, bottom: 0,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 28, top: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Timer selector
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (final s in [3, 5, 10]) _timerChip(s),
-                ],
-              ),
-              const SizedBox(height: 18),
-              // Manual shutter (fallback if someone else is holding the phone)
-              GestureDetector(
-                onTap: _beginCountdown,
-                child: Container(
-                  width: 72, height: 72,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.15),
-                    border: Border.all(color: Colors.white, width: 4),
-                  ),
-                  child: const Icon(Icons.timer_outlined,
-                      color: Colors.white, size: 30),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text('capture.shutter_hint'.tr(),
-                  style: GoogleFonts.outfit(
-                      color: Colors.white70, fontSize: 12)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // _buildBottomControls was replaced by _buildBottomUI
 
   Widget _timerChip(int s) {
     final sel = _timerSeconds == s;
     return GestureDetector(
       onTap: () => setState(() => _timerSeconds = s),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(horizontal: 6),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: sel ? AppColors.burgundy : Colors.black.withOpacity(0.4),
-          borderRadius: BorderRadius.circular(20),
+          color: sel ? AppColors.burgundy : Colors.black.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-              color: sel ? AppColors.burgundy : Colors.white.withOpacity(0.3)),
+              color: sel ? AppColors.burgundy : Colors.white.withOpacity(0.2),
+              width: 1.5),
+          boxShadow: sel
+              ? [
+                  BoxShadow(
+                      color: AppColors.burgundy.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4))
+                ]
+              : [],
         ),
         child: Text('${s}s',
             style: GoogleFonts.outfit(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600)),
+                color: sel ? Colors.white : Colors.white70,
+                fontSize: 15,
+                fontWeight: sel ? FontWeight.bold : FontWeight.w500)),
       ),
     );
   }

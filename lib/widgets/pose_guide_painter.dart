@@ -30,11 +30,12 @@ class PoseGuidePainter extends CustomPainter {
       ..color = color.withOpacity(0.18)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
-    // Work in a centered 9:16 box; the figure spans ~82% of its height.
-    final boxH = size.height * 0.9;
+    // Now that this painter is inside the AspectRatio of the CameraPreview,
+    // size perfectly matches the camera frame.
+    final boxH = size.height * 0.80; // Use 80% of camera height
     final boxW = boxH * 9 / 16;
     final cx = size.width / 2;
-    final top = (size.height - boxH) / 2;
+    final top = size.height * 0.05; // 5% margin from the top of camera frame
     final unit = boxH; // vertical reference
 
     double y(double f) => top + f * unit; // fraction of figure height → dy
