@@ -767,21 +767,32 @@ class _TryOnScreenState extends State<TryOnScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 15, color: _muted),
-            const SizedBox(width: 6),
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: _accent.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 16, color: _accent),
+            ),
+            const SizedBox(width: 9),
             Text(title,
                 style: GoogleFonts.outfit(
-                    fontSize: 14, fontWeight: FontWeight.w700, color: _ink)),
+                    fontSize: 14.5, fontWeight: FontWeight.w700, color: _ink)),
+            const Spacer(),
+            Text('${products.length} picks',
+                style: GoogleFonts.outfit(fontSize: 11, color: _muted)),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         SizedBox(
-          height: 208,
+          height: 236,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: products.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, i) => _matchCard(products[i]),
           ),
         ),
@@ -796,34 +807,75 @@ class _TryOnScreenState extends State<TryOnScreen> {
         MaterialPageRoute(builder: (_) => ProductDetailScreen.fromProduct(p)),
       ),
       child: Container(
-        width: 132,
+        width: 152,
         decoration: BoxDecoration(
           color: _surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
               color: _isDark ? AppColors.darkBorder : AppColors.creamAlt),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(_isDark ? 0.25 : 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-              child: SizedBox(
-                height: 132,
-                width: double.infinity,
-                child: CdnImage(
-                  p.image,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: _isDark ? AppColors.charcoal : AppColors.creamAlt,
-                    child: Icon(Icons.checkroom_rounded,
-                        size: 30, color: _muted),
+            // Photo with floating "match" badge
+            Expanded(
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(17)),
+                    child: SizedBox.expand(
+                      child: CdnImage(
+                        p.image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: _isDark
+                              ? AppColors.charcoal
+                              : AppColors.creamAlt,
+                          child: Icon(Icons.checkroom_rounded,
+                              size: 30, color: _muted),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.auto_awesome_rounded,
+                              size: 10, color: Color(0xFFC9A96E)),
+                          const SizedBox(width: 3),
+                          Text('Match',
+                              style: GoogleFonts.outfit(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+            // Name / shop / price row
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              padding: const EdgeInsets.fromLTRB(11, 9, 11, 11),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -831,17 +883,41 @@ class _TryOnScreenState extends State<TryOnScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
                           color: _ink)),
-                  const SizedBox(height: 3),
-                  Text(p.price,
+                  const SizedBox(height: 2),
+                  Text(p.shopName ?? p.brand,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: _accent)),
+                      style:
+                          GoogleFonts.outfit(fontSize: 10.5, color: _muted)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(p.price,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: _accent)),
+                      ),
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: _accent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.arrow_forward_rounded,
+                            size: 14,
+                            color:
+                                _isDark ? AppColors.charcoal : Colors.white),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
