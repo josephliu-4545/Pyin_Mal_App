@@ -33,7 +33,9 @@ class _Salon {
   });
 }
 
-const _shopsDir = 'pyin-mal-assets/assets/images/Shops';
+// Lowercase 'shops' — must match the case bundled into the APK (Android asset
+// lookup is case-sensitive; the capital-S folder merges into 'shops' at build).
+const _shopsDir = 'pyin-mal-assets/assets/images/shops';
 
 const _salons = <_Salon>[
   _Salon(
@@ -240,7 +242,7 @@ class HaircutBookingScreen extends StatelessWidget {
                           clipBehavior: Clip.antiAlias,
                           child: salon.logo != null
                               ? Image.asset(salon.logo!, fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Icon(salon.icon, color: accent, size: 32))
+                                  errorBuilder: (_, e, __) { debugPrint('❌ LOGO FAIL ${salon.logo} -> $e'); return Icon(salon.icon, color: accent, size: 32); })
                               : Icon(salon.icon, color: accent, size: 32),
                         ),
                         const SizedBox(height: 12),

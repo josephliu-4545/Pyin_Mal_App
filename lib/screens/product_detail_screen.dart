@@ -23,6 +23,7 @@ import 'package:pyin_mal_app/screens/ar_fitting_room_screen.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/services/outfit_recommendation_service.dart';
+import 'package:pyin_mal_app/services/outfit_ai_recommendation_service.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -89,10 +90,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   // Size recommendation from the user's saved Bodygram measurements.
   SizeRecommendation? _sizeRec;
 
-  // "Complete the Look" — complementary products (different category slot,
-  // e.g. pants/jackets/shoes when viewing a shirt — never another shirt).
-  late final List<Product> _completeTheLookItems = OutfitRecommendationService
-      .recommendationsFor(ProductRepository.getProductById(widget.productId) ??
+  // Resolved Product for the item being viewed — falls back to a synthetic
+  // Unisex product if it's not in the repository (e.g. a mocked item).
+  late final Product _self =
+      ProductRepository.getProductById(widget.productId) ??
           Product(
             id: widget.productId,
             name: widget.name,
@@ -101,7 +102,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             gender: 'Unisex',
             brand: widget.brand,
             shopName: widget.shopName,
-          ));
+          );
+
+  // "Complete the Look" — complementary products (different category slot,
+  // e.g. pants/jackets/shoes when viewing a shirt — never another shirt).
+  // Starts as the instant rule-based shortlist, then gets re-ranked by the
+  // user's style profile once the AI call resolves (see _refineCompleteTheLook).
+  late List<Product> _completeTheLookItems =
+      OutfitRecommendationService.recommendationsFor(_self);
+
+  /// Re-ranks [_completeTheLookItems] using the user's style profile. The
+  /// rule-based list above is already shown, so this only ever refines —
+  /// on failure or timeout the original list stays put.
+  Future<void> _refineCompleteTheLook() async {
+    final pool = OutfitRecommendationService.recommendationsFor(_self, limit: 24);
+    final refined = await OutfitAiRecommendationService.refine(_self, pool, limit: 10);
+    if (mounted && refined.isNotEmpty) {
+      setState(() => _completeTheLookItems = refined);
+    }
+  }
 
   // ── Photo gallery ─────────────────────────────────────────────────────────
   final PageController _galleryController = PageController();
@@ -124,6 +143,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ? widget.colorVariants.keys.first
             : '');
     _loadSizeRecommendation();
+    _refineCompleteTheLook();
     // Position the PiP at the top-right of the card once layout is known.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
