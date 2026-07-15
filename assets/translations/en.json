@@ -208,7 +208,9 @@
     "account": "Account",
     "settings": "Settings",
     "order_history": "Order History",
-    "sign_out": "Sign out"
+    "sign_out": "Sign out",
+    "avatar_updated": "Avatar updated successfully!",
+    "avatar_failed": "Failed to upload image. Please try again later."
   },
   "cart": {
     "login_prompt": "Please log in to checkout and earn points!",

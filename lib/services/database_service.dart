@@ -42,6 +42,19 @@ class DatabaseService {
     });
   }
 
+  Future<void> updateAvatarUrl(String url) async {
+    if (_uid == null) return;
+    await _db.collection('users').doc(_uid).update({
+      'avatarUrl': url,
+    });
+    
+    // Also update FirebaseAuth profile for consistency
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await user.updatePhotoURL(url);
+    }
+  }
+
   /// Save the body info + style preferences collected during profile setup.
   /// Uses set(merge) so it works whether or not the user doc already exists.
   Future<void> saveProfileSetup(Map<String, dynamic> data) async {
@@ -299,6 +312,25 @@ class DatabaseService {
   Future<void> markResellSold(String postId) async {
     if (postId.isEmpty) return;
     await _db.collection('resellPosts').doc(postId).update({'isSoldOut': true});
+  }
+
+  /// One-shot read of the raw resell post doc.
+  Future<Map<String, dynamic>?> getResellPostRaw(String postId) async {
+    if (postId.isEmpty) return null;
+    final snap = await _db.collection('resellPosts').doc(postId).get();
+    return snap.data();
+  }
+
+  /// Updates an existing resell post.
+  Future<void> updateResellPost(String postId, Map<String, dynamic> data) async {
+    if (postId.isEmpty) return;
+    await _db.collection('resellPosts').doc(postId).update(data);
+  }
+
+  /// Deletes an existing resell post.
+  Future<void> deleteResellPost(String postId) async {
+    if (postId.isEmpty) return;
+    await _db.collection('resellPosts').doc(postId).delete();
   }
 
   // ── Tracking ───────────────────────────────────────────────────────────────

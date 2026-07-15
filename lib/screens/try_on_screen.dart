@@ -278,9 +278,14 @@ class _TryOnScreenState extends State<TryOnScreen> {
       children: [
         _topBar(),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-            child: Column(
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              child: ConstrainedBox(
+                constraints:
+                    BoxConstraints(minHeight: constraints.maxHeight - 44),
+                child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('try_on.mix_match'.tr(),
@@ -368,6 +373,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
                   ),
                 ),
               ],
+                ),
+              ),
             ),
           ),
         ),
