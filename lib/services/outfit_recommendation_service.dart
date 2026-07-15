@@ -70,10 +70,15 @@ class OutfitRecommendationService {
       return _slotOf(p.category) != slot;
     }).toList();
 
+    // Same-shop items rank first (closer in style); within that, order is a
+    // stable pseudo-random shuffle seeded by (viewed product, candidate) so
+    // browsing different items in the same slot doesn't keep surfacing the
+    // exact same leftover subset in the exact same order.
     candidates.sort((a, b) {
       final aSameShop = a.shopName == product.shopName ? 0 : 1;
       final bSameShop = b.shopName == product.shopName ? 0 : 1;
-      return aSameShop.compareTo(bSameShop);
+      if (aSameShop != bSameShop) return aSameShop.compareTo(bSameShop);
+      return Object.hash(product.id, a.id).compareTo(Object.hash(product.id, b.id));
     });
 
     return candidates.take(limit).toList();

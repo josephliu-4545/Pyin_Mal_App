@@ -206,12 +206,15 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
       );
     }
 
-    // Otherwise show the upload UI
-    return Stack(
-      children: [
-        SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+    // Otherwise show the upload UI — vertically centered so the screen
+    // doesn't leave a large blank area under the button.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
@@ -293,11 +296,28 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
                         ),
                       ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
+              // Small tip so the lower half doesn't feel empty
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.lightbulb_outline,
+                      size: 14, color: Colors.white38),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'Clear, front-facing photos give the most realistic result.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
+                          color: Colors.white38, fontSize: 11.5),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 
