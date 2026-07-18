@@ -2374,7 +2374,7 @@ class _HomeTabState extends State<_HomeTab> {
                                   applicationName: 'Ta Chat Nhate',
                                   applicationVersion: '1.0.0',
                                   applicationLegalese:
-                                      '© 2026 Ta Chat Nhate · Pyin Mal',
+                                      '© 2026 Ta Chat Nhate',
                                 ),
                               );
                             },

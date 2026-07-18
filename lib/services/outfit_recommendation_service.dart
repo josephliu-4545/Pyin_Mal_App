@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 
@@ -80,6 +81,11 @@ class OutfitRecommendationService {
       if (aSameShop != bSameShop) return aSameShop.compareTo(bSameShop);
       return Object.hash(product.id, a.id).compareTo(Object.hash(product.id, b.id));
     });
+
+    debugPrint('🎯 CompleteTheLook: viewing "${product.name}" '
+        '(id=${product.id}, category=${product.category}, slot=$slot, gender=${product.gender}) '
+        '— catalog=${ProductRepository.allProducts.length} total, '
+        '${candidates.length} candidates after filtering');
 
     return candidates.take(limit).toList();
   }

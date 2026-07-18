@@ -110,7 +110,7 @@ class _OverlayPermissionScreenState extends State<OverlayPermissionScreen>
             const SizedBox(height: 8),
             Text(
               'The scanner floats over any app so you can scan clothing '
-              'without switching back to Pyin Mal.',
+              'without switching back to Ta Chat Nhate.',
               style: GoogleFonts.outfit(fontSize: 14,
                   color: isDark ? AppColors.paleText : AppColors.inkGrey),
             ),
@@ -257,14 +257,14 @@ class _MiuiGuideCard extends StatelessWidget {
         ]),
         const SizedBox(height: 10),
         _MiuiStep(n: '1', text:
-            'Settings → Apps → Manage apps → Pyin Mal → Other permissions\n'
+            'Settings → Apps → Manage apps → Ta Chat Nhate → Other permissions\n'
             '→ Enable "Display pop-up window"'),
         const SizedBox(height: 8),
         _MiuiStep(n: '2', text:
             'Same page → Enable "Start in background"'),
         const SizedBox(height: 8),
         _MiuiStep(n: '3', text:
-            'Settings → Apps → Manage apps → Pyin Mal\n'
+            'Settings → Apps → Manage apps → Ta Chat Nhate\n'
             '→ Battery saver → No restrictions'),
       ]),
     );

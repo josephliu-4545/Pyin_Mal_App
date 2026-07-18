@@ -234,6 +234,27 @@
     "ok": "OK",
     "error": "Failed to place order. Please try again."
   },
+  "mmqr": {
+    "brand": "MyanmarPay · MMQR",
+    "standard": "National QR Standard",
+    "merchant_sub": "Merchant · Yangon, MM",
+    "expires_in": "QR expires in {time}",
+    "ref": "Ref: {ref}",
+    "scan_prompt": "Scan with any MMQR-enabled app",
+    "how_to": "How to pay",
+    "step1": "Open {wallet} (or any MMQR banking app).",
+    "step2": "Tap Scan and point at this QR code.",
+    "step3": "Confirm the {amount} payment to {merchant}.",
+    "demo_note": "Demo mode — no live payment gateway is connected yet. Tap the button below to preview a successful payment.",
+    "cancel": "Cancel",
+    "pay_preview": "I've paid — preview",
+    "confirming": "Confirming…",
+    "success_title": "Payment Successful",
+    "success_desc": "{amount} paid to {merchant} via MMQR",
+    "placing_order": "Placing your order…",
+    "note": "You'll scan a MyanmarPay MMQR code to pay with {wallet} after tapping Place Order.",
+    "wallet_sub": "MMQR mobile wallet"
+  },
   "product": {
     "360": "360°",
     "photo": "Photo",
@@ -392,7 +413,7 @@
   },
   "ai_chat": {
     "title": "AI Stylist",
-    "greeting": "Hi! I'm your Pyin Mal Stylist ✨\nI can help you find the perfect outfit or suggest a great haircut. What are you looking for today?",
+    "greeting": "Hi! I'm your Ta Chat Nhate Stylist ✨\nI can help you find the perfect outfit or suggest a great haircut. What are you looking for today?",
     "ask_advice": "Ask for advice..."
   },
   "ar_hair": {
@@ -445,7 +466,7 @@
     "change": "Change",
     "remove": "Remove",
     "welcome": "Welcome",
-    "to_pyin_mal": "to Pyin Mal",
+    "to_pyin_mal": "to Ta Chat Nhate",
     "welcome_desc": "Answer a few quick questions to help us understand your style better.",
     "start_quiz": "Start the Quiz",
     "step_1_3": "Step 1/3",
@@ -654,7 +675,7 @@
   },
   "sale": {
     "title": "Flash Sale",
-    "subtitle": "Deals from shops across Pyin Mal",
+    "subtitle": "Deals from shops across Ta Chat Nhate",
     "ends_in": "Ends in",
     "all": "All",
     "items_count": "{} items on sale"

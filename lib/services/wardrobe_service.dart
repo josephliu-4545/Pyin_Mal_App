@@ -20,7 +20,7 @@ class WardrobeService {
   static const _proxyUrl = 'https://tachatnhate.xo.je/ai-proxy.php';
 
   static const _promptHeader =
-      'You are a fashion AI assistant for Pyin Mal, a Myanmar clothing app.\n'
+      'You are a fashion AI assistant for Ta Chat Nhate, a Myanmar clothing app.\n'
       'A user is adding a clothing item they own to their digital wardrobe.\n'
       'Analyze the clothing item visible in this image.\n\n';
 

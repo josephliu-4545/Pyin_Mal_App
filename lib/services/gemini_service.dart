@@ -39,7 +39,7 @@ class GeminiService {
     }).join('\n');
 
     final systemPrompt = '''
-You are an expert personal stylist and shopping assistant for the 'Pyin Mal' fashion app.
+You are an expert personal stylist and shopping assistant for the 'Ta Chat Nhate' fashion app.
 Your job is to help users find the perfect outfits, provide fashion advice, and recommend specific items from our catalog.
 
 Here are the available products you can recommend:

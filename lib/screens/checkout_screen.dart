@@ -11,6 +11,7 @@ import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/services/wardrobe_service.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/core/guide_keys.dart';
+import 'package:pyin_mal_app/widgets/mmqr_payment_sheet.dart';
 
 // ── Payment option model ──────────────────────────────────────────────────────
 enum _PayKind { wallet, card, cod }
@@ -52,13 +53,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   // Mobile wallets + card + cash on delivery
   static const _payOptions = <_PayOption>[
-    _PayOption('kpay', 'KBZPay', 'Mobile wallet', Icons.account_balance_wallet_rounded,
+    _PayOption('kpay', 'KBZPay', 'MMQR mobile wallet', Icons.account_balance_wallet_rounded,
         Color(0xFF1565C0), _PayKind.wallet, logo: 'assets/images/pay_kbzpay.png'),
-    _PayOption('wave', 'WavePay', 'Mobile wallet', Icons.waves_rounded,
+    _PayOption('wave', 'WavePay', 'MMQR mobile wallet', Icons.waves_rounded,
         Color(0xFFFFB300), _PayKind.wallet, logo: 'assets/images/pay_wavepay.png'),
-    _PayOption('aya', 'AYA Pay', 'Mobile wallet', Icons.payments_rounded,
+    _PayOption('aya', 'AYA Pay', 'MMQR mobile wallet', Icons.payments_rounded,
         Color(0xFFE53935), _PayKind.wallet, logo: 'assets/images/pay_ayapay.png'),
-    _PayOption('uab', 'UAB Pay', 'Mobile wallet', Icons.account_balance_rounded,
+    _PayOption('uab', 'UAB Pay', 'MMQR mobile wallet', Icons.account_balance_rounded,
         Color(0xFF00897B), _PayKind.wallet, logo: 'assets/images/pay_uabpay.png'),
     _PayOption('card', 'Credit / Debit Card', 'Visa, Mastercard', Icons.credit_card_rounded,
         Color(0xFF6A1B9A), _PayKind.card, logo: 'assets/images/pay_card.png'),
@@ -94,6 +95,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Future<void> _placeOrder() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // MMQR flow: mobile wallets pay via the MyanmarPay national QR standard.
+    // We show the (demo) MMQR payment sheet first and only place the order once
+    // the payment is confirmed. Card / cash-on-delivery skip this step.
+    if (_selectedOption.kind == _PayKind.wallet) {
+      final cart = CartService.instance;
+      final total = cart.totalPrice + (cart.items.isEmpty ? 0 : _shippingFee);
+      final orderRef =
+          'PM${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+      final paid = await MmqrPaymentSheet.show(
+        context,
+        amount: total.toDouble(),
+        walletLabel: _selectedOption.label,
+        walletColor: _selectedOption.color,
+        walletIcon: _selectedOption.icon,
+        walletLogo: _selectedOption.logo,
+        orderRef: orderRef,
+      );
+      if (!mounted || !paid) return;
+    }
 
     setState(() => _placing = true);
 
@@ -556,11 +577,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline_rounded, size: 16, color: muted),
+          Icon(Icons.qr_code_2_rounded, size: 16, color: muted),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              "You'll confirm the payment in the ${_selectedOption.label} app after placing the order.",
+              'mmqr.note'.tr(namedArgs: {'wallet': _selectedOption.label}),
               style: GoogleFonts.outfit(fontSize: 12, color: muted, height: 1.4),
             ),
           ),

@@ -655,7 +655,7 @@ class _ShopScreenState extends State<ShopScreen> {
                           Icon(Icons.chevron_right_rounded, size: 20, color: muted),
                         ],
                       ),
-                      Text('Deals from shops across Pyin Mal',
+                      Text('Deals from shops across Ta Chat Nhate',
                           style: GoogleFonts.outfit(fontSize: 11, color: muted)),
                     ],
                   ),

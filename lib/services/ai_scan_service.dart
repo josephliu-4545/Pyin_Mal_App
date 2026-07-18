@@ -17,7 +17,7 @@ class AiScanService {
   static const _proxyUrl = 'https://tachatnhate.xo.je/ai-proxy.php';
 
   static const _promptHeader =
-      'You are a fashion AI assistant for Pyin Mal, a Myanmar clothing app.\n'
+      'You are a fashion AI assistant for Ta Chat Nhate, a Myanmar clothing app.\n'
       'Analyze the clothing item visible in this image. The photo may be taken in Myanmar.\n'
       'You understand both English and Burmese (မြန်မာဘာသာ) clothing terms.\n\n'
       'Step 1 — Describe what you see:\n'

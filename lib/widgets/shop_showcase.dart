@@ -324,7 +324,7 @@ class _FeaturedShopsSectionState extends State<FeaturedShopsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Featured Shops', 'Discover stores on Pyin Mal', widget.isDark),
+        _sectionHeader('Featured Shops', 'Discover stores on Ta Chat Nhate', widget.isDark),
         const SizedBox(height: 14),
         SizedBox(
           height: 170,

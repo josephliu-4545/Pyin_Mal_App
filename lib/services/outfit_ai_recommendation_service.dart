@@ -47,7 +47,7 @@ class OutfitAiRecommendationService {
           '- ${p.name} (ID: ${p.id}, Category: ${p.category}, Brand: ${p.brand})').join('\n');
 
       final systemPrompt = '''
-You are a personal stylist for the 'Pyin Mal' fashion app choosing items that
+You are a personal stylist for the 'Ta Chat Nhate' fashion app choosing items that
 "complete the look" for a shopper who is viewing this item:
 ${product.name} (Category: ${product.category}, Brand: ${product.brand}).
 
