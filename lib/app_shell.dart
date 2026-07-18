@@ -15,6 +15,7 @@ import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/model_preview_screen.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
 import 'package:pyin_mal_app/screens/ar_fitting_room_screen.dart';
+import 'package:pyin_mal_app/screens/ar_studio_screen.dart';
 import 'package:pyin_mal_app/screens/notification_screen.dart';
 import 'package:pyin_mal_app/screens/ai_chat_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
@@ -2505,6 +2506,7 @@ class _HomeTabState extends State<_HomeTab> {
     final row1 = [
       _AICard(label: 'Model\nTry-On',      sub: 'Virtual avatar',    icon: Icons.view_in_ar_rounded,              color: const Color(0xFFC9A96E), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ModelPreviewScreen()))),
       _AICard(label: 'Virtual\nTry-On',    sub: 'AI on yourself',    icon: Icons.checkroom_rounded,               color: const Color(0xFF7C6AF7), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TryOnScreen()))),
+      _AICard(label: '360°\nStudio',       sub: 'See every angle',   icon: Icons.threed_rotation_rounded,         color: const Color(0xFFE07A5F), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ARStudioScreen()))),
       _AICard(label: 'AR Try-On\n& 3D',   sub: 'Augmented reality', icon: Icons.view_in_ar_rounded,              color: const Color(0xFF3D9BE9), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ARFittingRoomScreen()))),
       _AICard(label: 'Haircut\nRec',       sub: 'AI hairstyle',      icon: Icons.face_retouching_natural_rounded, color: const Color(0xFF52B788), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()))),
     ];

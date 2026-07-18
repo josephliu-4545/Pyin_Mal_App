@@ -14,7 +14,6 @@ import '../widgets/cdn_image.dart';
 import '../services/pose_guide_validator.dart';
 import 'pose_guide_camera_screen.dart';
 import 'product_detail_screen.dart';
-import 'try_on_video_screen.dart';
 
 class TryOnScreen extends StatefulWidget {
   final String? initialImageUrl;
@@ -746,32 +745,6 @@ class _TryOnScreenState extends State<TryOnScreen> {
                   ),
                 ),
                 const SizedBox(height: 28),
-                // 360° AI video of this look (fal.ai image-to-video)
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TryOnVideoScreen(
-                            tryOnImageUrl: _resultImageUrl!),
-                      ),
-                    ),
-                    icon: const Icon(Icons.threed_rotation_rounded, size: 18),
-                    label: Text('See it in 360°',
-                        style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.w700, fontSize: 15)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _ink,
-                      foregroundColor: _isDark ? AppColors.charcoal : Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   height: 54,
