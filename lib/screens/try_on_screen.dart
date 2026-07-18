@@ -11,7 +11,10 @@ import '../services/try_on_service.dart';
 import '../models/product.dart';
 import '../data/product_repository.dart';
 import '../widgets/cdn_image.dart';
+import '../services/pose_guide_validator.dart';
+import 'pose_guide_camera_screen.dart';
 import 'product_detail_screen.dart';
+import 'try_on_video_screen.dart';
 
 class TryOnScreen extends StatefulWidget {
   final String? initialImageUrl;
@@ -121,6 +124,70 @@ class _TryOnScreenState extends State<TryOnScreen> {
       final bytes = await image.readAsBytes();
       setState(() {
         onPicked(image, bytes);
+      });
+    }
+  }
+
+  /// Person photo entry: guided pose camera (validates full body + pose with
+  /// on-device detection before auto-capturing) or plain gallery pick.
+  Future<void> _pickPersonPhoto() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: _muted.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.accessibility_new_rounded, color: _accent),
+              title: Text('Guided camera',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700, color: _ink)),
+              subtitle: Text('Best results — we check your pose live',
+                  style: GoogleFonts.outfit(fontSize: 12, color: _muted)),
+              onTap: () => Navigator.pop(context, 'camera'),
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library_rounded, color: _accent),
+              title: Text('Choose from gallery',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700, color: _ink)),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || choice == null) return;
+
+    if (choice == 'camera') {
+      final bytes = await Navigator.push<Uint8List>(
+        context,
+        MaterialPageRoute(
+            builder: (_) =>
+                const PoseGuideCameraScreen(shot: BodyShot.front)),
+      );
+      if (bytes != null && mounted) {
+        setState(() {
+          _userPhoto = XFile.fromData(bytes, name: 'guided_capture.jpg');
+          _userPhotoBytes = bytes;
+        });
+      }
+    } else {
+      await _pickImage((f, b) {
+        _userPhoto = f;
+        _userPhotoBytes = b;
       });
     }
   }
@@ -413,10 +480,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
   Widget _personCard() {
     final has = _userPhotoBytes != null;
     return GestureDetector(
-      onTap: () => _pickImage((f, b) {
-        _userPhoto = f;
-        _userPhotoBytes = b;
-      }),
+      onTap: _pickPersonPhoto,
       child: Container(
         height: 200,
         decoration: BoxDecoration(
@@ -444,12 +508,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
                     Positioned(
                       top: 10,
                       right: 10,
-                      child: _circleChip(Icons.swap_horiz_rounded, () {
-                        _pickImage((f, b) {
-                          _userPhoto = f;
-                          _userPhotoBytes = b;
-                        });
-                      }),
+                      child: _circleChip(
+                          Icons.swap_horiz_rounded, _pickPersonPhoto),
                     ),
                     Positioned(
                       bottom: 0,
@@ -686,6 +746,32 @@ class _TryOnScreenState extends State<TryOnScreen> {
                   ),
                 ),
                 const SizedBox(height: 28),
+                // 360° AI video of this look (fal.ai image-to-video)
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TryOnVideoScreen(
+                            tryOnImageUrl: _resultImageUrl!),
+                      ),
+                    ),
+                    icon: const Icon(Icons.threed_rotation_rounded, size: 18),
+                    label: Text('See it in 360°',
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w700, fontSize: 15)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _ink,
+                      foregroundColor: _isDark ? AppColors.charcoal : Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   height: 54,
