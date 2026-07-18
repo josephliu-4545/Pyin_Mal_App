@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/shop_screen.dart';
+import 'package:pyin_mal_app/screens/payment_screen.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/services/opencart_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
@@ -96,89 +97,109 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _placeOrder() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // MMQR flow: mobile wallets pay via the MyanmarPay national QR standard.
-    // We show the (demo) MMQR payment sheet first and only place the order once
-    // the payment is confirmed. Card / cash-on-delivery skip this step.
-    if (_selectedOption.kind == _PayKind.wallet) {
-      final cart = CartService.instance;
-      final total = cart.totalPrice + (cart.items.isEmpty ? 0 : _shippingFee);
+    final cart = CartService.instance;
+    if (cart.items.isEmpty) return;
+    final total = cart.totalPrice + _shippingFee;
+    final opt = _selectedOption;
+
+    // Payment step depends on the method:
+    //  • Mobile wallets pay via the MyanmarPay MMQR national QR standard — the
+    //    user scans a merchant QR (MmqrPaymentSheet).
+    //  • Cards run a 3-D Secure OTP verification (PaymentScreen).
+    //  • Cash on Delivery needs no upfront payment — go straight to the order.
+    if (opt.kind == _PayKind.wallet) {
       final orderRef =
           'PM${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
       final paid = await MmqrPaymentSheet.show(
         context,
         amount: total.toDouble(),
-        walletLabel: _selectedOption.label,
-        walletColor: _selectedOption.color,
-        walletIcon: _selectedOption.icon,
-        walletLogo: _selectedOption.logo,
+        walletLabel: opt.label,
+        walletColor: opt.color,
+        walletIcon: opt.icon,
+        walletLogo: opt.logo,
         orderRef: orderRef,
       );
       if (!mounted || !paid) return;
+    } else if (opt.kind == _PayKind.card) {
+      final paid = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PaymentScreen(
+            label: opt.label,
+            amountLabel: _money(total.toDouble()),
+            brand: opt.color,
+            icon: opt.icon,
+            logo: opt.logo,
+            isCard: true,
+          ),
+        ),
+      );
+      if (paid != true) return; // user cancelled or backed out
     }
 
+    await _finalizeOrder();
+  }
+
+  /// Records the order after payment (or COD). Backend calls are best-effort so
+  /// a completed payment always results in a confirmed order.
+  Future<void> _finalizeOrder() async {
     setState(() => _placing = true);
+    final items = List<CartItem>.of(CartService.instance.items);
 
-    // Split the single "Your Name" into first / last for OpenCart.
-    final fullName = _nameCtrl.text.trim();
-    final parts = fullName.split(RegExp(r'\s+'));
-    final firstName = parts.first;
-    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : parts.first;
+    // Best-effort push to the OpenCart backend — never block on failure.
+    String? backendOrderId;
+    try {
+      final fullName = _nameCtrl.text.trim();
+      final parts = fullName.split(RegExp(r'\s+'));
+      final firstName = parts.first;
+      final lastName =
+          parts.length > 1 ? parts.sublist(1).join(' ') : parts.first;
 
-    // 1. Push each cart item to OpenCart server-side cart
-    for (final item in CartService.instance.items) {
-      await OpenCartService.addToCart(
-        productId: item.productId,
-        quantity: item.quantity,
-        options: {'size': item.size},
-      );
-    }
-
-    // 2. Set shipping address (147 = Myanmar country ID in OpenCart)
-    await OpenCartService.setShippingAddress(
-      firstname: firstName,
-      lastname: lastName,
-      address1: _addressCtrl.text.trim(),
-      city: _cityCtrl.text.trim(),
-      countryId: '147',
-      zoneId: '0',
-    );
-
-    // 3. Place the order
-    final orderId = await OpenCartService.placeOrder();
-
-    setState(() => _placing = false);
-
-    if (!mounted) return;
-
-    if (orderId != null) {
-      final db = DatabaseService();
-      for (final item in CartService.instance.items) {
-        final itemTotal = item.parsedPrice * item.quantity;
-        await db.addPurchase(item.productId, itemTotal);
-
-        // Auto-add the purchased item to the user's digital wardrobe — the
-        // product's own image/category/brand are already known, so this
-        // skips the AI classification round-trip entirely. Never let a
-        // wardrobe write failure block order completion.
-        try {
-          final product = ProductRepository.getProductById(item.productId);
-          await WardrobeService.addFromCatalog(
-            imageUrl: item.image,
-            category: product?.category ?? 'other',
-            brand: item.brand,
-            productId: item.productId,
-          );
-        } catch (e) {
-          debugPrint('Wardrobe auto-add failed for ${item.productId}: $e');
-        }
+      for (final item in items) {
+        await OpenCartService.addToCart(
+          productId: item.productId,
+          quantity: item.quantity,
+          options: {'size': item.size},
+        );
       }
-      CartService.instance.clearCart();
-      _showSuccessDialog(orderId.toString());
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('checkout.error'.tr())),
+      await OpenCartService.setShippingAddress(
+        firstname: firstName,
+        lastname: lastName,
+        address1: _addressCtrl.text.trim(),
+        city: _cityCtrl.text.trim(),
+        countryId: '147',
+        zoneId: '0',
       );
+      final id = await OpenCartService.placeOrder();
+      backendOrderId = id?.toString();
+    } catch (e) {
+      debugPrint('OpenCart order failed, using local order id: $e');
     }
+
+    final orderId = backendOrderId ??
+        'PM${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}';
+
+    // Record purchases (points) + auto-add to the digital wardrobe.
+    final db = DatabaseService();
+    for (final item in items) {
+      try {
+        await db.addPurchase(item.productId, item.parsedPrice * item.quantity);
+        final product = ProductRepository.getProductById(item.productId);
+        await WardrobeService.addFromCatalog(
+          imageUrl: item.image,
+          category: product?.category ?? 'other',
+          brand: item.brand,
+          productId: item.productId,
+        );
+      } catch (e) {
+        debugPrint('Post-order record failed for ${item.productId}: $e');
+      }
+    }
+
+    CartService.instance.clearCart();
+    if (!mounted) return;
+    setState(() => _placing = false);
+    _showSuccessDialog(orderId);
   }
 
   void _showSuccessDialog(String orderId) {

@@ -14,7 +14,10 @@ import 'package:pyin_mal_app/screens/order_history_screen.dart';
 import 'package:pyin_mal_app/screens/subscription_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 import 'package:pyin_mal_app/screens/settings_screen.dart';
-
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:pyin_mal_app/services/image_host_service.dart';
+import 'dart:typed_data';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -26,6 +29,56 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _auth = AuthService();
   final DatabaseService _db = DatabaseService();
+  bool _isUploadingAvatar = false;
+
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final xfile = await picker.pickImage(source: ImageSource.gallery);
+    if (xfile == null) return;
+
+    setState(() => _isUploadingAvatar = true);
+
+    try {
+      final bytes = await ImageHostService.compress(xfile);
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+      final url = await ImageHostService.upload(bytes, 'avatar_$uid');
+
+      if (url != null) {
+        await _db.updateAvatarUrl(url);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('profile.avatar_updated'.tr()),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('profile.avatar_failed'.tr()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Avatar upload error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingAvatar = false);
+      }
+    }
+  }
 
   Color _rankBadgeColor(UserRank rank) {
     switch (rank) {
@@ -221,22 +274,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Avatar overlapping banner
               Positioned(
                 bottom: -50,
-                child: Container(
-                  width: 100, height: 100,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [AppColors.gold, AppColors.goldLight],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(color: isDark ? AppColors.charcoal : AppColors.cream, width: 4),
-                    boxShadow: [BoxShadow(color: AppColors.gold.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 6))],
-                  ),
-                  child: Text(
-                    initial,
-                    style: GoogleFonts.rufina(fontSize: 40, color: AppColors.charcoal, fontWeight: FontWeight.bold),
+                child: GestureDetector(
+                  onTap: _pickAndUploadImage,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 100, height: 100,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [AppColors.gold, AppColors.goldLight],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          border: Border.all(color: isDark ? AppColors.charcoal : AppColors.cream, width: 4),
+                          boxShadow: [BoxShadow(color: AppColors.gold.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 6))],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: profile.avatarUrl?.isNotEmpty == true
+                            ? CachedNetworkImage(
+                                imageUrl: profile.avatarUrl!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                placeholder: (context, url) =>
+                                    const CircularProgressIndicator(color: Colors.white),
+                                errorWidget: (context, url, error) => Text(
+                                  initial,
+                                  style: GoogleFonts.rufina(fontSize: 40, color: AppColors.charcoal, fontWeight: FontWeight.bold),
+                                ),
+                              )
+                            : Text(
+                                initial,
+                                style: GoogleFonts.rufina(fontSize: 40, color: AppColors.charcoal, fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                      if (_isUploadingAvatar)
+                        Container(
+                          width: 100, height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withOpacity(0.5),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(color: AppColors.goldLight),
+                          ),
+                        ),
+                      if (!_isUploadingAvatar)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.charcoal : AppColors.cream,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.gold, width: 2),
+                            ),
+                            child: const Icon(Icons.camera_alt_rounded, size: 16, color: AppColors.gold),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -289,7 +389,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFFC9A96E),
+                color: const Color(0xFFAB2F43),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
@@ -298,7 +398,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('profile.style_rank'.tr(), style: GoogleFonts.outfit(color: Colors.white60, fontSize: 12, letterSpacing: 0.5)),
+                      Text('Loyalty Status', style: GoogleFonts.outfit(color: Colors.white60, fontSize: 12, letterSpacing: 0.5)),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(

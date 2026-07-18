@@ -19,6 +19,8 @@ import 'package:pyin_mal_app/screens/notification_screen.dart';
 import 'package:pyin_mal_app/screens/ai_chat_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/profile_screen.dart';
+import 'package:pyin_mal_app/models/user_profile.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pyin_mal_app/screens/subscription_screen.dart';
 import 'package:pyin_mal_app/screens/scan_screen.dart';
 import 'package:pyin_mal_app/screens/body_scan_screen.dart';
@@ -618,25 +620,56 @@ class _HomeTabState extends State<_HomeTab> {
               child: GestureDetector(
                 onTap: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const ProfileScreen())),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isDim
-                        ? Colors.white.withOpacity(0.22)
-                        : AppColors.burgundy,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      'P',
-                      style: GoogleFonts.rufina(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                child: StreamBuilder<UserProfile?>(
+                  stream: DatabaseService().getUserProfile(),
+                  builder: (context, snapshot) {
+                    final profile = snapshot.data;
+                    final hasImage = profile?.avatarUrl?.isNotEmpty == true;
+                    final initial = (profile?.displayName?.isNotEmpty == true)
+                        ? profile!.displayName!.substring(0, 1).toUpperCase()
+                        : 'P';
+                        
+                    return Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isDim
+                            ? Colors.white.withOpacity(0.22)
+                            : AppColors.burgundy,
+                        shape: BoxShape.circle,
                       ),
-                    ),
-                  ),
+                      clipBehavior: Clip.antiAlias,
+                      child: hasImage
+                          ? CachedNetworkImage(
+                              imageUrl: profile!.avatarUrl!,
+                              fit: BoxFit.cover,
+                              width: 40,
+                              height: 40,
+                              placeholder: (context, url) =>
+                                  const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))),
+                              errorWidget: (context, url, error) => Center(
+                                child: Text(
+                                  initial,
+                                  style: GoogleFonts.rufina(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Center(
+                              child: Text(
+                                initial,
+                                style: GoogleFonts.rufina(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                    );
+                  }
                 ),
               ),
             ),

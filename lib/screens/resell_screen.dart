@@ -375,6 +375,11 @@ class _ResellScreenState extends State<ResellScreen> {
                       accent: accent,
                       onTap: () =>
                           _openDetailSheet(posts[i], isDark, accent),
+                      onEdit: () async {
+                        final raw = await _db.getResellPostRaw(posts[i].id);
+                        _openPostSheet(editPost: posts[i], rawDoc: raw);
+                      },
+                      onDelete: () => _deletePost(posts[i].id),
                     ),
                     childCount: posts.length,
                   ),
@@ -389,24 +394,25 @@ class _ResellScreenState extends State<ResellScreen> {
   }
 
   // ── Post item sheet (functional) ───────────────────────────────────────────
-  void _openPostSheet() {
+  void _openPostSheet({ResellPost? editPost, Map<String, dynamic>? rawDoc}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = isDark ? AppColors.gold : AppColors.burgundy;
     final cardBg = isDark ? AppColors.darkWarm : Colors.white;
     final ink = isDark ? Colors.white : AppColors.inkBlack;
     final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
 
-    final nameCtrl = TextEditingController();
-    final priceCtrl = TextEditingController();
-    final sizeCtrl = TextEditingController();
-    String condition = 'Like New';
+    final nameCtrl = TextEditingController(text: editPost?.title);
+    final priceCtrl = TextEditingController(text: editPost?.price.replaceAll(' MMK', '').replaceAll(',', ''));
+    final sizeCtrl = TextEditingController(text: editPost?.size);
+    String condition = editPost?.condition ?? 'Like New';
     Uint8List? photo;
+    String? existingImageUrl = editPost?.imageUrl;
     // Step 2 — pickup / delivery arrangement
     int step = 0; // 0 = item details, 1 = pickup
-    final addressCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    String pickupMethod = 'pickup'; // 'pickup' | 'dropoff'
-    String timeSlot = 'morning'; // 'morning' | 'afternoon' | 'evening'
+    final addressCtrl = TextEditingController(text: rawDoc?['address'] as String? ?? '');
+    final phoneCtrl = TextEditingController(text: rawDoc?['phone'] as String? ?? '');
+    String pickupMethod = rawDoc?['pickupMethod'] as String? ?? 'pickup'; // 'pickup' | 'dropoff'
+    String timeSlot = rawDoc?['timeSlot'] as String? ?? 'morning'; // 'morning' | 'afternoon' | 'evening'
 
     showModalBottomSheet(
       context: context,
@@ -506,14 +512,15 @@ class _ResellScreenState extends State<ResellScreen> {
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: accent.withOpacity(0.35)),
                         ),
-                        child: photo != null
+                        child: (photo != null || existingImageUrl != null)
                             ? Stack(
                                 fit: StackFit.expand,
                                 children: [
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(13),
-                                    child:
-                                        Image.memory(photo!, fit: BoxFit.cover),
+                                    child: photo != null
+                                        ? Image.memory(photo!, fit: BoxFit.cover)
+                                        : CdnImage(existingImageUrl ?? editPost!.displaySrc, fit: BoxFit.cover),
                                   ),
                                   Positioned(
                                     top: 8,
@@ -817,7 +824,8 @@ class _ResellScreenState extends State<ResellScreen> {
                                             .contains('MMK')
                                         ? rawPrice
                                         : '$rawPrice MMK');
-                                // Capture values before the sheet closes / awaits.
+                                // Capture ALL values before the sheet closes / awaits
+                                // (including mutable vars like condition, pickupMethod, timeSlot).
                                 final messenger =
                                     ScaffoldMessenger.of(context);
                                 final title = nameCtrl.text.trim();
@@ -827,14 +835,21 @@ class _ResellScreenState extends State<ResellScreen> {
                                 final phone = phoneCtrl.text.trim();
                                 final address = addressCtrl.text.trim();
                                 final localPhoto = photo;
+                                final capturedCondition = condition;
+                                final capturedPickupMethod = pickupMethod;
+                                final capturedTimeSlot = timeSlot;
+                                final capturedEditPost = editPost;
+                                final capturedExistingImageUrl = existingImageUrl;
 
                                 Navigator.pop(sheetCtx);
-                                messenger.showSnackBar(const SnackBar(
-                                    content: Text('Posting your item…')));
+                                messenger.showSnackBar(SnackBar(
+                                    content: Text(capturedEditPost != null
+                                        ? 'Saving changes…'
+                                        : 'Posting your item…')));
 
                                 // Host the photo so the listing is visible on
                                 // any device, then persist it to Firestore.
-                                String imageUrl = '';
+                                String imageUrl = capturedExistingImageUrl ?? '';
                                 if (localPhoto != null) {
                                   final url = await ImageHostService.upload(
                                       localPhoto,
@@ -842,31 +857,57 @@ class _ResellScreenState extends State<ResellScreen> {
                                   if (url != null) imageUrl = url;
                                 }
 
-                                final id = await _db.createResellPost(
-                                  title: title,
-                                  price: priceLabel,
-                                  imageUrl: imageUrl,
-                                  condition: condition,
-                                  size: size,
-                                  phone: phone,
-                                  pickupMethod: pickupMethod,
-                                  address: pickupMethod == 'pickup'
-                                      ? address
-                                      : null,
-                                  timeSlot: pickupMethod == 'pickup'
-                                      ? timeSlot
-                                      : null,
-                                );
+                                bool success = false;
+                                String? errorMsg;
+                                try {
+                                  if (capturedEditPost != null) {
+                                    await _db.updateResellPost(capturedEditPost.id, {
+                                      'title': title,
+                                      'price': priceLabel,
+                                      'imageUrl': imageUrl,
+                                      'condition': capturedCondition,
+                                      'size': size,
+                                      'phone': phone,
+                                      'pickupMethod': capturedPickupMethod,
+                                      'address': capturedPickupMethod == 'pickup' ? address : null,
+                                      'timeSlot': capturedPickupMethod == 'pickup' ? capturedTimeSlot : null,
+                                    });
+                                    success = true;
+                                  } else {
+                                    final newId = await _db.createResellPost(
+                                      title: title,
+                                      price: priceLabel,
+                                      imageUrl: imageUrl,
+                                      condition: capturedCondition,
+                                      size: size,
+                                      phone: phone,
+                                      pickupMethod: capturedPickupMethod,
+                                      address: capturedPickupMethod == 'pickup'
+                                          ? address
+                                          : null,
+                                      timeSlot: capturedPickupMethod == 'pickup'
+                                          ? capturedTimeSlot
+                                          : null,
+                                    );
+                                    success = newId != null;
+                                  }
+                                } catch (e) {
+                                  errorMsg = e.toString();
+                                }
 
                                 if (!mounted) return;
                                 messenger.hideCurrentSnackBar();
                                 messenger.showSnackBar(
                                   SnackBar(
-                                      content: Text(id == null
-                                          ? 'Couldn\'t post — please sign in and try again.'
-                                          : (pickupMethod == 'pickup'
-                                              ? 'Item posted! A rider will collect it once it sells.'
-                                              : 'Item posted! Drop it off at a partner point once it sells.')),
+                                      content: Text(errorMsg != null
+                                          ? 'Error: $errorMsg'
+                                          : !success
+                                              ? 'Couldn\'t post — please sign in and try again.'
+                                              : capturedEditPost != null
+                                                  ? 'Listing updated successfully!'
+                                                  : (capturedPickupMethod == 'pickup'
+                                                      ? 'Item posted! A rider will collect it once it sells.'
+                                                      : 'Item posted! Drop it off at a partner point once it sells.')),
                                       duration:
                                           const Duration(seconds: 3)),
                                 );
@@ -1188,6 +1229,24 @@ class _ResellScreenState extends State<ResellScreen> {
               fontSize: 11, fontWeight: FontWeight.w600, color: color)),
     );
   }
+  Future<void> _deletePost(String id) async {
+    if (id.isEmpty) return; // demo items can't be deleted from DB
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete listing?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to permanently delete this item?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: const TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await _db.deleteResellPost(id);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Listing deleted')));
+    }
+  }
 }
 
 class _ResellCard extends StatelessWidget {
@@ -1198,6 +1257,8 @@ class _ResellCard extends StatelessWidget {
   final Color muted;
   final Color accent;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const _ResellCard({
     required this.post,
@@ -1207,6 +1268,8 @@ class _ResellCard extends StatelessWidget {
     required this.muted,
     required this.accent,
     required this.onTap,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -1280,6 +1343,30 @@ class _ResellCard extends StatelessWidget {
                               color: Colors.white)),
                     ),
                   ),
+                  // Settings icon for owner (top-right)
+                  if (post.isMineFor(FirebaseAuth.instance.currentUser?.uid))
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: PopupMenuButton<String>(
+                        icon: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.45),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.settings_rounded, size: 16, color: Colors.white),
+                        ),
+                        onSelected: (val) {
+                          if (val == 'edit') onEdit?.call();
+                          if (val == 'delete') onDelete?.call();
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(value: 'edit', child: Text('Edit post')),
+                          const PopupMenuItem(value: 'delete', child: Text('Delete post')),
+                        ],
+                      ),
+                    ),
                   // Sold-out overlay
                   if (post.isSoldOut)
                     Positioned.fill(

@@ -208,7 +208,9 @@
     "account": "Account",
     "settings": "Settings",
     "order_history": "Order History",
-    "sign_out": "Sign out"
+    "sign_out": "Sign out",
+    "avatar_updated": "Avatar updated successfully!",
+    "avatar_failed": "Failed to upload image. Please try again later."
   },
   "cart": {
     "login_prompt": "Please log in to checkout and earn points!",
@@ -254,6 +256,26 @@
     "placing_order": "Placing your order…",
     "note": "You'll scan a MyanmarPay MMQR code to pay with {wallet} after tapping Place Order.",
     "wallet_sub": "MMQR mobile wallet"
+  },
+  "payment": {
+    "secure": "Secure payment",
+    "amount_to_pay": "Amount to pay",
+    "wallet_title": "Pay with {wallet}",
+    "wallet_desc": "Enter the phone number linked to your {wallet} wallet.",
+    "pin_title": "Enter your {wallet} PIN",
+    "pin_desc": "Confirm the payment with your 6-digit wallet PIN.",
+    "pin_secure": "Your PIN is encrypted and never stored by {brand}.",
+    "otp_title": "3-D Secure verification",
+    "otp_desc": "We sent a one-time code to the phone number registered with your bank. Enter it to authorise this payment.",
+    "resend": "Didn't get a code?  Resend",
+    "processing": "Confirming your payment…",
+    "processing_hint": "Please don't close this screen.",
+    "continue": "Continue",
+    "pay": "Pay {amount}",
+    "verify_pay": "Verify & pay {amount}",
+    "err_otp": "Enter the 6-digit code sent to your phone.",
+    "err_account": "Enter your {wallet} account number.",
+    "err_pin": "Enter your 6-digit PIN."
   },
   "product": {
     "360": "360°",
