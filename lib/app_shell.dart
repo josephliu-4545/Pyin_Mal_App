@@ -331,6 +331,8 @@ class _HomeTabState extends State<_HomeTab> {
         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TryOnScreen()))),
     ('AR Try-On', Icons.view_in_ar_rounded,
         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ARFittingRoomScreen()))),
+    ('360° Studio', Icons.threed_rotation_rounded,
+        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ARStudioScreen()))),
     ('Haircut', Icons.content_cut_rounded,
         () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()))),
     ('Scan', Icons.document_scanner_rounded,
@@ -1114,15 +1116,15 @@ class _HomeTabState extends State<_HomeTab> {
               Expanded(
                 child: _aiFeatureCard(
                   colors: const [Color(0xFF1F5F8B), Color(0xFF3D9BE9)],
-                  icon: Icons.view_in_ar_rounded,
-                  title: 'AR Try-On',
-                  desc: 'Live camera fitting',
+                  icon: Icons.threed_rotation_rounded,
+                  title: '360° Studio',
+                  desc: 'See every angle',
                   image:
                       'pyin-mal-assets/assets/images/Hero/pyin mal studio1.jpg',
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const ARFittingRoomScreen())),
+                          builder: (_) => const ARStudioScreen())),
                 ),
               ),
               const SizedBox(width: 10),

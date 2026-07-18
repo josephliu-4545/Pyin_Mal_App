@@ -40,12 +40,62 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
   Color get _muted => _isDark ? AppColors.paleText : AppColors.inkGrey;
 
   Future<void> _capture() async {
-    final bytes = await Navigator.push<Uint8List>(
-      context,
-      MaterialPageRoute(
-          builder: (_) => const PoseGuideCameraScreen(shot: BodyShot.front)),
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _muted.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.accessibility_new_rounded, color: _accent),
+              title: Text('Guided camera',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700, color: _ink)),
+              subtitle: Text('Best results — we check your pose live',
+                  style: GoogleFonts.outfit(fontSize: 12, color: _muted)),
+              onTap: () => Navigator.pop(context, 'camera'),
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library_rounded, color: _accent),
+              title: Text('Upload a full-body photo',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700, color: _ink)),
+              subtitle: Text('Standing, facing the camera, head to feet visible',
+                  style: GoogleFonts.outfit(fontSize: 12, color: _muted)),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
-    if (bytes != null && mounted) setState(() => _personBytes = bytes);
+    if (!mounted || choice == null) return;
+
+    if (choice == 'camera') {
+      final bytes = await Navigator.push<Uint8List>(
+        context,
+        MaterialPageRoute(
+            builder: (_) => const PoseGuideCameraScreen(shot: BodyShot.front)),
+      );
+      if (bytes != null && mounted) setState(() => _personBytes = bytes);
+    } else {
+      final img = await _picker.pickImage(source: ImageSource.gallery);
+      if (img == null || !mounted) return;
+      final bytes = await img.readAsBytes();
+      setState(() => _personBytes = bytes);
+    }
   }
 
   Future<void> _pickGarment(bool isShirt) async {
@@ -351,13 +401,13 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
                         color: _accent, size: 30),
                   ),
                   const SizedBox(height: 14),
-                  Text('Open guided camera',
+                  Text('Add your full-body photo',
                       style: GoogleFonts.outfit(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: _ink)),
                   const SizedBox(height: 4),
-                  Text('We track your pose live so the shot comes out right',
+                  Text('Guided camera or upload from your gallery',
                       style: GoogleFonts.outfit(fontSize: 12, color: _muted)),
                 ],
               ),
