@@ -5,6 +5,7 @@ import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/checkout_screen.dart';
+import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class CartScreen extends StatelessWidget {
@@ -15,10 +16,18 @@ class CartScreen extends StatelessWidget {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
+      // Not signed in → take them to the Login screen first. If they sign in,
+      // come back and continue straight to checkout.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('cart.login_prompt'.tr())),
       );
-      return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+      if (!context.mounted) return;
+      // Only proceed if they actually signed in.
+      if (FirebaseAuth.instance.currentUser == null) return;
     }
 
     // Navigate to OpenCart checkout screen for shipping address + order placement.
