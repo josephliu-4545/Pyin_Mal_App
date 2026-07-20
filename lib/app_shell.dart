@@ -10,6 +10,7 @@ import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/theme_notifier.dart';
 import 'package:pyin_mal_app/screens/shop_screen.dart';
 import 'package:pyin_mal_app/screens/haircut_screen.dart';
+import 'package:pyin_mal_app/screens/services_screen.dart';
 import 'package:pyin_mal_app/screens/favorites_screen.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/model_preview_screen.dart';
@@ -141,6 +142,7 @@ class _MainShellState extends State<MainShell> {
           // Shop tab relies on the shell-level cart bar (avoids a double bar).
           ShopScreen(showCartBar: false, cartIconKey: GuideKeys.shopCart),
           const HaircutScreen(),
+          const ServicesScreen(),
           const FavoritesScreen(),
           const DeliveryScreen(),
         ],
@@ -184,6 +186,8 @@ class _GlassNav extends StatelessWidget {
     (icon: Icons.home_rounded,        outline: Icons.home_outlined,              label: 'nav.home'),
     (icon: Icons.store_rounded,       outline: Icons.store_outlined,             label: 'nav.shop'),
     (icon: Icons.content_cut_rounded, outline: Icons.content_cut_outlined,       label: 'nav.hair'),
+    // 'Services'.tr() falls back to 'Services' when the key isn't defined.
+    (icon: Icons.handshake_rounded,   outline: Icons.handshake_outlined,         label: 'Services'),
     (icon: Icons.favorite_rounded,    outline: Icons.favorite_outline_rounded,   label: 'nav.saved'),
     (icon: Icons.local_shipping_rounded, outline: Icons.local_shipping_outlined, label: 'nav.delivery'),
   ];
@@ -212,43 +216,53 @@ class _GlassNav extends StatelessWidget {
             ),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(_items.length, (i) {
               final item = _items[i];
               final selected = currentIndex == i;
-              return GestureDetector(
-                onTap: () => onTap(i),
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: selected ? accent.withOpacity(0.12) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 220),
-                        child: Icon(
-                          selected ? item.icon : item.outline,
-                          key: ValueKey(selected),
-                          color: selected ? accent : (isDark ? AppColors.paleText : AppColors.inkGrey),
-                          size: 22,
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onTap(i),
+                  behavior: HitTestBehavior.opaque,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOutCubic,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color:
+                          selected ? accent.withOpacity(0.12) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 220),
+                          child: Icon(
+                            selected ? item.icon : item.outline,
+                            key: ValueKey(selected),
+                            color: selected
+                                ? accent
+                                : (isDark ? AppColors.paleText : AppColors.inkGrey),
+                            size: 21,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        item.label.tr(),
-                        style: GoogleFonts.outfit(
-                          fontSize: 10,
-                          color: selected ? accent : (isDark ? AppColors.paleText : AppColors.inkGrey),
-                          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                        const SizedBox(height: 3),
+                        Text(
+                          item.label.tr(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            fontSize: 9.5,
+                            color: selected
+                                ? accent
+                                : (isDark ? AppColors.paleText : AppColors.inkGrey),
+                            fontWeight:
+                                selected ? FontWeight.bold : FontWeight.normal,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -2253,56 +2267,84 @@ class _HomeTabState extends State<_HomeTab> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ── Profile header ──────────────────────────────
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Avatar
-                                CircleAvatar(
-                                  radius: 36,
-                                  backgroundColor: isDark
-                                      ? AppColors.darkBorder
-                                      : AppColors.creamAlt,
-                                  backgroundImage: photoUrl != null
-                                      ? NetworkImage(photoUrl)
-                                      : null,
-                                  child: photoUrl == null
-                                      ? Icon(
-                                          Icons.person_rounded,
-                                          size: 36,
+                          // ── Profile header (tap → Profile screen) ───────
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              closeDrawer();
+                              Future.delayed(
+                                const Duration(milliseconds: 200),
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const ProfileScreen()),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Avatar
+                                  CircleAvatar(
+                                    radius: 36,
+                                    backgroundColor: isDark
+                                        ? AppColors.darkBorder
+                                        : AppColors.creamAlt,
+                                    backgroundImage: photoUrl != null
+                                        ? NetworkImage(photoUrl)
+                                        : null,
+                                    child: photoUrl == null
+                                        ? Icon(
+                                            Icons.person_rounded,
+                                            size: 36,
+                                            color: isDark
+                                                ? AppColors.paleText
+                                                : AppColors.inkGrey,
+                                          )
+                                        : null,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  // Name + chevron
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          displayName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.rufina(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark
+                                                ? Colors.white
+                                                : AppColors.inkBlack,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Icon(Icons.chevron_right_rounded,
+                                          size: 20,
                                           color: isDark
                                               ? AppColors.paleText
-                                              : AppColors.inkGrey,
-                                        )
-                                      : null,
-                                ),
-                                const SizedBox(height: 14),
-                                // Name
-                                Text(
-                                  displayName,
-                                  style: GoogleFonts.rufina(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark
-                                        ? Colors.white
-                                        : AppColors.inkBlack,
+                                              : AppColors.inkGrey),
+                                    ],
                                   ),
-                                ),
-                                if (email.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    email,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 13,
-                                      color: isDark
-                                          ? AppColors.paleText
-                                          : AppColors.inkGrey,
+                                  if (email.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      email,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        color: isDark
+                                            ? AppColors.paleText
+                                            : AppColors.inkGrey,
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
                           // Divider
@@ -2323,32 +2365,6 @@ class _HomeTabState extends State<_HomeTab> {
                               closeDrawer();
                               // Switch to Home tab in the shell
                               GuideNav.switchTab?.call(0);
-                            },
-                            isDark,
-                          ),
-                          _buildDrawerItem(
-                            Icons.person_rounded,
-                            'menu.profile'.tr(),
-                            () {
-                              closeDrawer();
-                              Future.delayed(
-                                const Duration(milliseconds: 200),
-                                () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const ProfileScreen()),
-                                ),
-                              );
-                            },
-                            isDark,
-                          ),
-                          _buildDrawerItem(
-                            Icons.favorite_rounded,
-                            'menu.favorites'.tr(),
-                            () {
-                              closeDrawer();
-                              // Switch to Favourites tab (index 3) in the shell
-                              GuideNav.switchTab?.call(3);
                             },
                             isDark,
                           ),
@@ -2516,7 +2532,7 @@ class _HomeTabState extends State<_HomeTab> {
       _AICard(label: 'AI Closet\nRecs',    sub: 'Smart wardrobe',    icon: Icons.auto_awesome_rounded,            color: const Color(0xFFC9A96E), onTap: () => _comingSoon('AI Closet Recommendations')),
       _AICard(label: 'Voice\nAssistant',   sub: 'Style by voice',    icon: Icons.mic_rounded,                     color: const Color(0xFF52B788), onTap: () => _showVoiceAssistantSheet(context, isDark)),
       _AICard(label: 'Shop\nOutfits',      sub: 'Browse fashion',    icon: Icons.store_rounded,                   color: const Color(0xFFC9A96E), onTap: () => widget.onTabRequested?.call(1)),
-      _AICard(label: 'Saved\nLooks',       sub: 'Your favourites',   icon: Icons.favorite_rounded,                color: const Color(0xFF7C6AF7), onTap: () => widget.onTabRequested?.call(3)),
+      _AICard(label: 'Saved\nLooks',       sub: 'Your favourites',   icon: Icons.favorite_rounded,                color: const Color(0xFF7C6AF7), onTap: () => widget.onTabRequested?.call(4)),
     ];
     return Column(
       children: [

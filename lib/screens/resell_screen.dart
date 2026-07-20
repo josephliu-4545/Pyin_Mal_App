@@ -86,7 +86,10 @@ Color conditionColor(String c) {
 }
 
 class ResellScreen extends StatefulWidget {
-  const ResellScreen({super.key});
+  /// When true (shown inside the Services tabs), the in-screen back button is
+  /// hidden since the host Services screen owns the header.
+  final bool embedded;
+  const ResellScreen({super.key, this.embedded = false});
 
   @override
   State<ResellScreen> createState() => _ResellScreenState();
@@ -139,27 +142,29 @@ class _ResellScreenState extends State<ResellScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: cardBg,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                                color:
-                                    Colors.black.withOpacity(isDark ? 0.2 : 0.07),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2)),
-                          ],
+                    if (!widget.embedded) ...[
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: cardBg,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black
+                                      .withOpacity(isDark ? 0.2 : 0.07),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2)),
+                            ],
+                          ),
+                          child: Icon(Icons.arrow_back_ios_rounded,
+                              size: 18, color: ink),
                         ),
-                        child: Icon(Icons.arrow_back_ios_rounded,
-                            size: 18, color: ink),
                       ),
-                    ),
-                    const SizedBox(width: 12),
+                      const SizedBox(width: 12),
+                    ],
                     Text('resell.title'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 18,

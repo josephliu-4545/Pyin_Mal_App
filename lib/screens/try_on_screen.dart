@@ -308,7 +308,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          Text('try_on.title'.tr(),
+          Text('AI Try-On',
               style: GoogleFonts.outfit(
                   fontSize: 16, fontWeight: FontWeight.w600, color: _ink)),
           const Spacer(),

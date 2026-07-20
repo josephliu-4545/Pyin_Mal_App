@@ -257,7 +257,10 @@ void _showShelterDetails(
 }
 
 class DonateScreen extends StatefulWidget {
-  const DonateScreen({super.key});
+  /// When true (shown inside the Services tabs), the in-screen back button is
+  /// hidden since the host Services screen owns the header.
+  final bool embedded;
+  const DonateScreen({super.key, this.embedded = false});
 
   @override
   State<DonateScreen> createState() => _DonateScreenState();
@@ -400,12 +403,14 @@ class _DonateScreenState extends State<DonateScreen>
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Row(
                     children: [
-                      _CircleBtn(
-                        icon: Icons.arrow_back_ios_rounded,
-                        isDark: isDark,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                      const SizedBox(width: 12),
+                      if (!widget.embedded) ...[
+                        _CircleBtn(
+                          icon: Icons.arrow_back_ios_rounded,
+                          isDark: isDark,
+                          onTap: () => Navigator.pop(context),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
                       Text('donate.title'.tr(),
                           style: GoogleFonts.outfit(
                             fontSize: 18,
