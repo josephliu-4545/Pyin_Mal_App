@@ -5,7 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 /// Progress states surfaced to the UI while a video generates.
-enum FalVideoStatus { submitting, queued, generating, done, failed }
+enum VideoGenStatus { submitting, queued, generating, done, failed }
 
 /// Image-to-video generation via fal.ai's queue API (Wan 2.5).
 ///
@@ -37,15 +37,15 @@ class FalVideoService {
   /// failure (details are debug-logged).
   static Future<String?> generateTurnaroundVideo({
     required String imageUrl,
-    void Function(FalVideoStatus status)? onStatus,
+    void Function(VideoGenStatus status)? onStatus,
   }) async {
     if (_apiKey.isEmpty) {
       debugPrint('❗ FAL_API_KEY missing from .env');
-      onStatus?.call(FalVideoStatus.failed);
+      onStatus?.call(VideoGenStatus.failed);
       return null;
     }
 
-    onStatus?.call(FalVideoStatus.submitting);
+    onStatus?.call(VideoGenStatus.submitting);
 
     // 1️⃣ Submit to the queue.
     final String statusUrl;
@@ -64,7 +64,7 @@ class FalVideoService {
       debugPrint('🎬 fal submit status: ${submit.statusCode}');
       if (submit.statusCode != 200) {
         debugPrint('❗ fal submit failed: ${submit.body}');
-        onStatus?.call(FalVideoStatus.failed);
+        onStatus?.call(VideoGenStatus.failed);
         return null;
       }
       final data = jsonDecode(submit.body) as Map<String, dynamic>;
@@ -74,12 +74,12 @@ class FalVideoService {
       responseUrl = data['response_url'] as String;
     } catch (e) {
       debugPrint('🚨 fal submit exception: $e');
-      onStatus?.call(FalVideoStatus.failed);
+      onStatus?.call(VideoGenStatus.failed);
       return null;
     }
 
     // 2️⃣ Poll until the queue reports COMPLETED (up to ~5 min).
-    onStatus?.call(FalVideoStatus.queued);
+    onStatus?.call(VideoGenStatus.queued);
     for (int i = 0; i < 100; i++) {
       await Future.delayed(const Duration(seconds: 3));
       try {
@@ -92,7 +92,7 @@ class FalVideoService {
             (jsonDecode(poll.body) as Map<String, dynamic>)['status'];
         debugPrint('🎬 fal status: $status');
         if (status == 'IN_PROGRESS') {
-          onStatus?.call(FalVideoStatus.generating);
+          onStatus?.call(VideoGenStatus.generating);
         } else if (status == 'COMPLETED') {
           return _fetchResult(responseUrl, onStatus);
         }
@@ -102,19 +102,19 @@ class FalVideoService {
       }
     }
     debugPrint('❗ fal polling timed out');
-    onStatus?.call(FalVideoStatus.failed);
+    onStatus?.call(VideoGenStatus.failed);
     return null;
   }
 
   static Future<String?> _fetchResult(
     String responseUrl,
-    void Function(FalVideoStatus status)? onStatus,
+    void Function(VideoGenStatus status)? onStatus,
   ) async {
     try {
       final res = await http.get(Uri.parse(responseUrl), headers: _headers);
       if (res.statusCode != 200) {
         debugPrint('❗ fal result HTTP ${res.statusCode}: ${res.body}');
-        onStatus?.call(FalVideoStatus.failed);
+        onStatus?.call(VideoGenStatus.failed);
         return null;
       }
       final data = jsonDecode(res.body) as Map<String, dynamic>;
@@ -124,14 +124,14 @@ class FalVideoService {
       final url = video is Map ? video['url'] as String? : null;
       if (url == null) {
         debugPrint('❗ fal result missing video url: ${res.body}');
-        onStatus?.call(FalVideoStatus.failed);
+        onStatus?.call(VideoGenStatus.failed);
         return null;
       }
-      onStatus?.call(FalVideoStatus.done);
+      onStatus?.call(VideoGenStatus.done);
       return url;
     } catch (e) {
       debugPrint('🚨 fal result exception: $e');
-      onStatus?.call(FalVideoStatus.failed);
+      onStatus?.call(VideoGenStatus.failed);
       return null;
     }
   }

@@ -108,6 +108,66 @@ class ImageHostService {
     return null;
   }
 
+  // ── Video upload ────────────────────────────────────────────────────────────
+
+  /// Uploads a video (mp4/mov) and returns a direct public URL, or null.
+  /// Cloudinary first (durable, needs CLOUDINARY_* env), then tmpfiles.org
+  /// (keyless, 60-minute lifetime — long enough for Kling to fetch it).
+  static Future<String?> uploadVideo(Uint8List bytes, String name) async {
+    // Cloudinary video endpoint (same unsigned preset as images).
+    final cloud = dotenv.env['CLOUDINARY_CLOUD_NAME'];
+    final preset = dotenv.env['CLOUDINARY_UPLOAD_PRESET'];
+    if (cloud != null && cloud.isNotEmpty && preset != null && preset.isNotEmpty) {
+      try {
+        final safeName = name.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+        final request = http.MultipartRequest(
+          'POST',
+          Uri.parse('https://api.cloudinary.com/v1_1/$cloud/video/upload'),
+        )
+          ..fields['upload_preset'] = preset
+          ..files.add(http.MultipartFile.fromBytes('file', bytes,
+              filename: '$safeName.mp4'));
+        final response = await http.Response.fromStream(
+            await request.send().timeout(const Duration(minutes: 3)));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final url = data['secure_url'] as String?;
+          if (url != null) {
+            debugPrint('✅ video uploaded via cloudinary: $url');
+            return url;
+          }
+        } else {
+          debugPrint('⚠️ cloudinary video HTTP ${response.statusCode}: '
+              '${response.body}');
+        }
+      } catch (e) {
+        debugPrint('🚨 cloudinary video failed ($e), trying tmpfiles...');
+      }
+    }
+
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://tmpfiles.org/api/v1/upload'),
+      )..files.add(
+          http.MultipartFile.fromBytes('file', bytes, filename: '$name.mp4'));
+      final response = await http.Response.fromStream(
+          await request.send().timeout(const Duration(minutes: 3)));
+      if (response.statusCode != 200) return null;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final viewer = data['data']?['url'] as String?;
+      if (viewer == null) return null;
+      final url = viewer
+          .replaceFirst('http://', 'https://')
+          .replaceFirst('tmpfiles.org/', 'tmpfiles.org/dl/');
+      debugPrint('✅ video uploaded via tmpfiles: $url');
+      return url;
+    } catch (e) {
+      debugPrint('🚨 tmpfiles video failed ($e)');
+      return null;
+    }
+  }
+
   // ── Individual hosts ────────────────────────────────────────────────────────
 
   /// Own Cloudflare Worker relay (cloudflare-worker/ai-relay.js): forwards the

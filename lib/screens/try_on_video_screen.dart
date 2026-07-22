@@ -5,21 +5,31 @@ import 'package:video_player/video_player.dart';
 
 import '../main.dart'; // AppColors
 import '../services/fal_video_service.dart';
+import '../services/kling_motion_service.dart';
 
-/// Turns a finished try-on image into a 360° turnaround video via fal.ai and
-/// plays it. Generation takes ~1-3 minutes, so the screen shows the try-on
-/// image with a progress overlay while it waits.
+/// Turns a finished try-on image into a video and plays it.
+///
+/// Two modes, chosen by whether [motionVideoUrl] is provided:
+///  • null → 360° turnaround via fal.ai (image-to-video, ~1-3 min).
+///  • set  → the user's own recorded movement transferred onto their dressed
+///    image via Kling Motion Control (video-to-video, can take longer).
 class TryOnVideoScreen extends StatefulWidget {
   /// Public URL of the generated try-on image (NanoBanana result).
   final String tryOnImageUrl;
-  const TryOnVideoScreen({super.key, required this.tryOnImageUrl});
+
+  /// Public URL of the user's motion reference video (Kling mode), or null
+  /// for the default 360° spin.
+  final String? motionVideoUrl;
+
+  const TryOnVideoScreen(
+      {super.key, required this.tryOnImageUrl, this.motionVideoUrl});
 
   @override
   State<TryOnVideoScreen> createState() => _TryOnVideoScreenState();
 }
 
 class _TryOnVideoScreenState extends State<TryOnVideoScreen> {
-  FalVideoStatus _status = FalVideoStatus.submitting;
+  VideoGenStatus _status = VideoGenStatus.submitting;
   String? _videoUrl;
   VideoPlayerController? _player;
 
@@ -31,18 +41,27 @@ class _TryOnVideoScreenState extends State<TryOnVideoScreen> {
 
   Future<void> _generate() async {
     setState(() {
-      _status = FalVideoStatus.submitting;
+      _status = VideoGenStatus.submitting;
       _videoUrl = null;
     });
-    final url = await FalVideoService.generateTurnaroundVideo(
-      imageUrl: widget.tryOnImageUrl,
-      onStatus: (s) {
-        if (mounted) setState(() => _status = s);
-      },
-    );
+    final motion = widget.motionVideoUrl;
+    final url = motion != null
+        ? await KlingMotionService.generateMotionVideo(
+            imageUrl: widget.tryOnImageUrl,
+            motionVideoUrl: motion,
+            onStatus: (s) {
+              if (mounted) setState(() => _status = s);
+            },
+          )
+        : await FalVideoService.generateTurnaroundVideo(
+            imageUrl: widget.tryOnImageUrl,
+            onStatus: (s) {
+              if (mounted) setState(() => _status = s);
+            },
+          );
     if (!mounted) return;
     if (url == null) {
-      setState(() => _status = FalVideoStatus.failed);
+      setState(() => _status = VideoGenStatus.failed);
       return;
     }
     final player = VideoPlayerController.networkUrl(Uri.parse(url));
@@ -51,7 +70,7 @@ class _TryOnVideoScreenState extends State<TryOnVideoScreen> {
     } catch (e) {
       debugPrint('❗ video init failed: $e');
       player.dispose();
-      if (mounted) setState(() => _status = FalVideoStatus.failed);
+      if (mounted) setState(() => _status = VideoGenStatus.failed);
       return;
     }
     if (!mounted) {
@@ -76,12 +95,16 @@ class _TryOnVideoScreenState extends State<TryOnVideoScreen> {
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
   Color get _accent => _isDark ? AppColors.gold : AppColors.burgundy;
 
+  bool get _isMotion => widget.motionVideoUrl != null;
+
   String get _statusText => switch (_status) {
-        FalVideoStatus.submitting => 'Sending your look to the studio…',
-        FalVideoStatus.queued => 'Waiting in line…',
-        FalVideoStatus.generating => 'Creating your 360° view…\nThis takes 1-3 minutes',
-        FalVideoStatus.done => '',
-        FalVideoStatus.failed => 'Something went wrong',
+        VideoGenStatus.submitting => 'Sending your look to the studio…',
+        VideoGenStatus.queued => 'Waiting in line…',
+        VideoGenStatus.generating => _isMotion
+            ? 'Recreating your movement in the new outfit…\nThis can take a few minutes'
+            : 'Creating your 360° view…\nThis takes 1-3 minutes',
+        VideoGenStatus.done => '',
+        VideoGenStatus.failed => 'Something went wrong',
       };
 
   @override
@@ -102,7 +125,7 @@ class _TryOnVideoScreenState extends State<TryOnVideoScreen> {
             else
               _buildWaiting(),
             _buildTopBar(),
-            if (_status == FalVideoStatus.failed) _buildFailed(),
+            if (_status == VideoGenStatus.failed) _buildFailed(),
           ],
         ),
       ),
@@ -122,7 +145,7 @@ class _TryOnVideoScreenState extends State<TryOnVideoScreen> {
           colorBlendMode: BlendMode.darken,
           errorBuilder: (_, __, ___) => const SizedBox.expand(),
         ),
-        if (_status != FalVideoStatus.failed)
+        if (_status != VideoGenStatus.failed)
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -178,7 +201,7 @@ class _TryOnVideoScreenState extends State<TryOnVideoScreen> {
                     fontSize: 16,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
-            Text('Check your connection and fal.ai credit, then try again.',
+            Text('Check your connection and API credit, then try again.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(color: Colors.white60, fontSize: 13)),
             const SizedBox(height: 18),
@@ -231,9 +254,14 @@ class _TryOnVideoScreenState extends State<TryOnVideoScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.threed_rotation_rounded, size: 15, color: _accent),
+                  Icon(
+                      _isMotion
+                          ? Icons.directions_run_rounded
+                          : Icons.threed_rotation_rounded,
+                      size: 15,
+                      color: _accent),
                   const SizedBox(width: 6),
-                  Text('360° View',
+                  Text(_isMotion ? 'Your Moves' : '360° View',
                       style: GoogleFonts.outfit(
                           color: Colors.white,
                           fontSize: 13,

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../main.dart'; // AppColors
+import '../services/image_host_service.dart';
 import '../services/nanobanana_api_service.dart';
 import '../services/pose_guide_validator.dart';
 import 'pose_guide_camera_screen.dart';
@@ -31,6 +32,12 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
   Uint8List? _pantsBytes;
 
   bool _working = false;
+  String _workingLabel = 'Fitting your outfit…';
+
+  // Motion mode: false = 360° spin (image-to-video), true = user's own
+  // recorded movement (Kling motion control, video-to-video).
+  bool _useMotion = false;
+  XFile? _motionVideo;
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
   Color get _accent => _isDark ? AppColors.gold : AppColors.burgundy;
@@ -113,35 +120,112 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
     });
   }
 
+  /// Record (system camera) or pick the motion reference video. Kling needs
+  /// 3-30s, one person, full/upper body visible, steady single take.
+  Future<void> _pickMotionVideo() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Film 3-15 seconds of yourself moving — whole body in frame, '
+                'phone held steady, no cuts. Your movement will be recreated '
+                'in the new outfit.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(fontSize: 12.5, color: _muted),
+              ),
+            ),
+            const SizedBox(height: 4),
+            ListTile(
+              leading: Icon(Icons.videocam_rounded, color: _accent),
+              title: Text('Record now',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700, color: _ink)),
+              onTap: () => Navigator.pop(context, 'camera'),
+            ),
+            ListTile(
+              leading: Icon(Icons.video_library_rounded, color: _accent),
+              title: Text('Choose from gallery',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700, color: _ink)),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || choice == null) return;
+
+    final video = await _picker.pickVideo(
+      source: choice == 'camera' ? ImageSource.camera : ImageSource.gallery,
+      maxDuration: const Duration(seconds: 15),
+    );
+    if (video != null && mounted) setState(() => _motionVideo = video);
+  }
+
   Future<void> _generate() async {
     if (_personBytes == null || (_shirt == null && _pants == null)) return;
-    setState(() => _working = true);
+    if (_useMotion && _motionVideo == null) return;
+    setState(() {
+      _working = true;
+      _workingLabel = 'Fitting your outfit…';
+    });
 
     // Internal step: dress the person (NanoBanana). Its result URL is public,
-    // which is exactly what the video model needs as input.
+    // which is exactly what the video models need as input.
     final imageUrl = await NanoBananaApiService.generateTryOnImage(
       userPhoto: XFile.fromData(_personBytes!, name: 'studio_capture.jpg'),
       shirtPhoto: _shirt,
       pantsPhoto: _pants,
     );
     if (!mounted) return;
-    setState(() => _working = false);
 
     if (imageUrl == null) {
+      setState(() => _working = false);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Could not fit the outfit — please try again.')));
       return;
     }
+
+    // Motion mode: the reference video must be publicly reachable for Kling.
+    String? motionUrl;
+    if (_useMotion) {
+      setState(() => _workingLabel = 'Uploading your video…');
+      final bytes = await _motionVideo!.readAsBytes();
+      motionUrl = await ImageHostService.uploadVideo(bytes, 'motion_ref');
+      if (!mounted) return;
+      if (motionUrl == null) {
+        setState(() => _working = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content:
+                Text('Could not upload your video — check your connection.')));
+        return;
+      }
+    }
+
+    setState(() => _working = false);
     Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (_) => TryOnVideoScreen(tryOnImageUrl: imageUrl)),
+          builder: (_) => TryOnVideoScreen(
+              tryOnImageUrl: imageUrl, motionVideoUrl: motionUrl)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final ready = _personBytes != null && (_shirtBytes != null || _pantsBytes != null);
+    final ready = _personBytes != null &&
+        (_shirtBytes != null || _pantsBytes != null) &&
+        (!_useMotion || _motionVideo != null);
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
@@ -196,6 +280,36 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
                         })),
                       ],
                     ),
+                    const SizedBox(height: 24),
+                    _stepLabel('3', 'How should it move?'),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _modeCard(
+                            selected: !_useMotion,
+                            icon: Icons.threed_rotation_rounded,
+                            title: '360° Spin',
+                            desc: 'A smooth turnaround of your look',
+                            onTap: () => setState(() => _useMotion = false),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _modeCard(
+                            selected: _useMotion,
+                            icon: Icons.directions_run_rounded,
+                            title: 'My Movement',
+                            desc: 'Record a video — the outfit follows you',
+                            onTap: () => setState(() => _useMotion = true),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_useMotion) ...[
+                      const SizedBox(height: 12),
+                      _motionVideoCard(),
+                    ],
                     const SizedBox(height: 28),
                     SizedBox(
                       width: double.infinity,
@@ -224,7 +338,7 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
                                         color: Colors.white, strokeWidth: 2),
                                   ),
                                   const SizedBox(width: 12),
-                                  Text('Fitting your outfit…',
+                                  Text(_workingLabel,
                                       style: GoogleFonts.outfit(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 15)),
@@ -247,9 +361,13 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
                     const SizedBox(height: 10),
                     Center(
                       child: Text(
-                        ready
-                            ? 'Takes 2-4 minutes in total'
-                            : 'Capture yourself and add at least one piece',
+                        !ready
+                            ? (_useMotion && _motionVideo == null
+                                ? 'Add your movement video to continue'
+                                : 'Capture yourself and add at least one piece')
+                            : (_useMotion
+                                ? 'Takes a few minutes in total'
+                                : 'Takes 2-4 minutes in total'),
                         style: GoogleFonts.outfit(fontSize: 12, color: _muted),
                       ),
                     ),
@@ -411,6 +529,103 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
                       style: GoogleFonts.outfit(fontSize: 12, color: _muted)),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget _modeCard({
+    required bool selected,
+    required IconData icon,
+    required String title,
+    required String desc,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected ? _accent.withOpacity(0.10) : _surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? _accent
+                : (_isDark ? AppColors.darkBorder : AppColors.creamAlt),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: selected ? _accent : _muted, size: 24),
+            const SizedBox(height: 8),
+            Text(title,
+                style: GoogleFonts.outfit(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: _ink)),
+            const SizedBox(height: 2),
+            Text(desc,
+                style: GoogleFonts.outfit(
+                    fontSize: 10.5, height: 1.3, color: _muted)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _motionVideoCard() {
+    final has = _motionVideo != null;
+    return GestureDetector(
+      onTap: _pickMotionVideo,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: has ? _accent : _accent.withOpacity(0.35),
+            width: has ? 2 : 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: _accent.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                  has ? Icons.check_circle_rounded : Icons.videocam_rounded,
+                  color: _accent,
+                  size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(has ? 'Movement video added' : 'Add your movement video',
+                      style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: _ink)),
+                  const SizedBox(height: 2),
+                  Text(
+                      has
+                          ? 'Tap to record or choose a different one'
+                          : '3-15 seconds, whole body visible, steady camera',
+                      style: GoogleFonts.outfit(fontSize: 11.5, color: _muted)),
+                ],
+              ),
+            ),
+            Icon(has ? Icons.swap_horiz_rounded : Icons.add_rounded,
+                color: _accent, size: 20),
+          ],
+        ),
       ),
     );
   }
