@@ -10,7 +10,11 @@ import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/theme_notifier.dart';
 import 'package:pyin_mal_app/screens/shop_screen.dart';
 import 'package:pyin_mal_app/screens/haircut_screen.dart';
-import 'package:pyin_mal_app/screens/services_screen.dart';
+import 'package:pyin_mal_app/screens/new_in_screen.dart';
+import 'package:pyin_mal_app/screens/trending_screen.dart';
+import 'package:pyin_mal_app/screens/events_screen.dart';
+import 'package:pyin_mal_app/screens/order_history_screen.dart';
+import 'package:pyin_mal_app/screens/gift_card_screen.dart';
 import 'package:pyin_mal_app/screens/favorites_screen.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/model_preview_screen.dart';
@@ -25,7 +29,6 @@ import 'package:pyin_mal_app/models/user_profile.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pyin_mal_app/screens/subscription_screen.dart';
 import 'package:pyin_mal_app/screens/scan_screen.dart';
-import 'package:pyin_mal_app/screens/body_scan_screen.dart';
 import 'package:pyin_mal_app/screens/donate_screen.dart';
 import 'package:pyin_mal_app/screens/delivery_screen.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
@@ -33,7 +36,6 @@ import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/screens/sale_screen.dart';
 import 'package:pyin_mal_app/screens/resell_screen.dart';
 import 'package:pyin_mal_app/screens/wardrobe_screen.dart';
-import 'package:pyin_mal_app/screens/community_screen.dart';
 import 'package:pyin_mal_app/screens/settings_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
@@ -142,9 +144,7 @@ class _MainShellState extends State<MainShell> {
           // Shop tab relies on the shell-level cart bar (avoids a double bar).
           ShopScreen(showCartBar: false, cartIconKey: GuideKeys.shopCart),
           const HaircutScreen(),
-          const ServicesScreen(),
           const FavoritesScreen(),
-          const DeliveryScreen(),
         ],
       ),
       floatingActionButton: Padding(
@@ -186,10 +186,7 @@ class _GlassNav extends StatelessWidget {
     (icon: Icons.home_rounded,        outline: Icons.home_outlined,              label: 'nav.home'),
     (icon: Icons.store_rounded,       outline: Icons.store_outlined,             label: 'nav.shop'),
     (icon: Icons.content_cut_rounded, outline: Icons.content_cut_outlined,       label: 'nav.hair'),
-    // 'Services'.tr() falls back to 'Services' when the key isn't defined.
-    (icon: Icons.handshake_rounded,   outline: Icons.handshake_outlined,         label: 'Services'),
     (icon: Icons.favorite_rounded,    outline: Icons.favorite_outline_rounded,   label: 'nav.saved'),
-    (icon: Icons.local_shipping_rounded, outline: Icons.local_shipping_outlined, label: 'nav.delivery'),
   ];
 
   @override
@@ -339,20 +336,23 @@ class _HomeTabState extends State<_HomeTab> {
     }
   }
 
-  // Bordered feature shortcuts — "For You" tools
+  // Bordered shortcuts — "For You" = quick ways to discover products.
   late final List<(String, IconData, VoidCallback)> _forYouFeatures = [
-    ('AI Try-On', Icons.checkroom_rounded,
-        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TryOnScreen()))),
-    ('AR Try-On', Icons.view_in_ar_rounded,
-        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ARFittingRoomScreen()))),
-    ('360° Studio', Icons.threed_rotation_rounded,
-        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ARStudioScreen()))),
-    ('Haircut', Icons.content_cut_rounded,
-        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HaircutScreen()))),
-    ('Scan', Icons.document_scanner_rounded,
-        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanScreen()))),
-    ('Body Measure', Icons.straighten_rounded,
-        () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BodyScanScreen()))),
+    ('New In', Icons.fiber_new_rounded,
+        () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const NewInScreen()))),
+    ('Trend', Icons.local_fire_department_rounded,
+        () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const TrendingScreen()))),
+    ('Events', Icons.event_rounded,
+        () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const EventsScreen()))),
+    ('My Wardrobe', Icons.checkroom_rounded,
+        () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const WardrobeScreen()))),
+    ('History', Icons.receipt_long_rounded,
+        () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const OrderHistoryScreen()))),
   ];
 
   // Bordered feature shortcuts — "Services" tools
@@ -362,12 +362,12 @@ class _HomeTabState extends State<_HomeTab> {
     ('Resell', Icons.sell_rounded,
         () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const ResellScreen()))),
-    ('My Wardrobe', Icons.checkroom_rounded,
+    ('Delivery', Icons.local_shipping_rounded,
         () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const WardrobeScreen()))),
-    ('OOTD', Icons.auto_awesome_rounded,
+            MaterialPageRoute(builder: (_) => const DeliveryScreen()))),
+    ('Gift Card', Icons.card_giftcard_rounded,
         () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const CommunityScreen()))),
+            MaterialPageRoute(builder: (_) => const GiftCardScreen()))),
   ];
 
   List<(String, IconData, VoidCallback)> get _quickFeatures =>
@@ -2532,7 +2532,7 @@ class _HomeTabState extends State<_HomeTab> {
       _AICard(label: 'AI Closet\nRecs',    sub: 'Smart wardrobe',    icon: Icons.auto_awesome_rounded,            color: const Color(0xFFC9A96E), onTap: () => _comingSoon('AI Closet Recommendations')),
       _AICard(label: 'Voice\nAssistant',   sub: 'Style by voice',    icon: Icons.mic_rounded,                     color: const Color(0xFF52B788), onTap: () => _showVoiceAssistantSheet(context, isDark)),
       _AICard(label: 'Shop\nOutfits',      sub: 'Browse fashion',    icon: Icons.store_rounded,                   color: const Color(0xFFC9A96E), onTap: () => widget.onTabRequested?.call(1)),
-      _AICard(label: 'Saved\nLooks',       sub: 'Your favourites',   icon: Icons.favorite_rounded,                color: const Color(0xFF7C6AF7), onTap: () => widget.onTabRequested?.call(4)),
+      _AICard(label: 'Saved\nLooks',       sub: 'Your favourites',   icon: Icons.favorite_rounded,                color: const Color(0xFF7C6AF7), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoritesScreen()))),
     ];
     return Column(
       children: [
