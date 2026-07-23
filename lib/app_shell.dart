@@ -47,6 +47,7 @@ import 'package:pyin_mal_app/widgets/shop_showcase.dart';
 import 'package:pyin_mal_app/core/constants/shop_constants.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
 import 'package:pyin_mal_app/screens/user_guide_screen.dart';
+import 'package:pyin_mal_app/screens/try_on_gallery_screen.dart';
 
 /// Foodpanda-style brand pink used for the bottom nav + home tabs accent.
 const Color kBrandPink = Color(0xFFD70F64);
@@ -145,6 +146,7 @@ class _MainShellState extends State<MainShell> {
           ShopScreen(showCartBar: false, cartIconKey: GuideKeys.shopCart),
           const HaircutScreen(),
           const FavoritesScreen(),
+          const TryOnGalleryScreen(),
         ],
       ),
       floatingActionButton: Padding(
@@ -183,10 +185,11 @@ class _GlassNav extends StatelessWidget {
   const _GlassNav({super.key, required this.currentIndex, required this.onTap, required this.isDark});
 
   static const _items = [
-    (icon: Icons.home_rounded,        outline: Icons.home_outlined,              label: 'nav.home'),
-    (icon: Icons.store_rounded,       outline: Icons.store_outlined,             label: 'nav.shop'),
-    (icon: Icons.content_cut_rounded, outline: Icons.content_cut_outlined,       label: 'nav.hair'),
-    (icon: Icons.favorite_rounded,    outline: Icons.favorite_outline_rounded,   label: 'nav.saved'),
+    (icon: Icons.home_rounded,          outline: Icons.home_outlined,              label: 'nav.home'),
+    (icon: Icons.store_rounded,         outline: Icons.store_outlined,             label: 'nav.shop'),
+    (icon: Icons.content_cut_rounded,   outline: Icons.content_cut_outlined,       label: 'nav.hair'),
+    (icon: Icons.favorite_rounded,      outline: Icons.favorite_outline_rounded,   label: 'nav.saved'),
+    (icon: Icons.photo_library_rounded, outline: Icons.photo_library_outlined,     label: 'nav.gallery'),
   ];
 
   @override

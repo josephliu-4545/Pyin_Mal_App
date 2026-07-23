@@ -33,6 +33,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   int _age = 22;
   int _height = 165; // cm
   int _weight = 58; // kg
+  int _chest = 90; // cm
+  int _waist = 75; // cm
+  int _hip = 95; // cm
 
   // ── Step 2: skin tone ───────────────────────────────────────────────────
   int _skinTone = 2; // index into _skinTones
@@ -152,6 +155,23 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       });
     } catch (_) {
       // Best effort — never block the user from entering the app.
+    }
+
+    // Save body measurements in the shape the size recommender reads
+    // (Bodygram-style keys, values in mm).
+    try {
+      await _db.saveBodyMeasurements({
+        'scanId': 'profile-manual',
+        'source': 'manualEntry',
+        'valuesMm': {
+          'bustGirth': _chest * 10.0,
+          'waistGirth': _waist * 10.0,
+          'hipGirth': _hip * 10.0,
+        },
+        'measuredAt': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {
+      // Best effort.
     }
     if (!mounted) return;
     // Straight into the app — no separate onboarding quiz.
@@ -453,6 +473,26 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         const SizedBox(height: 20),
         _slider('profile.weight'.tr(), _weight, 35, 150, 'profile.kg'.tr(), accent, isDark, ink,
             (v) => setState(() => _weight = v)),
+        const SizedBox(height: 24),
+
+        // Body measurements — used to recommend the right clothing size.
+        Text('Body measurements',
+            style: GoogleFonts.outfit(
+                fontSize: 13, fontWeight: FontWeight.w600, color: ink)),
+        const SizedBox(height: 4),
+        Text('Helps us recommend the right size.',
+            style: GoogleFonts.outfit(
+                fontSize: 11,
+                color: isDark ? AppColors.paleText : AppColors.inkGrey)),
+        const SizedBox(height: 16),
+        _slider('Chest', _chest, 60, 140, 'cm', accent, isDark, ink,
+            (v) => setState(() => _chest = v)),
+        const SizedBox(height: 20),
+        _slider('Waist', _waist, 50, 130, 'cm', accent, isDark, ink,
+            (v) => setState(() => _waist = v)),
+        const SizedBox(height: 20),
+        _slider('Hip', _hip, 60, 150, 'cm', accent, isDark, ink,
+            (v) => setState(() => _hip = v)),
       ],
     );
   }

@@ -4,8 +4,24 @@
     "shop": "ဈေးဝယ်",
     "hair": "ဆံပင်",
     "saved": "Saved",
+    "gallery": "ဓာတ်ပုံ",
     "profile": "ပရိုဖိုင်",
     "delivery": "ပို့ဆောင်ရေး"
+  },
+  "gallery": {
+    "title": "AI Try-On ဓာတ်ပုံများ",
+    "subtitle": "AI မှထုတ်လုပ်သောပုံများ",
+    "empty": "Try-on ပုံများမရှိသေးပါ",
+    "empty_desc": "AI Try-On ကိုအသုံးပြုပြီး outfit များ ထုတ်လုပ်ပါ — အလိုအလျောက် ဤနေရာတွင်ပေါ်လာမည်။",
+    "save_to_phone": "ဖုန်းတွင်သိမ်းဆည်းမည်",
+    "saved_success": "ပုံကိုဓာတ်ပုံတွင် သိမ်းဆည်းပြီးပါပြီ!",
+    "save_error": "ပုံသိမ်းမရပါ။ ထပ်မံကြိုးစားပါ။",
+    "delete": "ဖျက်မည်",
+    "delete_confirm": "ဤပုံကို gallery မှ ဖယ်ရှားမည်လား?",
+    "delete_yes": "ဖယ်ရှား",
+    "delete_no": "ထားရမည်",
+    "item_count_one": "{count} look",
+    "item_count_many": "{count} looks"
   },
   "greeting": {
     "morning": "မင်္ဂလာနံနက်ခင်းပါ၊",
