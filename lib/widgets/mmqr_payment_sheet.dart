@@ -19,30 +19,18 @@ import 'package:pyin_mal_app/main.dart';
 /// (or `null`) if the user backs out.
 class MmqrPaymentSheet extends StatefulWidget {
   final double amount;
-  final String walletLabel;
-  final Color walletColor;
-  final IconData walletIcon;
-  final String? walletLogo;
   final String orderRef;
 
   const MmqrPaymentSheet({
     super.key,
     required this.amount,
-    required this.walletLabel,
-    required this.walletColor,
-    required this.walletIcon,
     required this.orderRef,
-    this.walletLogo,
   });
 
   /// Convenience launcher. Resolves to `true` when the demo payment "succeeds".
   static Future<bool> show(
     BuildContext context, {
     required double amount,
-    required String walletLabel,
-    required Color walletColor,
-    required IconData walletIcon,
-    String? walletLogo,
     required String orderRef,
   }) async {
     final ok = await showModalBottomSheet<bool>(
@@ -53,10 +41,6 @@ class MmqrPaymentSheet extends StatefulWidget {
       enableDrag: false,
       builder: (_) => MmqrPaymentSheet(
         amount: amount,
-        walletLabel: walletLabel,
-        walletColor: walletColor,
-        walletIcon: walletIcon,
-        walletLogo: walletLogo,
         orderRef: orderRef,
       ),
     );
@@ -352,32 +336,24 @@ class _MmqrPaymentSheetState extends State<MmqrPaymentSheet> {
           alignment: WrapAlignment.center,
           spacing: 8,
           runSpacing: 8,
+          // A "works with" strip — MMQR is interoperable, so every listed app
+          // can scan the same code. None is pre-selected; the customer picks
+          // inside their own banking app.
           children: _networks.map((n) {
-            final isSelected =
-                n.toLowerCase().replaceAll(' ', '') ==
-                    widget.walletLabel.toLowerCase().replaceAll(' ', '');
-            final accent = isDark ? AppColors.gold : AppColors.burgundy;
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? accent.withOpacity(0.14)
-                    : (isDark ? AppColors.darkWarm : Colors.white),
+                color: isDark ? AppColors.darkWarm : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected
-                      ? accent
-                      : (isDark ? AppColors.darkBorder : AppColors.creamAlt),
-                  width: isSelected ? 1.4 : 1,
+                  color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
                 ),
               ),
               child: Text(n,
                   style: GoogleFonts.outfit(
                       fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected
-                          ? accent
-                          : (isDark ? Colors.white : AppColors.inkBlack))),
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white : AppColors.inkBlack)),
             );
           }).toList(),
         ),
@@ -434,7 +410,7 @@ class _MmqrPaymentSheetState extends State<MmqrPaymentSheet> {
               style: GoogleFonts.outfit(
                   fontSize: 13, fontWeight: FontWeight.w700, color: ink)),
           const SizedBox(height: 12),
-          step('1', 'mmqr.step1'.tr(namedArgs: {'wallet': widget.walletLabel})),
+          step('1', 'mmqr.step1'.tr()),
           step('2', 'mmqr.step2'.tr()),
           step(
               '3',

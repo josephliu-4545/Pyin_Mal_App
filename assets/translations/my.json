@@ -204,7 +204,7 @@
     "city": "မြို့",
     "order_summary": "မှာယူမှုအကျဉ်းချုပ်",
     "total": "စုစုပေါင်း",
-    "payment_method": "ငွေပေးချေမှု - ပစ္စည်းရောက်ငွေချေ",
+    "payment_method": "ငွေပေးချေမှုနည်းလမ်း",
     "place_order": "မှာယူမည်",
     "required": "လိုအပ်ပါသည်",
     "success_title": "မှာယူမှုအောင်မြင်ပါသည်!",
@@ -220,7 +220,7 @@
     "ref": "ကိုးကား: {ref}",
     "scan_prompt": "MMQR သုံးနိုင်သည့် app ဖြင့် စကင်ဖတ်ပါ",
     "how_to": "ငွေပေးချေနည်း",
-    "step1": "{wallet} (သို့) မည်သည့် MMQR banking app ကိုမဆို ဖွင့်ပါ။",
+    "step1": "မည်သည့် MMQR banking app ကိုမဆို ဖွင့်ပါ (KBZPay, WavePay, AYA Pay, CB Pay…)။",
     "step2": "Scan ကိုနှိပ်ပြီး ဤ QR ကုဒ်ကို ချိန်ပါ။",
     "step3": "{merchant} သို့ {amount} ငွေပေးချေမှုကို အတည်ပြုပါ။",
     "demo_note": "စမ်းသပ်မုဒ် — တကယ့်ငွေပေးချေမှုစနစ် မချိတ်ဆက်ရသေးပါ။ အောက်ကခလုတ်ကိုနှိပ်၍ ငွေပေးချေမှုအောင်မြင်ပုံကို အစမ်းကြည့်ပါ။",
@@ -230,7 +230,7 @@
     "success_title": "ငွေပေးချေမှု အောင်မြင်ပါသည်",
     "success_desc": "MMQR ဖြင့် {merchant} သို့ {amount} ပေးချေပြီးပါပြီ",
     "placing_order": "သင့်မှာယူမှုကို တင်နေသည်…",
-    "note": "Place Order ကိုနှိပ်ပြီးနောက် {wallet} ဖြင့်ပေးချေရန် MyanmarPay MMQR ကုဒ်ကို စကင်ဖတ်ရပါမည်။",
+    "note": "Place Order ကိုနှိပ်ပြီးနောက် မည်သည့် banking app နှင့်မဆို MyanmarPay MMQR ကုဒ်ကို စကင်ဖတ်ရပါမည်။",
     "wallet_sub": "MMQR မိုဘိုင်းပိုက်ဆံအိတ်"
   },
   "payment": {

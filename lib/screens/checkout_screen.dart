@@ -15,7 +15,11 @@ import 'package:pyin_mal_app/core/guide_keys.dart';
 import 'package:pyin_mal_app/widgets/mmqr_payment_sheet.dart';
 
 // ── Payment option model ──────────────────────────────────────────────────────
-enum _PayKind { wallet, card, cod }
+// MMQR is Myanmar's interoperable national QR standard — one merchant QR is
+// scanned by ANY banking app (KBZPay, WavePay, AYA, CB Pay, OK$, A+, UAB…), so
+// we don't need a per-wallet picker here; the wallet choice happens inside the
+// customer's own app. Card and cash-on-delivery are separate rails.
+enum _PayKind { mmqr, card, cod }
 
 class _PayOption {
   final String id;
@@ -52,29 +56,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   bool _placing = false;
 
-  // Mobile wallets + card + cash on delivery
+  // One MMQR option (scan with any banking app) + card + cash on delivery.
   static const _payOptions = <_PayOption>[
-    _PayOption('kpay', 'KBZPay', 'MMQR mobile wallet', Icons.account_balance_wallet_rounded,
-        Color(0xFF1565C0), _PayKind.wallet, logo: 'assets/images/pay_kbzpay.png'),
-    _PayOption('wave', 'WavePay', 'MMQR mobile wallet', Icons.waves_rounded,
-        Color(0xFFFFB300), _PayKind.wallet, logo: 'assets/images/pay_wavepay.png'),
-    _PayOption('aya', 'AYA Pay', 'MMQR mobile wallet', Icons.payments_rounded,
-        Color(0xFFE53935), _PayKind.wallet, logo: 'assets/images/pay_ayapay.png'),
-    _PayOption('uab', 'UAB Pay', 'MMQR mobile wallet', Icons.account_balance_rounded,
-        Color(0xFF00897B), _PayKind.wallet, logo: 'assets/images/pay_uabpay.png'),
-    _PayOption('okdollar', 'OK\$', 'MMQR mobile wallet', Icons.attach_money_rounded,
-        Color(0xFFF9A825), _PayKind.wallet, logo: 'assets/images/pay_okdollar.png'),
-    _PayOption('cbpay', 'CB Pay', 'MMQR mobile wallet', Icons.account_balance_wallet_outlined,
-        Color(0xFF6D4C41), _PayKind.wallet, logo: 'assets/images/pay_cbpay.png'),
-    _PayOption('aplus', 'A+ Wallet', 'MMQR mobile wallet', Icons.add_circle_outline_rounded,
-        Color(0xFF2E7D32), _PayKind.wallet, logo: 'assets/images/pay_apluswallet.png'),
+    _PayOption('mmqr', 'MyanmarPay · MMQR', 'Scan with any banking app',
+        Icons.qr_code_2_rounded, Color(0xFF00897B), _PayKind.mmqr),
     _PayOption('card', 'Credit / Debit Card', 'Visa, Mastercard', Icons.credit_card_rounded,
         Color(0xFF6A1B9A), _PayKind.card, logo: 'assets/images/pay_card.png'),
     _PayOption('cod', 'Cash on Delivery', 'Pay when it arrives', Icons.local_shipping_rounded,
         Color(0xFF455A64), _PayKind.cod),
   ];
 
-  String _selectedPay = 'kpay';
+  String _selectedPay = 'mmqr';
 
   _PayOption get _selectedOption =>
       _payOptions.firstWhere((o) => o.id == _selectedPay);
@@ -113,16 +105,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     //    user scans a merchant QR (MmqrPaymentSheet).
     //  • Cards run a 3-D Secure OTP verification (PaymentScreen).
     //  • Cash on Delivery needs no upfront payment — go straight to the order.
-    if (opt.kind == _PayKind.wallet) {
+    if (opt.kind == _PayKind.mmqr) {
       final orderRef =
           'PM${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
       final paid = await MmqrPaymentSheet.show(
         context,
         amount: total.toDouble(),
-        walletLabel: opt.label,
-        walletColor: opt.color,
-        walletIcon: opt.icon,
-        walletLogo: opt.logo,
         orderRef: orderRef,
       );
       if (!mounted || !paid) return;
@@ -370,7 +358,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       const SizedBox(height: 8),
                       _buildCardForm(isDark),
                     ],
-                    if (_selectedOption.kind == _PayKind.wallet) ...[
+                    if (_selectedOption.kind == _PayKind.mmqr) ...[
                       const SizedBox(height: 12),
                       _walletNote(isDark),
                     ],
@@ -608,7 +596,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'mmqr.note'.tr(namedArgs: {'wallet': _selectedOption.label}),
+              'mmqr.note'.tr(),
               style: GoogleFonts.outfit(fontSize: 12, color: muted, height: 1.4),
             ),
           ),

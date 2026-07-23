@@ -228,7 +228,7 @@
     "city": "City",
     "order_summary": "Order Summary",
     "total": "Total",
-    "payment_method": "Payment: Cash on Delivery",
+    "payment_method": "Payment Method",
     "place_order": "Place Order",
     "required": "Required",
     "success_title": "Order Placed!",
@@ -244,7 +244,7 @@
     "ref": "Ref: {ref}",
     "scan_prompt": "Scan with any MMQR-enabled app",
     "how_to": "How to pay",
-    "step1": "Open {wallet} (or any MMQR banking app).",
+    "step1": "Open any MMQR banking app (KBZPay, WavePay, AYA Pay, CB Pay…).",
     "step2": "Tap Scan and point at this QR code.",
     "step3": "Confirm the {amount} payment to {merchant}.",
     "demo_note": "Demo mode — no live payment gateway is connected yet. Tap the button below to preview a successful payment.",
@@ -254,7 +254,7 @@
     "success_title": "Payment Successful",
     "success_desc": "{amount} paid to {merchant} via MMQR",
     "placing_order": "Placing your order…",
-    "note": "You'll scan a MyanmarPay MMQR code to pay with {wallet} after tapping Place Order.",
+    "note": "You'll scan a MyanmarPay MMQR code with any banking app after tapping Place Order.",
     "wallet_sub": "MMQR mobile wallet"
   },
   "payment": {
