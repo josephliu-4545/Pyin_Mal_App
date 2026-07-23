@@ -67,6 +67,50 @@ class DatabaseService {
     );
   }
 
+  // ── AI Try-On Gallery ────────────────────────────────────────────────────────
+
+  /// Appends a new AI-generated try-on result to the user's gallery collection.
+  /// Each document stores the result image URL and a server-side timestamp so
+  /// the gallery can be shown newest-first.
+  Future<String?> saveTryOnResult(String imageUrl) async {
+    if (_uid == null) return null;
+    final ref = await _db
+        .collection('users')
+        .doc(_uid)
+        .collection('tryOnGallery')
+        .add({
+      'imageUrl': imageUrl,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return ref.id;
+  }
+
+  /// Live stream of the current user's AI try-on gallery, newest first.
+  /// Each map contains at minimum 'imageUrl' (String) and 'createdAt' (Timestamp).
+  Stream<List<Map<String, dynamic>>> streamTryOnGallery() {
+    if (_uid == null) return Stream.value([]);
+    return _db
+        .collection('users')
+        .doc(_uid)
+        .collection('tryOnGallery')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => {'id': d.id, ...d.data()})
+            .toList());
+  }
+
+  /// Removes a single try-on gallery entry by its Firestore document id.
+  Future<void> deleteTryOnGalleryItem(String docId) async {
+    if (_uid == null) return;
+    await _db
+        .collection('users')
+        .doc(_uid)
+        .collection('tryOnGallery')
+        .doc(docId)
+        .delete();
+  }
+
   /// Save the body info + style preferences collected during profile setup.
   /// Uses set(merge) so it works whether or not the user doc already exists.
   Future<void> saveProfileSetup(Map<String, dynamic> data) async {

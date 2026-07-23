@@ -265,6 +265,13 @@ class _TryOnScreenState extends State<TryOnScreen> {
               content: Text('try_on.err_api'.tr()),
             ),
           );
+        } else {
+          // Auto-save to Gallery so the user can view it later.
+          DatabaseService().saveTryOnResult(resultUrl).then((_) {
+            debugPrint('✅ Try-on result saved to gallery');
+          }).catchError((e) {
+            debugPrint('⚠️ Could not save to gallery: $e');
+          });
         }
       }
     } catch (e) {

@@ -26,8 +26,24 @@
     "shop": "Shop",
     "hair": "Hair",
     "saved": "Saved",
+    "gallery": "Gallery",
     "profile": "Profile",
     "delivery": "Delivery"
+  },
+  "gallery": {
+    "title": "AI Try-On Gallery",
+    "subtitle": "Your AI-generated looks",
+    "empty": "No try-ons yet",
+    "empty_desc": "Use the AI Try-On feature to generate outfits — they'll appear here automatically.",
+    "save_to_phone": "Save to Phone",
+    "saved_success": "Image saved to your gallery!",
+    "save_error": "Could not save image. Please try again.",
+    "delete": "Delete",
+    "delete_confirm": "Remove this image from your gallery?",
+    "delete_yes": "Remove",
+    "delete_no": "Keep",
+    "item_count_one": "{count} look",
+    "item_count_many": "{count} looks"
   },
   "greeting": {
     "morning": "good morning,",
