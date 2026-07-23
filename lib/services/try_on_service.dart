@@ -20,6 +20,18 @@ class TryOnService {
   XFile? shoesPhoto;
   Uint8List? shoesPhotoBytes;
 
+  // Optional catalog context per garment slot. Set when a slot is filled from a
+  // real product (not a raw gallery upload), so the size-fit check can look up
+  // that item's chart and the chosen size. Null → no size check for that slot.
+  String? shirtProductId;
+  String? shirtSize;
+
+  String? pantsProductId;
+  String? pantsSize;
+
+  String? shoesProductId;
+  String? shoesSize;
+
   void clear() {
     userPhoto = null;
     userPhotoBytes = null;
@@ -29,5 +41,11 @@ class TryOnService {
     pantsPhotoBytes = null;
     shoesPhoto = null;
     shoesPhotoBytes = null;
+    shirtProductId = null;
+    shirtSize = null;
+    pantsProductId = null;
+    pantsSize = null;
+    shoesProductId = null;
+    shoesSize = null;
   }
 }

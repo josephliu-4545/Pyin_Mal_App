@@ -9,6 +9,9 @@ import 'package:pyin_mal_app/screens/payment_screen.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/services/opencart_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
+import 'package:pyin_mal_app/services/fitting_session.dart';
+import 'package:pyin_mal_app/services/size_advisor.dart';
+import 'package:pyin_mal_app/widgets/size_fit_banner.dart';
 import 'package:pyin_mal_app/services/wardrobe_service.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/core/guide_keys.dart';
@@ -56,6 +59,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   bool _placing = false;
 
+  // Size-fit warnings for the cart, per the active wearer (self or a guest).
+  // Recomputed when the wearer or cart changes — not on every rebuild — so we
+  // don't re-hit Firestore when unrelated setState fires (e.g. payment toggle).
+  List<String> _sizeWarnings = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    FittingSession.instance.addListener(_recomputeSizeWarnings);
+    _recomputeSizeWarnings();
+  }
+
+  Future<void> _recomputeSizeWarnings() async {
+    final msgs = <String>[];
+    for (final item in CartService.instance.items) {
+      final check = await SizeAdvisor.checkGarment(
+        productId: item.productId,
+        size: item.size,
+        garment: 'item',
+      );
+      if (check.message != null) {
+        msgs.add('${item.name} (${item.size}) — ${check.message}');
+      }
+    }
+    if (mounted) setState(() => _sizeWarnings = msgs);
+  }
+
   // One MMQR option (scan with any banking app) + card + cash on delivery.
   static const _payOptions = <_PayOption>[
     _PayOption('mmqr', 'MyanmarPay · MMQR', 'Scan with any banking app',
@@ -75,6 +105,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   void dispose() {
+    FittingSession.instance.removeListener(_recomputeSizeWarnings);
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _addressCtrl.dispose();
@@ -264,6 +295,44 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  /// "Size check" card: pick who the order is for, then warn (non-blocking) if
+  /// any item's size looks off for that person. Silent until per-item size
+  /// charts + saved measurements exist — so pre-data it just shows the picker.
+  Widget _buildSizeCheck(bool isDark) {
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+    return _sectionCard(
+      isDark,
+      icon: Icons.straighten_rounded,
+      title: 'Size check',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _sizeWarnings.isEmpty
+                      ? "We'll flag any item that may not fit."
+                      : 'A few items may not fit:',
+                  style: GoogleFonts.outfit(fontSize: 12.5, color: muted),
+                ),
+              ),
+              const SizedBox(width: 10),
+              WhoIsThisForSelector(
+                isDark: isDark,
+                onChanged: _recomputeSizeWarnings,
+              ),
+            ],
+          ),
+          for (final msg in _sizeWarnings) ...[
+            const SizedBox(height: 10),
+            SizeFitBanner(message: msg, isDark: isDark),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -314,6 +383,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // ── Size Check ────────────────────────────────────────────────
+              _buildSizeCheck(isDark),
               const SizedBox(height: 16),
 
               // ── Shipping Details ──────────────────────────────────────────

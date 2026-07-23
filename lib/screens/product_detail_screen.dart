@@ -990,6 +990,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                           builder: (_) => TryOnScreen(
                                             initialImageUrl: widget.image,
                                             initialCategory: widget.category,
+                                            initialProductId: widget.productId,
+                                            initialSize: _selectedSize,
                                           ))),
                                   icon: const Icon(
                                       Icons.face_retouching_natural_rounded,

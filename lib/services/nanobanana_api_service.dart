@@ -144,12 +144,41 @@ class NanoBananaApiService {
   // ── Public API ──────────────────────────────────────────────────────────────
 
   /// Virtual clothing try-on.
+  ///
+  /// [fitHints] are true-to-size render instructions produced by
+  /// SizeFitService.renderHint — one phrase per garment that doesn't fit the
+  /// wearer (e.g. "the bottoms are too small: render them tight and straining").
+  /// When any are supplied, the prompt tells NanoBanana to honour the real fit
+  /// instead of silently tailoring every piece to look perfect, so the result
+  /// actually shows whether the chosen size works on that body.
   static Future<String?> generateTryOnImage({
     required XFile userPhoto,
     XFile? shirtPhoto,
     XFile? pantsPhoto,
     XFile? shoesPhoto,
+    List<String> fitHints = const [],
   }) {
+    final buffer = StringBuffer(
+      'Virtual try-on: dress the person from the first image in the '
+      'provided clothing items. Output a SINGLE realistic full-body photo '
+      'of ONLY that one person wearing the new outfit, standing centered '
+      'and facing the camera against a clean plain studio background. '
+      'Do NOT create a collage or grid. Do NOT show a before-and-after or '
+      'the original photo. Do NOT show the clothing items on their own. '
+      'Show exactly one person and nothing else.',
+    );
+
+    final hints = fitHints.where((h) => h.trim().isNotEmpty).toList();
+    if (hints.isNotEmpty) {
+      buffer.write(
+        ' IMPORTANT — show the true fit for this exact body; do NOT resize, '
+        'retailor or stretch the clothing to fit perfectly. Keep each garment '
+        'at its real size and let it sit accordingly: ',
+      );
+      buffer.write(hints.join('; '));
+      buffer.write('.');
+    }
+
     return _runGeneration(
       images: {
         'person': userPhoto,
@@ -157,14 +186,7 @@ class NanoBananaApiService {
         'pants': pantsPhoto,
         'shoes': shoesPhoto,
       },
-      prompt:
-          'Virtual try-on: dress the person from the first image in the '
-          'provided clothing items. Output a SINGLE realistic full-body photo '
-          'of ONLY that one person wearing the new outfit, standing centered '
-          'and facing the camera against a clean plain studio background. '
-          'Do NOT create a collage or grid. Do NOT show a before-and-after or '
-          'the original photo. Do NOT show the clothing items on their own. '
-          'Show exactly one person and nothing else.',
+      prompt: buffer.toString(),
     );
   }
 

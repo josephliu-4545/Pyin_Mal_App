@@ -112,6 +112,18 @@ class DatabaseService {
     return snap.data();
   }
 
+  /// One-shot read of the account holder's saved body measurements (from a
+  /// Bodygram scan or manual entry), or null when none are on file.
+  Future<BodyMeasurements?> getBodyMeasurements() async {
+    if (_uid == null) return null;
+    final snap = await _db.collection('users').doc(_uid).get();
+    final bm = snap.data()?['bodyMeasurements'];
+    if (bm is Map) {
+      return BodyMeasurements.fromMap(Map<String, dynamic>.from(bm));
+    }
+    return null;
+  }
+
   /// Persist the latest Bodygram scan result on the user doc.
   Future<void> saveBodyMeasurements(Map<String, dynamic> data) async {
     if (_uid == null) return;

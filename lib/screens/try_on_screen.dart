@@ -9,6 +9,9 @@ import '../core/constants/api_constants.dart';
 import '../main.dart'; // For AppColors
 import '../services/try_on_service.dart';
 import '../services/database_service.dart';
+import '../services/fitting_session.dart';
+import '../services/size_advisor.dart';
+import '../widgets/size_fit_banner.dart';
 import '../models/product.dart';
 import '../data/product_repository.dart';
 import '../widgets/cdn_image.dart';
@@ -20,7 +23,18 @@ class TryOnScreen extends StatefulWidget {
   final String? initialImageUrl;
   final String? initialCategory;
 
-  const TryOnScreen({super.key, this.initialImageUrl, this.initialCategory});
+  /// Catalog context when opened from a product, so the size-fit check can look
+  /// up that item's chart + the size the user picked on the product page.
+  final String? initialProductId;
+  final String? initialSize;
+
+  const TryOnScreen({
+    super.key,
+    this.initialImageUrl,
+    this.initialCategory,
+    this.initialProductId,
+    this.initialSize,
+  });
 
   @override
   State<TryOnScreen> createState() => _TryOnScreenState();
@@ -56,11 +70,51 @@ class _TryOnScreenState extends State<TryOnScreen> {
   Uint8List? get _shoesPhotoBytes => TryOnService.instance.shoesPhotoBytes;
   set _shoesPhotoBytes(Uint8List? val) => TryOnService.instance.shoesPhotoBytes = val;
 
+  // Size-fit feedback for the current wearer. Messages drive the inline banner;
+  // hints are handed to NanoBanana so the render reflects the true fit.
+  List<String> _sizeWarnings = const [];
+  List<String> _fitHints = const [];
+
   @override
   void initState() {
     super.initState();
     _loadInitialImage();
     _loadSavedUserPhoto();
+    FittingSession.instance.addListener(_recomputeFit);
+  }
+
+  @override
+  void dispose() {
+    FittingSession.instance.removeListener(_recomputeFit);
+    super.dispose();
+  }
+
+  /// Runs the size-fit check for every garment slot that carries catalog
+  /// context (product + chosen size), against the active wearer. No-ops
+  /// silently for raw gallery uploads or until charts/measurements exist.
+  Future<void> _recomputeFit() async {
+    final svc = TryOnService.instance;
+    final msgs = <String>[];
+    final hints = <String>[];
+
+    Future<void> checkSlot(String? pid, String? size, String garment) async {
+      if (pid == null || size == null) return;
+      final c = await SizeAdvisor.checkGarment(
+          productId: pid, size: size, garment: garment);
+      if (c.message != null) msgs.add(c.message!);
+      if (c.renderHint != null) hints.add(c.renderHint!);
+    }
+
+    await checkSlot(svc.shirtProductId, svc.shirtSize, 'top');
+    await checkSlot(svc.pantsProductId, svc.pantsSize, 'bottoms');
+    await checkSlot(svc.shoesProductId, svc.shoesSize, 'shoes');
+
+    if (mounted) {
+      setState(() {
+        _sizeWarnings = msgs;
+        _fitHints = hints;
+      });
+    }
   }
 
   /// Pre-fills the person photo from the try-on photo saved on the user's
@@ -129,17 +183,27 @@ class _TryOnScreenState extends State<TryOnScreen> {
         setState(() {
           final cat = widget.initialCategory?.toLowerCase() ?? '';
           final newFile = XFile.fromData(bytes, name: 'downloaded.jpg');
+          final svc = TryOnService.instance;
+          final pid = widget.initialProductId;
+          final size = widget.initialSize;
           if (cat.contains('pant') || cat.contains('skirt') || cat.contains('bottom') || cat.contains('short')) {
             _pantsPhotoBytes = bytes;
             _pantsPhoto = newFile;
+            svc.pantsProductId = pid;
+            svc.pantsSize = size;
           } else if (cat.contains('shoe') || cat.contains('sneaker')) {
             _shoesPhotoBytes = bytes;
             _shoesPhoto = newFile;
+            svc.shoesProductId = pid;
+            svc.shoesSize = size;
           } else {
             _shirtPhotoBytes = bytes;
             _shirtPhoto = newFile;
+            svc.shirtProductId = pid;
+            svc.shirtSize = size;
           }
         });
+        _recomputeFit();
       }
     } catch (e) {
       debugPrint('Failed to load initial image: $e');
@@ -244,12 +308,17 @@ class _TryOnScreenState extends State<TryOnScreen> {
         _isLoading = true;
       });
 
+      // Make sure the fit hints reflect the latest slots/wearer before we ask
+      // NanoBanana to render the outfit true-to-size.
+      await _recomputeFit();
+
       // Call API
       final resultUrl = await NanoBananaApiService.generateTryOnImage(
         userPhoto: _userPhoto!,
         shirtPhoto: _shirtPhoto,
         pantsPhoto: _pantsPhoto,
         shoesPhoto: _shoesPhoto,
+        fitHints: _fitHints,
       );
 
       // Update UI
@@ -400,6 +469,14 @@ class _TryOnScreenState extends State<TryOnScreen> {
                 _stepLabel('1', 'try_on.person'.tr(), 'try_on.required'.tr()),
                 const SizedBox(height: 12),
                 _personCard(),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: WhoIsThisForSelector(
+                    isDark: _isDark,
+                    onChanged: _recomputeFit,
+                  ),
+                ),
                 const SizedBox(height: 24),
 
                 // Step 2 — your pieces
@@ -457,6 +534,17 @@ class _TryOnScreenState extends State<TryOnScreen> {
                     ),
                   ],
                 ),
+
+                // Size selectors for any garment linked to a real product, so
+                // the user can try different sizes and see the fit change.
+                ..._buildSizeSelectors(),
+
+                // Non-blocking size-fit notices for the active wearer.
+                for (final msg in _sizeWarnings) ...[
+                  const SizedBox(height: 12),
+                  SizeFitBanner(message: msg, isDark: _isDark),
+                ],
+
                 const SizedBox(height: 28),
 
                 _generateButton(canGenerate),
@@ -476,6 +564,77 @@ class _TryOnScreenState extends State<TryOnScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // Default label sizes shown when a garment is product-linked. If a product's
+  // chart later uses different labels (e.g. numeric waists), source these from
+  // the chart's `sizes` instead — the fit check keys off whatever label is set.
+  static const _defaultSizes = ['XS', 'S', 'M', 'L', 'XL'];
+
+  List<Widget> _buildSizeSelectors() {
+    final svc = TryOnService.instance;
+    final rows = <Widget>[];
+
+    void addRow(String label, String? pid, String? current,
+        void Function(String) onPick) {
+      if (pid == null || current == null) return;
+      rows.add(const SizedBox(height: 22));
+      rows.add(Row(
+        children: [
+          Icon(Icons.straighten_rounded, size: 16, color: _accent),
+          const SizedBox(width: 8),
+          Text('$label size',
+              style: GoogleFonts.outfit(
+                  fontSize: 14, fontWeight: FontWeight.w700, color: _ink)),
+        ],
+      ));
+      rows.add(const SizedBox(height: 10));
+      rows.add(Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: _defaultSizes
+            .map((s) => _sizeChip(s, current == s, () => onPick(s)))
+            .toList(),
+      ));
+    }
+
+    addRow('Top', svc.shirtProductId, svc.shirtSize, (s) {
+      setState(() => svc.shirtSize = s);
+      _recomputeFit();
+    });
+    addRow('Bottom', svc.pantsProductId, svc.pantsSize, (s) {
+      setState(() => svc.pantsSize = s);
+      _recomputeFit();
+    });
+    addRow('Shoes', svc.shoesProductId, svc.shoesSize, (s) {
+      setState(() => svc.shoesSize = s);
+      _recomputeFit();
+    });
+    return rows;
+  }
+
+  Widget _sizeChip(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? _accent.withOpacity(0.14) : _surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? _accent
+                : (_isDark ? AppColors.darkBorder : AppColors.creamAlt),
+            width: selected ? 1.8 : 1,
+          ),
+        ),
+        child: Text(label,
+            style: GoogleFonts.outfit(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                color: selected ? _accent : _ink)),
+      ),
     );
   }
 

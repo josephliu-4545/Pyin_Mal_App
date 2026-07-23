@@ -11,13 +11,14 @@ import 'package:pyin_mal_app/screens/login_screen.dart';
 import 'package:pyin_mal_app/screens/body_scan_screen.dart';
 import 'package:pyin_mal_app/screens/overlay_permission_screen.dart';
 import 'package:pyin_mal_app/screens/order_history_screen.dart';
+import 'package:pyin_mal_app/screens/size_chart_admin_screen.dart';
+import 'package:pyin_mal_app/core/constants/admin_config.dart';
 import 'package:pyin_mal_app/screens/subscription_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 import 'package:pyin_mal_app/screens/settings_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pyin_mal_app/services/image_host_service.dart';
-import 'dart:typed_data';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -598,6 +599,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => const OverlayPermissionScreen())),
                   ),
+                  // Admin-only: catalog size-chart entry. Hidden unless the
+                  // signed-in user is the configured admin (see AdminConfig).
+                  if (AdminConfig.isCurrentUserAdmin) ...[
+                    Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.creamAlt, indent: 56),
+                    _buildActionTile(
+                      icon: Icons.straighten_outlined,
+                      label: 'Size charts (admin)',
+                      isDark: isDark,
+                      accent: accent,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const SizeChartAdminScreen()),
+                      ),
+                    ),
+                  ],
                   Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.creamAlt, indent: 56),
                   _buildActionTile(
                     icon: Icons.receipt_long_outlined,

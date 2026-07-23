@@ -1,4 +1,5 @@
 import 'package:pyin_mal_app/models/body_measurements.dart';
+import 'package:pyin_mal_app/models/item_size_chart.dart';
 
 /// Verdict for one label size against the user's body.
 enum FitVerdict { tight, fits, loose }
@@ -97,6 +98,34 @@ class SizeRecommendationService {
       size: sizes[bestIndex],
       basedOn: basedOn,
       verdicts: verdicts,
+    );
+  }
+
+  /// Builds a stand-in per-item [ItemSizeChart] from the conventional
+  /// ready-to-wear ranges above, based on the product's category + gender.
+  /// Used as a demo fallback so every product has *some* sizing without a real
+  /// chart entered — a shop-supplied chart in `sizeCharts/{id}` overrides it.
+  static ItemSizeChart? syntheticChart({
+    required String productId,
+    required String category,
+    required String gender,
+  }) {
+    final g = gender.toLowerCase() == 'male' ? 'male' : 'female';
+    final chart = _charts['$g-${_garmentGroup(category)}'];
+    if (chart == null) return null;
+    final bands = <String, Map<String, SizeBand>>{};
+    chart.forEach((measure, bounds) {
+      final perSize = <String, SizeBand>{};
+      for (var i = 0; i < sizes.length; i++) {
+        // Upper bound of one size is the lower bound of the next.
+        perSize[sizes[i]] = SizeBand(bounds[i], bounds[i + 1]);
+      }
+      bands[measure] = perSize;
+    });
+    return ItemSizeChart(
+      productId: productId,
+      sizes: List<String>.of(sizes),
+      bands: bands,
     );
   }
 
