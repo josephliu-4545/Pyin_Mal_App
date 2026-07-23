@@ -8,6 +8,7 @@ import '../services/nanobanana_api_service.dart';
 import '../core/constants/api_constants.dart';
 import '../main.dart'; // For AppColors
 import '../services/try_on_service.dart';
+import '../services/database_service.dart';
 import '../models/product.dart';
 import '../data/product_repository.dart';
 import '../widgets/cdn_image.dart';
@@ -59,6 +60,36 @@ class _TryOnScreenState extends State<TryOnScreen> {
   void initState() {
     super.initState();
     _loadInitialImage();
+    _loadSavedUserPhoto();
+  }
+
+  /// Pre-fills the person photo from the try-on photo saved on the user's
+  /// account (Profile → Try-On Photo), so returning users don't have to pick
+  /// from the gallery every time. Skipped when a person photo is already set
+  /// (e.g. chosen this session or captured via the guided camera).
+  Future<void> _loadSavedUserPhoto() async {
+    if (_userPhotoBytes != null) return;
+    try {
+      final data = await DatabaseService().getUserData();
+      final url = data?['tryOnPhotoUrl'] as String?;
+      if (url == null || url.isEmpty) return;
+      // A photo may have been picked while this was loading — don't clobber it.
+      if (_userPhotoBytes != null) return;
+      final response = await http.get(Uri.parse(Uri.encodeFull(url)));
+      if (response.statusCode != 200) {
+        debugPrint('❗ Saved try-on photo HTTP ${response.statusCode}');
+        return;
+      }
+      if (_userPhotoBytes != null || !mounted) return;
+      final bytes = response.bodyBytes;
+      setState(() {
+        _userPhoto = XFile.fromData(bytes, name: 'saved_tryon.jpg');
+        _userPhotoBytes = bytes;
+      });
+      debugPrint('✅ Loaded saved try-on photo (${bytes.length} bytes)');
+    } catch (e) {
+      debugPrint('Failed to load saved try-on photo: $e');
+    }
   }
 
   Future<void> _loadInitialImage() async {

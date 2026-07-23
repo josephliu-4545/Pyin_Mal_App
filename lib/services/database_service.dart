@@ -55,6 +55,18 @@ class DatabaseService {
     }
   }
 
+  /// Persist the reusable try-on photo (a public image URL). Kept separate
+  /// from `avatarUrl` so the try-on flow can pre-fill the person photo without
+  /// touching the user's profile picture. set(merge) so it works even if the
+  /// user doc hasn't been created yet.
+  Future<void> updateTryOnPhotoUrl(String url) async {
+    if (_uid == null) return;
+    await _db.collection('users').doc(_uid).set(
+      {'tryOnPhotoUrl': url},
+      SetOptions(merge: true),
+    );
+  }
+
   /// Save the body info + style preferences collected during profile setup.
   /// Uses set(merge) so it works whether or not the user doc already exists.
   Future<void> saveProfileSetup(Map<String, dynamic> data) async {

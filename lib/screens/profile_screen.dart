@@ -30,6 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _auth = AuthService();
   final DatabaseService _db = DatabaseService();
   bool _isUploadingAvatar = false;
+  bool _isUploadingTryOn = false;
 
   Future<void> _pickAndUploadImage() async {
     final picker = ImagePicker();
@@ -76,6 +77,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } finally {
       if (mounted) {
         setState(() => _isUploadingAvatar = false);
+      }
+    }
+  }
+
+  /// Upload (or replace) the reusable try-on photo. Same host + Firestore
+  /// pattern as the avatar, but writes `tryOnPhotoUrl` so the two stay separate.
+  Future<void> _pickAndUploadTryOnPhoto() async {
+    final picker = ImagePicker();
+    final xfile = await picker.pickImage(source: ImageSource.gallery);
+    if (xfile == null) return;
+
+    setState(() => _isUploadingTryOn = true);
+
+    try {
+      final bytes = await ImageHostService.compress(xfile);
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+      final url = await ImageHostService.upload(bytes, 'tryon_$uid');
+
+      if (url != null) {
+        await _db.updateTryOnPhotoUrl(url);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('profile.try_on_saved'.tr()),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('profile.try_on_failed'.tr()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Try-on photo upload error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('An error occurred. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingTryOn = false);
       }
     }
   }
@@ -445,6 +497,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
 
+        // ── Try-On Photo Section ──────────────────────────────────────────
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+            child: Text(
+              'profile.try_on_photo'.tr(),
+              style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: isDark ? AppColors.paleText : AppColors.inkGrey, letterSpacing: 1.2),
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _buildTryOnPhotoCard(profile, isDark, accent),
+          ),
+        ),
+
         // ── Account Section ───────────────────────────────────────────────
         SliverToBoxAdapter(
           child: Padding(
@@ -565,6 +634,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ],
+    );
+  }
+
+  /// Card in the profile that holds the reusable try-on photo. Tapping it
+  /// picks a new photo from the gallery and saves it to the account, so the
+  /// AI Try-On screen can auto-fill the person photo on every visit.
+  Widget _buildTryOnPhotoCard(UserProfile profile, bool isDark, Color accent) {
+    final hasPhoto = profile.tryOnPhotoUrl?.isNotEmpty == true;
+    return GestureDetector(
+      onTap: _isUploadingTryOn ? null : _pickAndUploadTryOnPhoto,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFC9A96E).withOpacity(isDark ? 0.15 : 0.20),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFC9A96E).withOpacity(0.35)),
+        ),
+        child: Row(
+          children: [
+            // Photo thumbnail (or add-photo placeholder)
+            Container(
+              width: 64,
+              height: 84,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: accent.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: accent.withOpacity(0.35)),
+              ),
+              child: _isUploadingTryOn
+                  ? Center(child: CircularProgressIndicator(color: accent, strokeWidth: 2))
+                  : hasPhoto
+                      ? CachedNetworkImage(
+                          imageUrl: profile.tryOnPhotoUrl!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) =>
+                              Center(child: CircularProgressIndicator(color: accent, strokeWidth: 2)),
+                          errorWidget: (context, url, error) =>
+                              Icon(Icons.person_rounded, color: accent, size: 30),
+                        )
+                      : Icon(Icons.add_a_photo_rounded, color: accent, size: 26),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hasPhoto ? 'profile.try_on_change'.tr() : 'profile.try_on_add'.tr(),
+                    style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w600, color: isDark ? Colors.white : AppColors.inkBlack),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'profile.try_on_photo_desc'.tr(),
+                    style: GoogleFonts.outfit(fontSize: 12, height: 1.35, color: isDark ? AppColors.paleText : AppColors.inkGrey),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              hasPhoto ? Icons.edit_rounded : Icons.arrow_forward_ios_rounded,
+              size: hasPhoto ? 16 : 13,
+              color: accent,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
