@@ -6,6 +6,9 @@ import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:pyin_mal_app/screens/checkout_screen.dart';
 import 'package:pyin_mal_app/screens/login_screen.dart';
+import 'package:pyin_mal_app/services/fitting_session.dart';
+import 'package:pyin_mal_app/services/size_advisor.dart';
+import 'package:pyin_mal_app/widgets/size_fit_banner.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class CartScreen extends StatelessWidget {
@@ -146,7 +149,7 @@ class CartScreen extends StatelessWidget {
   }
 }
 
-class _CartItemTile extends StatelessWidget {
+class _CartItemTile extends StatefulWidget {
   final CartItem item;
   final bool isDark;
   final Color accent;
@@ -154,7 +157,48 @@ class _CartItemTile extends StatelessWidget {
   const _CartItemTile({required this.item, required this.isDark, required this.accent});
 
   @override
+  State<_CartItemTile> createState() => _CartItemTileState();
+}
+
+class _CartItemTileState extends State<_CartItemTile> {
+  /// Size-fit notice for this line item against the active wearer, or null.
+  String? _warning;
+
+  @override
+  void initState() {
+    super.initState();
+    FittingSession.instance.addListener(_check);
+    _check();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CartItemTile old) {
+    super.didUpdateWidget(old);
+    if (old.item.size != widget.item.size ||
+        old.item.productId != widget.item.productId) {
+      _check();
+    }
+  }
+
+  @override
+  void dispose() {
+    FittingSession.instance.removeListener(_check);
+    super.dispose();
+  }
+
+  Future<void> _check() async {
+    final c = await SizeAdvisor.checkGarment(
+      productId: widget.item.productId,
+      size: widget.item.size,
+      garment: 'item',
+    );
+    if (mounted) setState(() => _warning = c.message);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.item;
+    final isDark = widget.isDark;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
@@ -170,8 +214,11 @@ class _CartItemTile extends StatelessWidget {
             )
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
           Container(
             width: 80,
             height: 80,
@@ -241,6 +288,13 @@ class _CartItemTile extends StatelessWidget {
             icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
             onPressed: () => CartService.instance.removeFromCart(item),
           ),
+            ],
+          ),
+          // Non-blocking size notice for this line item.
+          if (_warning != null) ...[
+            const SizedBox(height: 10),
+            SizeFitBanner(message: _warning!, isDark: isDark),
+          ],
         ],
       ),
     );
