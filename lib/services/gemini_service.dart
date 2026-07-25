@@ -28,6 +28,23 @@ class GeminiService {
   /// stored here.
   final List<Map<String, String>> _history = [];
 
+  /// Clear all conversation context (used when starting a brand-new chat).
+  void reset() => _history.clear();
+
+  /// Rebuild the conversation context from a saved conversation so the model
+  /// stays coherent when the user continues an old chat. The opening greeting
+  /// (a non-user assistant message with no preceding user turn) is skipped.
+  void seedHistory(List<AiMessage> messages) {
+    _history.clear();
+    for (final m in messages) {
+      if (m.isUser) {
+        _history.add({'role': 'user', 'content': m.text});
+      } else if (_history.isNotEmpty) {
+        _history.add({'role': 'assistant', 'content': m.text});
+      }
+    }
+  }
+
   /// Sends a message to the model and returns the AI's response as an AiMessage.
   Future<AiMessage> sendMessage(String text) async {
     // 1. Live per-request context: survey prefs, recent purchases/views/searches.

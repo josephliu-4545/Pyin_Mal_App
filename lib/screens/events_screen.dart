@@ -15,6 +15,7 @@ class _FashionEvent {
   final IconData icon;
   final String desc;
   final bool live;
+  final String banner;
 
   const _FashionEvent({
     required this.title,
@@ -25,9 +26,17 @@ class _FashionEvent {
     required this.color,
     required this.icon,
     required this.desc,
+    required this.banner,
     this.live = false,
   });
 }
+
+// Banner images reused across events (real shop banner.jpg assets — lowercase
+// paths matching the folders registered in pubspec, same as the home screen).
+const _bannerClassydock =
+    'pyin-mal-assets/assets/images/shops/classydock/banner.jpg';
+const _bannerRestyle =
+    'pyin-mal-assets/assets/images/shops/restyle/banner.jpg';
 
 const _events = <_FashionEvent>[
   _FashionEvent(
@@ -40,6 +49,7 @@ const _events = <_FashionEvent>[
     icon: Icons.storefront_rounded,
     desc:
         'Bold everyday fits and exclusive drops you won\'t find online. Swing by the ground-floor pop-up before it closes.',
+    banner: _bannerClassydock,
     live: true,
   ),
   _FashionEvent(
@@ -52,6 +62,7 @@ const _events = <_FashionEvent>[
     icon: Icons.local_fire_department_rounded,
     desc:
         'Three days of the deepest cuts of the season across streetwear, hoodies and tees. Countdown timers in the app.',
+    banner: _bannerRestyle,
   ),
   _FashionEvent(
     title: 'New Collection Launch',
@@ -63,6 +74,7 @@ const _events = <_FashionEvent>[
     icon: Icons.auto_awesome_rounded,
     desc:
         'Be the first to see the Anniversary line. Early access for app members, plus a styling corner on the night.',
+    banner: _bannerClassydock,
   ),
   _FashionEvent(
     title: 'Sustainable Style Meetup',
@@ -74,6 +86,7 @@ const _events = <_FashionEvent>[
     icon: Icons.recycling_rounded,
     desc:
         'Swap, resell and donate pre-loved fashion. Bring pieces you no longer wear and give them a second life.',
+    banner: _bannerClassydock,
   ),
   _FashionEvent(
     title: 'Mandalay Fashion Night',
@@ -85,6 +98,7 @@ const _events = <_FashionEvent>[
     icon: Icons.checkroom_rounded,
     desc:
         'Traditional meets modern in a one-night runway showcase. Limited seats — reserve through the app.',
+    banner: _bannerRestyle,
   ),
 ];
 
@@ -230,12 +244,30 @@ class _EventsScreenState extends State<EventsScreen> {
           borderRadius: BorderRadius.circular(22),
           child: Stack(
             children: [
-              // watermark icon
-              Positioned(
-                right: -18,
-                bottom: -22,
-                child: Icon(e.icon,
-                    size: 150, color: Colors.white.withOpacity(0.10)),
+              // Banner photo behind everything.
+              Positioned.fill(
+                child: Image.asset(
+                  e.banner,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+              // Neutral dark gradient at the bottom only — keeps the white text
+              // readable without tinting the photo with a colour.
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.55),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.35, 1.0],
+                    ),
+                  ),
+                ),
               ),
               Positioned(
                 top: -30,
@@ -372,61 +404,71 @@ class _EventsScreenState extends State<EventsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Colored banner strip with icon + tag
-          Container(
-            height: 74,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [e.color, Color.lerp(e.color, Colors.black, 0.3)!],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(19)),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
+          // Banner photo strip with icon + tag (no colour overlay on the image).
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(19)),
+            child: SizedBox(
+              height: 160,
+              width: double.infinity,
+              child: Stack(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.22),
-                      borderRadius: BorderRadius.circular(13),
+                  Positioned.fill(
+                    child: Image.asset(
+                      e.banner,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(color: e.color),
                     ),
-                    child: Icon(e.icon, color: Colors.white, size: 24),
                   ),
-                  const Spacer(),
-                  Container(
+                  Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 9, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: e.live
-                          ? Colors.white
-                          : Colors.white.withOpacity(0.22),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                        horizontal: 16, vertical: 12),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (e.live) ...[
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: e.color,
-                              shape: BoxShape.circle,
-                            ),
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.35),
+                            borderRadius: BorderRadius.circular(13),
                           ),
-                          const SizedBox(width: 5),
-                        ],
-                        Text(e.tag,
-                            style: GoogleFonts.outfit(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                                color: e.live ? e.color : Colors.white)),
+                          child: Icon(e.icon, color: Colors.white, size: 24),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: e.live
+                                ? Colors.white
+                                : Colors.black.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (e.live) ...[
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: e.color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                              ],
+                              Text(e.tag,
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.8,
+                                      color:
+                                          e.live ? e.color : Colors.white)),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),

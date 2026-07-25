@@ -18,9 +18,16 @@ class ItemSizeChartService {
   final Map<String, ItemSizeChart?> _cache = {};
 
   /// The size chart for [productId], or null when none has been entered yet.
-  Future<ItemSizeChart?> forProduct(String productId) async {
+  ///
+  /// Pass [forceRefresh] to bypass the in-memory cache (including a previously
+  /// cached miss) and re-read from Firestore — used by the user-facing size
+  /// guide so a chart added after the product was first opened still appears.
+  Future<ItemSizeChart?> forProduct(String productId,
+      {bool forceRefresh = false}) async {
     if (productId.isEmpty) return null;
-    if (_cache.containsKey(productId)) return _cache[productId];
+    if (!forceRefresh && _cache.containsKey(productId)) {
+      return _cache[productId];
+    }
     try {
       final snap = await _db.collection('sizeCharts').doc(productId).get();
       final chart = (snap.exists && snap.data() != null)

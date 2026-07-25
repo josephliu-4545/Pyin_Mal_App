@@ -1,5 +1,7 @@
 import 'dart:ui';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -7,6 +9,7 @@ import 'package:gal/gal.dart';
 import 'package:http/http.dart' as http;
 import '../main.dart'; // AppColors
 import '../services/database_service.dart';
+import 'try_on_screen.dart';
 
 // ── Gallery Screen ─────────────────────────────────────────────────────────────
 class TryOnGalleryScreen extends StatelessWidget {
@@ -218,28 +221,34 @@ class _GalleryBody extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 28),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                color: _accent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: _accent.withOpacity(0.3)),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TryOnScreen()),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.auto_awesome_rounded, size: 14, color: _accent),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Try AI Try-On',
-                    style: GoogleFonts.outfit(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _accent,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                decoration: BoxDecoration(
+                  color: _accent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: _accent.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, size: 14, color: _accent),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Try AI Try-On',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _accent,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -409,19 +418,39 @@ class _GalleryDetailViewState extends State<_GalleryDetailView> {
     if (_isSaving) return;
     setState(() => _isSaving = true);
     try {
-      final hasAccess = await Gal.hasAccess(toAlbum: false);
-      if (!hasAccess) {
-        await Gal.requestAccess(toAlbum: false);
+      // Reuse the exact bytes already downloaded for display (cached by
+      // CachedNetworkImage). This avoids a fresh network fetch that can fail if
+      // the image URL has expired or redirects. Fall back to a direct download.
+      Uint8List? bytes;
+      try {
+        final cached = await DefaultCacheManager().getSingleFile(_currentUrl);
+        if (await cached.exists()) {
+          bytes = await cached.readAsBytes();
+        }
+      } catch (e) {
+        debugPrint('Cache read failed, falling back to http: $e');
+      }
+      if (bytes == null || bytes.isEmpty) {
+        final response =
+            await http.get(Uri.parse(Uri.encodeFull(_currentUrl)));
+        if (response.statusCode != 200) {
+          throw Exception('HTTP ${response.statusCode}');
+        }
+        bytes = response.bodyBytes;
       }
 
-      final response =
-          await http.get(Uri.parse(Uri.encodeFull(_currentUrl)));
-      if (response.statusCode != 200) {
-        throw Exception('HTTP ${response.statusCode}');
+      // Ensure gallery write access before saving (no-op on Android 10+ for the
+      // shared gallery, but required on older versions and iOS).
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        final granted = await Gal.requestAccess();
+        if (!granted) {
+          throw Exception('Gallery access denied');
+        }
       }
 
       await Gal.putImageBytes(
-        response.bodyBytes,
+        bytes,
         name: 'tryon_${DateTime.now().millisecondsSinceEpoch}',
       );
 
@@ -611,7 +640,7 @@ class _GalleryDetailViewState extends State<_GalleryDetailView> {
                       label: Text(
                         _isSaving
                             ? 'Saving...'
-                            : 'gallery.save_to_phone'.tr(),
+                            : 'Save',
                         style: GoogleFonts.outfit(
                             fontWeight: FontWeight.w700, fontSize: 15),
                       ),

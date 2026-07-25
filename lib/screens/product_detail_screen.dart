@@ -16,6 +16,9 @@ import 'package:pyin_mal_app/core/guide_keys.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/services/size_recommendation_service.dart';
+import 'package:pyin_mal_app/services/item_size_chart_service.dart';
+import 'package:pyin_mal_app/models/item_size_chart.dart';
+import 'package:pyin_mal_app/data/size_chart_presets.dart';
 import 'package:pyin_mal_app/models/body_measurements.dart';
 import 'package:pyin_mal_app/models/clothing_item.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
@@ -2186,9 +2189,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _shopChart(bool isDark, Color accent, Color ink, Color muted) {
-    // Products don't carry a dedicated size-chart image, so we show the
-    // shop's product photo as a reference, or an empty state.
-    final hasImage = widget.image.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2200,21 +2200,106 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               fontSize: 13, fontWeight: FontWeight.w600, color: ink),
         ),
         const SizedBox(height: 12),
-        if (hasImage)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: AspectRatio(
-              aspectRatio: 3 / 4,
-              child: CdnImage(
-                widget.image,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    _shopChartEmpty(isDark, muted),
+        // The admin-entered chart for this exact product (sizeCharts/{id}).
+        FutureBuilder<ItemSizeChart?>(
+          future: ItemSizeChartService.instance
+              .forProduct(widget.productId, forceRefresh: true),
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return SizedBox(
+                height: 120,
+                child: Center(
+                    child: CircularProgressIndicator(
+                        color: accent, strokeWidth: 2)),
+              );
+            }
+            final chart = snap.data;
+            if (chart != null && !chart.isEmpty) {
+              return _adminChartTable(chart, isDark, accent, ink, muted);
+            }
+            // No chart entered yet → fall back to the product photo.
+            return _shopChartFallback(isDark, accent, ink, muted);
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Renders the admin-filled size chart as a table: one row per measurement,
+  /// one column per size. Values are the centimetre figures the admin entered.
+  Widget _adminChartTable(
+      ItemSizeChart chart, bool isDark, Color accent, Color ink, Color muted) {
+    final sizes = chart.sizes;
+    // Show measurement rows in the standard display order, keeping any custom
+    // keys the chart might have at the end.
+    final present = chart.measurements.toSet();
+    final measures = [
+      ...SizeMeasurements.all.where(present.contains),
+      ...present.where((m) => !SizeMeasurements.all.contains(m)),
+    ];
+    final headerBg = accent.withOpacity(isDark ? 0.22 : 0.12);
+    final borderColor = isDark ? Colors.white12 : const Color(0xFFE7E2DB);
+
+    String cell(String measure, String size) {
+      final band = chart.bandFor(measure, size);
+      if (band == null) return '–';
+      final v = band.midCm;
+      return v == v.roundToDouble()
+          ? v.toStringAsFixed(0)
+          : v.toStringAsFixed(1);
+    }
+
+    TextStyle headStyle(Color c) => GoogleFonts.outfit(
+        fontSize: 12.5, fontWeight: FontWeight.w700, color: c);
+    TextStyle bodyStyle(Color c) =>
+        GoogleFonts.outfit(fontSize: 12.5, color: c);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: borderColor),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Table(
+                defaultColumnWidth: const FixedColumnWidth(72),
+                columnWidths: const {0: FixedColumnWidth(150)},
+                border: TableBorder.symmetric(
+                  inside: BorderSide(color: borderColor),
+                ),
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                children: [
+                  // Header row: "Size (cm)" + each size label.
+                  TableRow(
+                    decoration: BoxDecoration(color: headerBg),
+                    children: [
+                      _tableCell('Size (cm)', headStyle(ink), left: true),
+                      ...sizes.map((s) =>
+                          _tableCell(s, headStyle(accent), center: true)),
+                    ],
+                  ),
+                  // One row per measurement.
+                  ...measures.map((m) {
+                    return TableRow(
+                      children: [
+                        _tableCell(SizeMeasurements.label(m), bodyStyle(ink),
+                            left: true),
+                        ...sizes.map((s) => _tableCell(
+                            cell(m, s), bodyStyle(muted),
+                            center: true)),
+                      ],
+                    );
+                  }),
+                ],
               ),
             ),
-          )
-        else
-          _shopChartEmpty(isDark, muted),
+          ),
+        ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(12),
@@ -2228,7 +2313,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'size_guide.switch_hint'.tr(),
+                  'Measurements in cm, as provided by the shop. Switch to Body Chart to get your recommended size.',
                   style: GoogleFonts.outfit(fontSize: 12, color: ink),
                 ),
               ),
@@ -2239,22 +2324,52 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _shopChartEmpty(bool isDark, Color muted) {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white10 : const Color(0xFFF4F2EF),
-        borderRadius: BorderRadius.circular(16),
+  Widget _tableCell(String text, TextStyle style,
+      {bool center = false, bool left = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+      child: Text(
+        text,
+        textAlign: center ? TextAlign.center : TextAlign.left,
+        style: style,
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.image_not_supported_outlined, size: 40, color: muted),
-          const SizedBox(height: 10),
-          Text('size_guide.no_chart'.tr(),
-              style: GoogleFonts.outfit(fontSize: 12, color: muted)),
-        ],
-      ),
+    );
+  }
+
+  /// Shown when no admin chart exists for this product yet.
+  Widget _shopChartFallback(
+      bool isDark, Color accent, Color ink, Color muted) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white10 : const Color(0xFFF4F2EF),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.straighten_rounded, size: 40, color: muted),
+              const SizedBox(height: 12),
+              Text('No size chart yet',
+                  style: GoogleFonts.outfit(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: ink)),
+              const SizedBox(height: 6),
+              Text(
+                "The shop hasn't added measurements for this product yet. "
+                'Switch to Body Chart to get your recommended size.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                    fontSize: 12, height: 1.5, color: muted),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

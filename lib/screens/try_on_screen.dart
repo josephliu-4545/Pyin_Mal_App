@@ -9,6 +9,7 @@ import '../core/constants/api_constants.dart';
 import '../main.dart'; // For AppColors
 import '../services/try_on_service.dart';
 import '../services/database_service.dart';
+import '../services/tryon_photo_store.dart';
 import '../services/fitting_session.dart';
 import '../services/size_advisor.dart';
 import '../widgets/size_fit_banner.dart';
@@ -123,6 +124,25 @@ class _TryOnScreenState extends State<TryOnScreen> {
   /// (e.g. chosen this session or captured via the guided camera).
   Future<void> _loadSavedUserPhoto() async {
     if (_userPhotoBytes != null) return;
+
+    // 1. Prefer the on-device copy — always available, no host expiry.
+    try {
+      final local = await TryOnPhotoStore.instance.load();
+      if (local != null) {
+        if (_userPhotoBytes != null || !mounted) return;
+        setState(() {
+          _userPhoto = XFile.fromData(local, name: 'saved_tryon.jpg');
+          _userPhotoBytes = local;
+        });
+        debugPrint('✅ Pre-filled try-on photo from local store '
+            '(${local.length} bytes)');
+        return;
+      }
+    } catch (e) {
+      debugPrint('Local try-on photo load failed: $e');
+    }
+
+    // 2. Fall back to the saved remote URL, caching it locally for next time.
     try {
       final data = await DatabaseService().getUserData();
       final url = data?['tryOnPhotoUrl'] as String?;
@@ -136,6 +156,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
       }
       if (_userPhotoBytes != null || !mounted) return;
       final bytes = response.bodyBytes;
+      await TryOnPhotoStore.instance.save(bytes);
       setState(() {
         _userPhoto = XFile.fromData(bytes, name: 'saved_tryon.jpg');
         _userPhotoBytes = bytes;
@@ -972,6 +993,10 @@ class _TryOnScreenState extends State<TryOnScreen> {
 
   // ── "Complete the look" — matching pants & shoes from the catalog ─────────
 
+  static const _topCats = {
+    'Top', 'T-Shirt', 'Tee', 'Shirt', 'Hoodie', 'Sweater', 'Jacket', 'Coat',
+    'Jersey', 'Blouse'
+  };
   static const _bottomCats = {'Pants', 'Jeans', 'Skirt', 'Short'};
   static const _shoeCats = {'Shoes', 'Sneakers', 'Footwear'};
 
@@ -987,12 +1012,14 @@ class _TryOnScreenState extends State<TryOnScreen> {
   List<Widget> _buildMatchSections() {
     final sections = <Widget>[];
     // Only suggest what the user did NOT already include in the try-on.
+    final needsTop = _shirtPhotoBytes == null;
     final needsBottom = _pantsPhotoBytes == null;
     final needsShoes = _shoesPhotoBytes == null;
 
+    final tops = needsTop ? _matchesFor(_topCats) : <Product>[];
     final bottoms = needsBottom ? _matchesFor(_bottomCats) : <Product>[];
     final shoes = needsShoes ? _matchesFor(_shoeCats) : <Product>[];
-    if (bottoms.isEmpty && shoes.isEmpty) return sections;
+    if (tops.isEmpty && bottoms.isEmpty && shoes.isEmpty) return sections;
 
     sections.add(const SizedBox(height: 32));
     sections.add(Row(
@@ -1011,6 +1038,11 @@ class _TryOnScreenState extends State<TryOnScreen> {
           style: GoogleFonts.outfit(fontSize: 12, color: _muted)),
     ));
 
+    if (tops.isNotEmpty) {
+      sections.add(const SizedBox(height: 18));
+      sections.add(
+          _matchRow('Matching tops', Icons.checkroom_rounded, tops));
+    }
     if (bottoms.isNotEmpty) {
       sections.add(const SizedBox(height: 18));
       sections.add(_matchRow('try_on.matching_pants'.tr(),

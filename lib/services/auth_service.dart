@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
+import 'package:pyin_mal_app/services/try_on_service.dart';
 import 'package:pyin_mal_app/models/user_profile.dart';
 
 class AuthService {
@@ -124,6 +125,9 @@ class AuthService {
 
   // Sign out
   Future<void> signOut() async {
+    // Drop the previous account's in-memory try-on photos/slots so the next
+    // account never inherits them.
+    TryOnService.instance.clear();
     await _auth.signOut();
   }
 }

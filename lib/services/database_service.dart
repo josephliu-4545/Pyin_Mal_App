@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:pyin_mal_app/models/user_profile.dart';
 import 'package:pyin_mal_app/models/wardrobe_item.dart';
 import 'package:pyin_mal_app/models/outfit_post.dart';
@@ -70,19 +71,30 @@ class DatabaseService {
   // ── AI Try-On Gallery ────────────────────────────────────────────────────────
 
   /// Appends a new AI-generated try-on result to the user's gallery collection.
-  /// Each document stores the result image URL and a server-side timestamp so
-  /// the gallery can be shown newest-first.
+  /// Uses a client-side timestamp (not a server sentinel) so the item has a
+  /// concrete `createdAt` immediately — a pending server timestamp reads as null
+  /// locally and can be dropped from the `orderBy('createdAt')` stream until the
+  /// server confirms, which made freshly-generated looks fail to appear.
   Future<String?> saveTryOnResult(String imageUrl) async {
-    if (_uid == null) return null;
-    final ref = await _db
-        .collection('users')
-        .doc(_uid)
-        .collection('tryOnGallery')
-        .add({
-      'imageUrl': imageUrl,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-    return ref.id;
+    if (_uid == null) {
+      debugPrint('⚠️ saveTryOnResult skipped: no signed-in user.');
+      return null;
+    }
+    try {
+      final ref = await _db
+          .collection('users')
+          .doc(_uid)
+          .collection('tryOnGallery')
+          .add({
+        'imageUrl': imageUrl,
+        'createdAt': Timestamp.now(),
+      });
+      debugPrint('✅ Try-on result saved to gallery: ${ref.id}');
+      return ref.id;
+    } catch (e) {
+      debugPrint('⚠️ saveTryOnResult failed: $e');
+      rethrow;
+    }
   }
 
   /// Live stream of the current user's AI try-on gallery, newest first.
@@ -108,6 +120,53 @@ class DatabaseService {
         .doc(_uid)
         .collection('tryOnGallery')
         .doc(docId)
+        .delete();
+  }
+
+  // ── AI Stylist Conversations ─────────────────────────────────────────────────
+
+  /// Live list of the user's saved AI chat conversations, newest activity first.
+  /// Each map has: 'id', 'title', 'updatedAt', and 'messages' (list of maps).
+  Stream<List<Map<String, dynamic>>> streamAiConversations() {
+    if (_uid == null) return Stream.value([]);
+    return _db
+        .collection('users')
+        .doc(_uid)
+        .collection('aiConversations')
+        .orderBy('updatedAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => {'id': d.id, ...d.data()})
+            .toList());
+  }
+
+  /// Create or update a conversation. `messages` is a list of AiMessage maps.
+  Future<void> saveAiConversation({
+    required String id,
+    required String title,
+    required List<Map<String, dynamic>> messages,
+  }) async {
+    if (_uid == null) return;
+    await _db
+        .collection('users')
+        .doc(_uid)
+        .collection('aiConversations')
+        .doc(id)
+        .set({
+      'title': title,
+      'messages': messages,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  /// Remove a saved conversation.
+  Future<void> deleteAiConversation(String id) async {
+    if (_uid == null) return;
+    await _db
+        .collection('users')
+        .doc(_uid)
+        .collection('aiConversations')
+        .doc(id)
         .delete();
   }
 

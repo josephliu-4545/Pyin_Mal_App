@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -19,6 +20,7 @@ import 'package:pyin_mal_app/screens/settings_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pyin_mal_app/services/image_host_service.dart';
+import 'package:pyin_mal_app/services/tryon_photo_store.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -32,6 +34,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final DatabaseService _db = DatabaseService();
   bool _isUploadingAvatar = false;
   bool _isUploadingTryOn = false;
+  // Locally-saved try-on photo bytes, so the card always shows the real image
+  // even if the remote host URL has expired.
+  Uint8List? _localTryOnBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    TryOnPhotoStore.instance.load().then((bytes) {
+      if (bytes != null && mounted) {
+        setState(() => _localTryOnBytes = bytes);
+      }
+    });
+  }
 
   Future<void> _pickAndUploadImage() async {
     final picker = ImagePicker();
@@ -93,39 +108,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       final bytes = await ImageHostService.compress(xfile);
+
+      // Save locally first so the photo shows immediately and survives even if
+      // the remote host URL later expires or the upload fails.
+      await TryOnPhotoStore.instance.save(bytes);
+      if (mounted) setState(() => _localTryOnBytes = bytes);
+
+      // The photo is already saved on-device (used for the profile card and to
+      // pre-fill the try-on screen), so from the user's view it's saved. The
+      // remote upload only adds cross-device sync — a failure there is not an
+      // error worth alarming the user about.
       final uid = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
       final url = await ImageHostService.upload(bytes, 'tryon_$uid');
-
       if (url != null) {
         await _db.updateTryOnPhotoUrl(url);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('profile.try_on_saved'.tr()),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('profile.try_on_failed'.tr()),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
       }
-    } catch (e) {
-      debugPrint('Try-on photo upload error: $e');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('An error occurred. Please try again.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: Text('profile.try_on_saved'.tr()),
+            backgroundColor: Colors.green,
           ),
         );
       }
+    } catch (e) {
+      debugPrint('Try-on photo upload error: $e');
+      // The local save above still succeeded, so don't show a scary error —
+      // the photo is usable. Only log for diagnostics.
     } finally {
       if (mounted) {
         setState(() => _isUploadingTryOn = false);
@@ -177,10 +187,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: ClipOval(
                     child: Image.asset(
-                      'pyin-mal-assets/assets/images/logo.png',
+                      'pyin-mal-assets/assets/images/new_logo.png',
                       width: 80,
                       height: 80,
                       fit: BoxFit.cover,
+                      // Fall back to the old logo until new_logo.png is added.
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        'pyin-mal-assets/assets/images/logo.png',
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
@@ -658,7 +675,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// picks a new photo from the gallery and saves it to the account, so the
   /// AI Try-On screen can auto-fill the person photo on every visit.
   Widget _buildTryOnPhotoCard(UserProfile profile, bool isDark, Color accent) {
-    final hasPhoto = profile.tryOnPhotoUrl?.isNotEmpty == true;
+    final hasPhoto =
+        _localTryOnBytes != null || profile.tryOnPhotoUrl?.isNotEmpty == true;
     return GestureDetector(
       onTap: _isUploadingTryOn ? null : _pickAndUploadTryOnPhoto,
       child: Container(
@@ -682,7 +700,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: _isUploadingTryOn
                   ? Center(child: CircularProgressIndicator(color: accent, strokeWidth: 2))
-                  : hasPhoto
+                  : _localTryOnBytes != null
+                      ? Image.memory(_localTryOnBytes!, fit: BoxFit.cover)
+                      : hasPhoto
                       ? CachedNetworkImage(
                           imageUrl: profile.tryOnPhotoUrl!,
                           fit: BoxFit.cover,

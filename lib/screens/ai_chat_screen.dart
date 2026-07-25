@@ -5,6 +5,8 @@ import 'package:pyin_mal_app/theme_notifier.dart';
 import 'package:pyin_mal_app/models/ai_message.dart';
 import 'package:pyin_mal_app/models/product.dart';
 import 'package:pyin_mal_app/services/gemini_service.dart';
+import 'package:pyin_mal_app/services/database_service.dart';
+import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/screens/product_detail_screen.dart';
 import 'package:pyin_mal_app/widgets/cdn_image.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -21,11 +23,16 @@ class _AiChatScreenState extends State<AiChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final GeminiService _geminiService = GeminiService();
+  final DatabaseService _db = DatabaseService();
   final stt.SpeechToText _speechToText = stt.SpeechToText();
   bool _speechEnabled = false;
   bool _isListening = false;
   bool _autoSend = true;
   String _currentLocaleId = 'my-MM';
+
+  // Firestore id of the conversation currently open. Null until the first user
+  // message is sent (a fresh, unsaved chat).
+  String? _conversationId;
 
   final List<AiMessage> _messages = [
     AiMessage(
@@ -33,7 +40,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
       isUser: false,
     ),
   ];
-  
+
   bool _isLoading = false;
 
   @override
@@ -104,6 +111,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
     _textController.clear();
 
+    // Start a new conversation id on the first user message.
+    _conversationId ??= DateTime.now().millisecondsSinceEpoch.toString();
+
     setState(() {
       _messages.add(AiMessage(text: text, isUser: true));
       _isLoading = true;
@@ -118,7 +128,216 @@ class _AiChatScreenState extends State<AiChatScreen> {
         _isLoading = false;
       });
       _scrollToBottom();
+      _persistConversation();
     }
+  }
+
+  /// Save the current conversation (best-effort). Title is the first user turn.
+  void _persistConversation() {
+    final id = _conversationId;
+    if (id == null) return;
+    final firstUser = _messages.firstWhere(
+      (m) => m.isUser,
+      orElse: () => AiMessage(text: 'New chat', isUser: true),
+    );
+    var title = firstUser.text.trim();
+    if (title.length > 60) title = '${title.substring(0, 60)}…';
+    _db
+        .saveAiConversation(
+          id: id,
+          title: title.isEmpty ? 'New chat' : title,
+          messages: _messages.map((m) => m.toMap()).toList(),
+        )
+        .catchError((e) => debugPrint('Save conversation failed: $e'));
+  }
+
+  /// Reset to a fresh, empty chat.
+  void _startNewChat() {
+    _geminiService.reset();
+    setState(() {
+      _conversationId = null;
+      _messages
+        ..clear()
+        ..add(AiMessage(text: 'ai_chat.greeting'.tr(), isUser: false));
+    });
+  }
+
+  /// Load a saved conversation into the screen and restore the AI's context.
+  Future<void> _openConversation(Map<String, dynamic> convo) async {
+    await ProductRepository.load();
+    final rawMessages = (convo['messages'] as List?) ?? [];
+    final restored = <AiMessage>[];
+    for (final m in rawMessages) {
+      final map = Map<String, dynamic>.from(m as Map);
+      final ids = (map['productIds'] as List?) ?? [];
+      final products = <Product>[];
+      for (final id in ids) {
+        final p = ProductRepository.getProductById(id.toString());
+        if (p != null) products.add(p);
+      }
+      restored.add(AiMessage(
+        text: map['text'] as String? ?? '',
+        isUser: map['isUser'] as bool? ?? false,
+        recommendedProducts: products,
+      ));
+    }
+    _geminiService.seedHistory(restored);
+    setState(() {
+      _conversationId = convo['id'] as String?;
+      _messages
+        ..clear()
+        ..addAll(restored.isEmpty
+            ? [AiMessage(text: 'ai_chat.greeting'.tr(), isUser: false)]
+            : restored);
+    });
+    _scrollToBottom();
+  }
+
+  void _showHistorySheet(bool isDark, Color accent) {
+    final sheetBg = isDark ? AppColors.charcoal : Colors.white;
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: sheetBg,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetCtx).size.height * 0.7,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: muted.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Row(
+                    children: [
+                      Text('Chat history',
+                          style: GoogleFonts.rufina(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: ink)),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () {
+                          Navigator.pop(sheetCtx);
+                          _startNewChat();
+                        },
+                        icon: Icon(Icons.add_rounded, size: 18, color: accent),
+                        label: Text('New',
+                            style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w700, color: accent)),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: _db.streamAiConversations(),
+                    builder: (context, snap) {
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return Padding(
+                          padding: const EdgeInsets.all(40),
+                          child: Center(
+                              child: CircularProgressIndicator(color: accent)),
+                        );
+                      }
+                      final convos = snap.data ?? [];
+                      if (convos.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.all(40),
+                          child: Text('No saved conversations yet.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(color: muted)),
+                        );
+                      }
+                      return ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                        itemCount: convos.length,
+                        separatorBuilder: (_, __) => Divider(
+                            height: 1, color: muted.withOpacity(0.12)),
+                        itemBuilder: (context, i) {
+                          final c = convos[i];
+                          final id = c['id'] as String?;
+                          final isCurrent = id == _conversationId;
+                          final count = (c['messages'] as List?)?.length ?? 0;
+                          return ListTile(
+                            leading: Icon(Icons.chat_bubble_outline_rounded,
+                                color: accent, size: 22),
+                            title: Text(
+                              c['title'] as String? ?? 'Chat',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.outfit(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: ink),
+                            ),
+                            subtitle: Text('$count messages',
+                                style: GoogleFonts.outfit(
+                                    fontSize: 12, color: muted)),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isCurrent)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: accent.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text('Current',
+                                        style: GoogleFonts.outfit(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: accent)),
+                                  ),
+                                IconButton(
+                                  icon: Icon(Icons.delete_outline_rounded,
+                                      size: 20, color: muted),
+                                  onPressed: () async {
+                                    if (id == null) return;
+                                    await _db.deleteAiConversation(id);
+                                    if (isCurrent) {
+                                      Navigator.pop(sheetCtx);
+                                      _startNewChat();
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              Navigator.pop(sheetCtx);
+                              _openConversation(c);
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -156,6 +375,20 @@ class _AiChatScreenState extends State<AiChatScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Chat history',
+            icon: Icon(Icons.history_rounded,
+                color: isDark ? Colors.white : AppColors.inkBlack),
+            onPressed: () => _showHistorySheet(isDark, accent),
+          ),
+          IconButton(
+            tooltip: 'New chat',
+            icon: Icon(Icons.add_comment_outlined,
+                color: isDark ? Colors.white : AppColors.inkBlack),
+            onPressed: _startNewChat,
+          ),
+        ],
       ),
       body: Column(
         children: [

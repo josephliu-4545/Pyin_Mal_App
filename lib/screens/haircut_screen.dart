@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
-import 'package:pyin_mal_app/screens/ar_hair_filter_screen.dart';
 import 'package:pyin_mal_app/screens/hair_try_on_screen.dart';
 import 'package:pyin_mal_app/screens/haircut_booking_screen.dart';
+import 'package:pyin_mal_app/services/cart_service.dart';
 import '../widgets/cdn_image.dart';
 import 'package:flutter/services.dart';
 
@@ -144,10 +144,11 @@ class _HaircutScreenState extends State<HaircutScreen> {
             // 3. Recommended Hairstyles
             _buildHairstyleSection(context, isMobile, isDark, accent),
 
-            // 4. Smart Assistant Tips
-            _buildSmartTips(isDark, accent),
-            
-            const SizedBox(height: 60),
+            // 4. Hair care products (order from partner salons)
+            _buildHairCareProducts(isDark, accent),
+
+            // Clear the floating glass nav bar (+ the device's bottom inset).
+            SizedBox(height: 120 + MediaQuery.of(context).padding.bottom),
           ],
         ),
       ),
@@ -214,27 +215,6 @@ class _HaircutScreenState extends State<HaircutScreen> {
             spacing: 16,
             runSpacing: 16,
             children: [
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ARHairFilterScreen(
-                        initialHairstylePath: _selectedHairstyle,
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.face_retouching_natural),
-                label: Text('haircut.ar_filter'.tr()),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? AppColors.darkWarm : AppColors.creamCard,
-                  foregroundColor: isDark ? Colors.white : AppColors.inkBlack,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 2,
-                ),
-              ),
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.push(
@@ -663,61 +643,32 @@ class _HaircutScreenState extends State<HaircutScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ARHairFilterScreen(
-                          initialHairstylePath: _selectedHairstyle,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
-                  label: Text('haircut.preview_on_me'.tr(),
-                      style: GoogleFonts.outfit(
-                          fontSize: 14, fontWeight: FontWeight.w700)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accent,
-                    foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => HairTryOnScreen(
+                      initialHairstylePath: _selectedHairstyle,
+                    ),
                   ),
-                ),
+                );
+              },
+              icon: const Icon(Icons.face_retouching_natural_rounded, size: 18),
+              label: Text('product.try_on'.tr(),
+                  style: GoogleFonts.outfit(
+                      fontSize: 14, fontWeight: FontWeight.w700)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accent,
+                foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => HairTryOnScreen(
-                          initialHairstylePath: _selectedHairstyle,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.face_retouching_natural_rounded, size: 18),
-                  label: Text('product.try_on'.tr(),
-                      style: GoogleFonts.outfit(
-                          fontSize: 14, fontWeight: FontWeight.w700)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: accent,
-                    side: BorderSide(color: accent, width: 1.5),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         // Book now with the chosen hairstyle
@@ -990,58 +941,437 @@ class _HaircutScreenState extends State<HaircutScreen> {
     );
   }
 
-  Widget _buildSmartTips(bool isDark, Color accent) {
-    return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: accent.withOpacity(0.2), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+  // ── Hair care products (order from the 5 partner salons) ────────────────────
+  Widget _buildHairCareProducts(bool isDark, Color accent) {
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.lightbulb_outline, color: AppColors.gold, size: 24),
-              const SizedBox(width: 12),
-              Text(
-                'haircut.styling_tips'.tr(),
-                style: GoogleFonts.rufina(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.inkBlack,
-                ),
+              Row(
+                children: [
+                  Icon(Icons.spa_rounded, color: AppColors.gold, size: 22),
+                  const SizedBox(width: 10),
+                  Text('Hair Care Products',
+                      style: GoogleFonts.rufina(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: ink)),
+                ],
               ),
+              const SizedBox(height: 4),
+              Text(
+                  'Salon-quality products you can order from our partner salons. Tap a product for details.',
+                  style: GoogleFonts.outfit(fontSize: 13, color: muted)),
             ],
           ),
-          const SizedBox(height: 20),
-          _buildTipItem(Icons.check_circle_outline, 'Best for oval and round faces', isDark, accent),
-          const SizedBox(height: 12),
-          _buildTipItem(Icons.check_circle_outline, 'Works well with casual and formal outfits', isDark, accent),
-          const SizedBox(height: 12),
-          _buildTipItem(Icons.check_circle_outline, 'Low maintenance for daily styling', isDark, accent),
-        ],
+        ),
+        const SizedBox(height: 16),
+        // First horizontal scrolling row of product cards.
+        SizedBox(
+          height: 246,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            itemCount: _hairCareProducts.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 14),
+            itemBuilder: (_, i) =>
+                _hairCareCard(_hairCareProducts[i], isDark, accent, ink, muted),
+          ),
+        ),
+        const SizedBox(height: 14),
+        // Second horizontal scrolling row of product cards.
+        SizedBox(
+          height: 246,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            itemCount: _hairCareProducts2.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 14),
+            itemBuilder: (_, i) => _hairCareCard(
+                _hairCareProducts2[i], isDark, accent, ink, muted),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _hairCareCard(_HairCareProduct p, bool isDark, Color accent,
+      Color ink, Color muted) {
+    return GestureDetector(
+      onTap: () => _showHairCareDetails(p, isDark, accent, ink, muted),
+      child: Container(
+        width: 168,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: accent.withOpacity(0.18)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product image with a "From {salon}" badge.
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(19)),
+                  child: Container(
+                    height: 130,
+                    width: double.infinity,
+                    color: accent.withOpacity(0.10),
+                    child: Image.asset(
+                      p.image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Icon(Icons.spa_rounded,
+                            color: accent, size: 36),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.55),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(p.salon,
+                        style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                          color: ink)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.storefront_rounded, size: 12, color: accent),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text('From ${p.salon}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.outfit(
+                                fontSize: 11, color: muted)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(p.price,
+                      style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: accent)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTipItem(IconData icon, String text, bool isDark, Color accent) {
+  // Details popup: Good for / How to use + Order button.
+  void _showHairCareDetails(_HairCareProduct p, bool isDark, Color accent,
+      Color ink, Color muted) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: isDark ? AppColors.charcoal : Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: muted.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        color: accent.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: accent.withOpacity(0.25)),
+                      ),
+                      child: Image.asset(
+                        p.image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Icon(Icons.spa_rounded, color: accent, size: 28),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(p.name,
+                              style: GoogleFonts.rufina(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.bold,
+                                  color: ink)),
+                          const SizedBox(height: 4),
+                          Text('From ${p.salon}',
+                              style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: accent)),
+                          const SizedBox(height: 2),
+                          Text(p.price,
+                              style: GoogleFonts.outfit(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: ink)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                _careMeta(Icons.favorite_border_rounded, 'Good for',
+                    p.goodFor, accent, ink, muted),
+                const SizedBox(height: 12),
+                _careMeta(Icons.info_outline_rounded, 'How to use',
+                    p.howToUse, accent, ink, muted),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(sheetCtx);
+                      _orderHairCareProduct(p);
+                    },
+                    icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
+                    label: Text('Order now',
+                        style: GoogleFonts.outfit(
+                            fontSize: 14, fontWeight: FontWeight.w700)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor:
+                          isDark ? AppColors.charcoal : Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _careMeta(IconData icon, String label, String value, Color accent,
+      Color ink, Color muted) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: AppColors.gold, size: 18),
-        const SizedBox(width: 12),
+        Icon(icon, size: 15, color: accent),
+        const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            text,
-            style: GoogleFonts.outfit(
-              color: isDark ? AppColors.paleText : AppColors.inkGrey,
-              fontSize: 14,
+          child: RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: GoogleFonts.outfit(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: ink),
+                ),
+                TextSpan(
+                  text: value,
+                  style: GoogleFonts.outfit(
+                      fontSize: 12.5, height: 1.4, color: muted),
+                ),
+              ],
             ),
           ),
         ),
       ],
     );
   }
+
+  void _orderHairCareProduct(_HairCareProduct p) {
+    CartService().addToCart(CartItem(
+      productId: 'haircare_${p.name}',
+      name: p.name,
+      price: p.price,
+      image: p.image,
+      brand: p.salon,
+      size: 'One size',
+      color: '-',
+    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text('${p.name} added to cart — order from ${p.salon}.'),
+      ),
+    );
+  }
 }
+
+// Hair care products sold by the 5 partner salons (from the booking screen).
+class _HairCareProduct {
+  final String name;
+  final String salon;
+  final String price;
+  final String goodFor;
+  final String howToUse;
+  final String image; // salon logo asset
+
+  const _HairCareProduct({
+    required this.name,
+    required this.salon,
+    required this.price,
+    required this.goodFor,
+    required this.howToUse,
+    required this.image,
+  });
+}
+
+const _hairShopsDir = 'pyin-mal-assets/assets/images/shops';
+
+const _hairCareProducts = <_HairCareProduct>[
+  _HairCareProduct(
+    name: 'Signature Styling Pomade',
+    salon: 'V47',
+    price: '14,000 MMK',
+    goodFor: 'Straight and wavy hair needing all-day medium hold.',
+    howToUse:
+        'Rub a pea-sized amount between palms and work through dry hair, then shape as you like.',
+    image: '$_hairShopsDir/V47/logo.png',
+  ),
+  _HairCareProduct(
+    name: 'Keratin Repair Serum',
+    salon: 'VIP Salon',
+    price: '28,000 MMK',
+    goodFor: 'Dry, damaged and colour-treated hair.',
+    howToUse:
+        'Apply a few drops to towel-dried hair, focus on the ends, do not rinse, then blow-dry.',
+    image: '$_hairShopsDir/VIP salon/logo.png',
+  ),
+  _HairCareProduct(
+    name: 'Volumizing Sea Salt Spray',
+    salon: 'T8',
+    price: '16,000 MMK',
+    goodFor: 'Fine and flat hair that needs texture and volume.',
+    howToUse:
+        'Spray onto damp hair, scrunch with your hands, then air-dry or blow-dry for a beachy finish.',
+    image: '$_hairShopsDir/T8/logo.png',
+  ),
+  _HairCareProduct(
+    name: 'Argan Oil Hair Treatment',
+    salon: 'Tony Tun Tun',
+    price: '32,000 MMK',
+    goodFor: 'Frizzy, curly and very dry hair.',
+    howToUse:
+        'Warm a small amount, massage into mid-lengths and ends, leave 10 minutes (or overnight), then rinse.',
+    image: '$_hairShopsDir/Tony Tun Tun/logo.png',
+  ),
+  _HairCareProduct(
+    name: 'Nourishing Beard and Scalp Oil',
+    salon: 'Neighborhood',
+    price: '12,000 MMK',
+    goodFor: 'Dry scalp and beard grooming.',
+    howToUse:
+        'Massage a few drops into the scalp or beard once a day after washing. No need to rinse.',
+    image: '$_hairShopsDir/the neighbour hood project/logo.png',
+  ),
+];
+
+// Second row of products (one more per salon).
+const _hairCareProducts2 = <_HairCareProduct>[
+  _HairCareProduct(
+    name: 'Hydrating Shampoo',
+    salon: 'V47',
+    price: '15,000 MMK',
+    goodFor: 'All hair types, gentle daily cleansing.',
+    howToUse:
+        'Massage into wet hair and scalp, lather, then rinse thoroughly. Repeat if needed.',
+    image: '$_hairShopsDir/V47/logo.png',
+  ),
+  _HairCareProduct(
+    name: 'Colour-Protect Conditioner',
+    salon: 'VIP Salon',
+    price: '22,000 MMK',
+    goodFor: 'Colour-treated hair that fades quickly.',
+    howToUse:
+        'After shampooing, apply from mid-lengths to ends, leave 2–3 minutes, then rinse.',
+    image: '$_hairShopsDir/VIP salon/logo.png',
+  ),
+  _HairCareProduct(
+    name: 'Matte Clay Wax',
+    salon: 'T8',
+    price: '18,000 MMK',
+    goodFor: 'Short and medium hair needing a strong matte finish.',
+    howToUse:
+        'Warm a small amount in your palms and style dry hair for a natural, matte look.',
+    image: '$_hairShopsDir/T8/logo.png',
+  ),
+  _HairCareProduct(
+    name: 'Deep Repair Hair Mask',
+    salon: 'Tony Tun Tun',
+    price: '38,000 MMK',
+    goodFor: 'Very dry, over-processed and brittle hair.',
+    howToUse:
+        'Apply to clean, damp hair, leave 5–10 minutes, then rinse well. Use once a week.',
+    image: '$_hairShopsDir/Tony Tun Tun/logo.png',
+  ),
+  _HairCareProduct(
+    name: 'Anti-Dandruff Tonic',
+    salon: 'Neighborhood',
+    price: '13,000 MMK',
+    goodFor: 'Flaky, itchy scalp.',
+    howToUse:
+        'Part the hair and apply to the scalp, massage gently, and leave in. Use 3 times a week.',
+    image: '$_hairShopsDir/the neighbour hood project/logo.png',
+  ),
+];

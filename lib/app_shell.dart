@@ -39,6 +39,7 @@ import 'package:pyin_mal_app/screens/wardrobe_screen.dart';
 import 'package:pyin_mal_app/screens/settings_screen.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
+import 'package:pyin_mal_app/services/try_on_service.dart';
 import 'package:pyin_mal_app/core/guide_keys.dart';
 import 'package:pyin_mal_app/widgets/guide_coach.dart';
 import 'package:pyin_mal_app/widgets/cart_bar.dart';
@@ -2465,7 +2466,12 @@ class _HomeTabState extends State<_HomeTab> {
                                 closeDrawer();
                                 Future.delayed(
                                   const Duration(milliseconds: 200),
-                                  () => FirebaseAuth.instance.signOut(),
+                                  () {
+                                    // Clear the previous account's in-memory
+                                    // try-on photos before signing out.
+                                    TryOnService.instance.clear();
+                                    FirebaseAuth.instance.signOut();
+                                  },
                                 );
                               },
                             ),

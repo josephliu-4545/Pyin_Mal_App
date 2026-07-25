@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../services/nanobanana_api_service.dart';
+import '../services/database_service.dart';
 
 class HairTryOnScreen extends StatefulWidget {
   final String? initialPrompt;
@@ -104,6 +105,13 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
               content: Text('hair_try_on.err_api'.tr()),
             ),
           );
+        } else {
+          // Auto-save to Gallery so the user can view it later.
+          DatabaseService().saveTryOnResult(resultUrl).then((_) {
+            debugPrint('✅ Hair try-on result saved to gallery');
+          }).catchError((e) {
+            debugPrint('⚠️ Could not save to gallery: $e');
+          });
         }
       }
     } catch (e) {

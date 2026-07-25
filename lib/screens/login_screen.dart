@@ -237,10 +237,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               ClipOval(
                                 child: Image.asset(
-                                  'pyin-mal-assets/assets/images/logo.png',
+                                  'pyin-mal-assets/assets/images/new_logo.png',
                                   width: 38,
                                   height: 38,
                                   fit: BoxFit.cover,
+                                  // Fall back to the old logo if the new one
+                                  // hasn't been added to the assets yet.
+                                  errorBuilder: (_, __, ___) => Image.asset(
+                                    'pyin-mal-assets/assets/images/logo.png',
+                                    width: 38,
+                                    height: 38,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 12),
