@@ -1,4 +1,5 @@
 import 'package:pyin_mal_app/data/product_repository.dart';
+import 'package:pyin_mal_app/models/item_size_chart.dart';
 import 'package:pyin_mal_app/services/fitting_session.dart';
 import 'package:pyin_mal_app/services/item_size_chart_service.dart';
 import 'package:pyin_mal_app/services/size_fit_service.dart';
@@ -33,6 +34,29 @@ class SizeAdvisor {
   /// set this false to only warn on genuinely-charted items.
   static bool useSyntheticFallback = true;
 
+  /// The single source of truth for "what chart sizes this product" — its real
+  /// shop/admin chart when one exists, otherwise the synthetic estimate built
+  /// from the product's OWN category + gender (when [useSyntheticFallback]).
+  /// Returns (chart, isSynthetic). Every screen — the product page's "Your size"
+  /// pill, the size-guide table, and the fit warnings — resolves the chart here
+  /// so they can never disagree about the same garment.
+  static Future<(ItemSizeChart?, bool)> resolveChart(String productId,
+      {bool forceRefresh = false}) async {
+    if (productId.isEmpty) return (null, false);
+    final real = await ItemSizeChartService.instance
+        .forProduct(productId, forceRefresh: forceRefresh);
+    if (real != null && !real.isEmpty) return (real, false);
+    if (!useSyntheticFallback) return (null, false);
+    final p = ProductRepository.getProductById(productId);
+    if (p == null) return (null, false);
+    final synth = SizeRecommendationService.syntheticChart(
+      productId: productId,
+      category: p.category,
+      gender: p.gender,
+    );
+    return (synth, true);
+  }
+
   /// [garment] is a short noun for the render hint: 'top', 'bottoms', 'shoes'…
   static Future<SizeCheck> checkGarment({
     required String productId,
@@ -41,17 +65,7 @@ class SizeAdvisor {
   }) async {
     if (productId.isEmpty || size.isEmpty) return SizeCheck.none;
 
-    var chart = await ItemSizeChartService.instance.forProduct(productId);
-    if (chart == null && useSyntheticFallback) {
-      final p = ProductRepository.getProductById(productId);
-      if (p != null) {
-        chart = SizeRecommendationService.syntheticChart(
-          productId: productId,
-          category: p.category,
-          gender: p.gender,
-        );
-      }
-    }
+    final (chart, _) = await resolveChart(productId);
     if (chart == null) return SizeCheck.none;
 
     final body = await FittingSession.instance.currentMeasurements();

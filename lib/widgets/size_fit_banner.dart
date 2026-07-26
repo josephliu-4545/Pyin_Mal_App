@@ -47,6 +47,83 @@ class SizeFitBanner extends StatelessWidget {
   }
 }
 
+/// Prominent, hard-to-miss banner shown wherever a size appears (product page,
+/// try-on, cart, checkout) WHEN the active wearer is someone other than the
+/// account holder — so the user always knows the sizes on screen aren't their
+/// own. Renders nothing when fitting yourself. One tap switches back to your
+/// profile (which is never modified). Rebuilds with [FittingSession].
+class FittingForBanner extends StatelessWidget {
+  final bool isDark;
+  const FittingForBanner({super.key, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: FittingSession.instance,
+      builder: (context, _) {
+        final session = FittingSession.instance;
+        if (session.isSelf) return const SizedBox.shrink();
+        final who = session.guestName?.trim().isNotEmpty == true
+            ? session.guestName!.trim()
+            : 'another person';
+        // Blue "informational override" treatment — distinct from the amber
+        // size-mismatch banner so the two never read as the same thing.
+        const blue = Color(0xFF1E6FB8);
+        final bg = isDark ? const Color(0x331E6FB8) : const Color(0xFFE7F1FA);
+        return Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: blue.withOpacity(0.5)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.group_rounded, size: 18, color: blue),
+              const SizedBox(width: 10),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: GoogleFonts.outfit(
+                      fontSize: 12.5,
+                      height: 1.35,
+                      color: isDark ? const Color(0xFFBFDCF2) : const Color(0xFF14507F),
+                    ),
+                    children: [
+                      const TextSpan(text: 'Sizes shown are for '),
+                      TextSpan(
+                        text: who,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      const TextSpan(text: ' — not your profile.'),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => FittingSession.instance.useSelf(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: blue,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text('Switch to you',
+                      style: GoogleFonts.outfit(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// Compact "Fitting for: You / [name]" chip. Tapping opens a sheet to
 /// switch between the account holder and a guest (with the guest's sizes).
 /// Rebuilds whenever [FittingSession] changes. [onChanged] lets the host

@@ -14,12 +14,14 @@ import '../models/product.dart';
 import '../widgets/cart_bar.dart';
 import 'package:pyin_mal_app/core/guide_keys.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
-import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/services/size_recommendation_service.dart';
-import 'package:pyin_mal_app/services/item_size_chart_service.dart';
+import 'package:pyin_mal_app/services/size_advisor.dart';
+import 'package:pyin_mal_app/services/size_fit_service.dart';
+import 'package:pyin_mal_app/services/fitting_session.dart';
 import 'package:pyin_mal_app/models/item_size_chart.dart';
-import 'package:pyin_mal_app/data/size_chart_presets.dart';
 import 'package:pyin_mal_app/models/body_measurements.dart';
+import 'package:pyin_mal_app/widgets/size_fit_banner.dart';
+import 'package:pyin_mal_app/data/size_chart_presets.dart';
 import 'package:pyin_mal_app/models/clothing_item.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
 import 'package:pyin_mal_app/screens/ar_fitting_room_screen.dart';
@@ -146,6 +148,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ? widget.colorVariants.keys.first
             : '');
     _loadSizeRecommendation();
+    // Re-evaluate "Your size" whenever the active wearer changes (e.g. the user
+    // switches to fitting someone else in the Body Chart tab), so the pill stays
+    // in sync with the same session the try-on/checkout warnings read.
+    FittingSession.instance.addListener(_loadSizeRecommendation);
     _refineCompleteTheLook();
     // Position the PiP at the top-right of the card once layout is known.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -159,6 +165,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   void dispose() {
+    FittingSession.instance.removeListener(_loadSizeRecommendation);
     _galleryController.dispose();
     super.dispose();
   }
@@ -455,21 +462,52 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  /// Text for the size pill — "Your size: M" when fitting yourself, or
+  /// "For [name]: size M" when the shared session is fitting someone else.
+  String _sizePillText() {
+    final s = _sizeRec!.size;
+    final session = FittingSession.instance;
+    if (session.isSelf) return 'product.your_size'.tr(args: [s]);
+    final who = session.guestName?.trim().isNotEmpty == true
+        ? session.guestName!.trim()
+        : 'them';
+    return 'For $who: size $s';
+  }
+
   Future<void> _loadSizeRecommendation() async {
     try {
-      final data = await DatabaseService().getUserData();
-      final saved = data?['bodyMeasurements'];
-      if (saved is! Map) return;
-      final rec = SizeRecommendationService.recommend(
-        measurements:
-            BodyMeasurements.fromMap(Map<String, dynamic>.from(saved)),
-        category: widget.category,
-        gender: data?['gender'] as String? ?? 'Female',
-      );
-      if (rec != null && mounted) {
+      // Whoever the shared session is fitting (you by default, or someone else
+      // set via the Body Chart tab) — same source the try-on/checkout warnings
+      // use, so "Your size" and the warnings can never disagree.
+      final body = await FittingSession.instance.currentMeasurements();
+      if (body == null) {
+        if (mounted) setState(() => _sizeRec = null);
+        return;
+      }
+      // Use the SAME chart the try-on/checkout warnings use — resolved from THIS
+      // product's own gender + category (or its real shop chart) — so "Your
+      // size" and the fit warnings can never disagree about the same garment.
+      final (chart, _) = await SizeAdvisor.resolveChart(widget.productId);
+      if (chart == null || chart.isEmpty) return;
+      final result = SizeFitService.evaluate(body: body, chart: chart);
+      final best = result?.recommendedSize;
+      if (result == null || best == null) return;
+      if (mounted) {
         setState(() {
-          _sizeRec = rec;
-          _selectedSize = rec.size;
+          _sizeRec = SizeRecommendation(
+            size: best,
+            basedOn: '',
+            verdicts: {
+              for (final s in result.sizes)
+                if (result.perSize[s] != null)
+                  s: switch (result.perSize[s]!) {
+                    Fit.tight => FitVerdict.tight,
+                    Fit.fits => FitVerdict.fits,
+                    Fit.loose => FitVerdict.loose,
+                  },
+            },
+          );
+          _selectedSize = best;
         });
       }
     } catch (_) {} // no measurements / offline — selector works as before
@@ -814,8 +852,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     size: 15, color: AppColors.gold),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'product.your_size'
-                                      .tr(args: [_sizeRec!.size]),
+                                  _sizePillText(),
                                   style: GoogleFonts.outfit(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w600,
@@ -829,6 +866,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                         ),
                       ),
+
+                    // Prominent notice when the sizes shown are for someone else.
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: FittingForBanner(isDark: isDark),
+                    ),
 
                     // ── 2. COLOR STRIP (directly under product) ──────────────
                     Padding(
@@ -1667,6 +1710,39 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     double bust = 34;
     double waist = 27;
     double hips = 37;
+    // "Fitting for someone else" state — mirrors the shared FittingSession so
+    // the Body Chart can drive size alerts for another person (session-wide),
+    // without ever touching the user's saved profile.
+    final session = FittingSession.instance;
+    bool useForAlerts = !session.isSelf;
+    String guestName = session.guestName ?? '';
+    // If a guest is already active, prefill the sliders from their sizes (cm→in).
+    if (useForAlerts) {
+      final g = session.guestMeasurements;
+      final gb = g?.cm('bustGirth');
+      final gw = g?.cm('waistGirth');
+      final gh = g?.cm('hipGirth');
+      if (gb != null) bust = gb / 2.54;
+      if (gw != null) waist = gw / 2.54;
+      if (gh != null) hips = gh / 2.54;
+    }
+
+    // Push the current sliders into the shared session as the guest wearer.
+    void applyGuest() {
+      session.useSomeoneElse(
+        name: guestName.trim().isEmpty ? null : guestName.trim(),
+        measurements: BodyMeasurements(
+          scanId: 'bodychart-${DateTime.now().millisecondsSinceEpoch}',
+          source: 'manual',
+          valuesMm: {
+            'bustGirth': bust * 25.4, // inches → mm
+            'waistGirth': waist * 25.4,
+            'hipGirth': hips * 25.4,
+          },
+          measuredAt: DateTime.now(),
+        ),
+      );
+    }
 
     showModalBottomSheet(
       context: context,
@@ -1739,9 +1815,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               waist,
                               hips,
                               (s) => setSheet(() => bodyShape = s),
-                              (b) => setSheet(() => bust = b),
-                              (w) => setSheet(() => waist = w),
-                              (h) => setSheet(() => hips = h),
+                              (b) => setSheet(() {
+                                bust = b;
+                                if (useForAlerts) applyGuest();
+                              }),
+                              (w) => setSheet(() {
+                                waist = w;
+                                if (useForAlerts) applyGuest();
+                              }),
+                              (h) => setSheet(() {
+                                hips = h;
+                                if (useForAlerts) applyGuest();
+                              }),
+                              useForAlerts: useForAlerts,
+                              guestName: guestName,
+                              onName: (v) => setSheet(() {
+                                guestName = v;
+                                if (useForAlerts) applyGuest();
+                              }),
+                              onToggleAlerts: (on) => setSheet(() {
+                                useForAlerts = on;
+                                if (on) {
+                                  applyGuest();
+                                } else {
+                                  session.useSelf();
+                                }
+                              }),
                             ),
                     ),
                   ),
@@ -1810,6 +1909,83 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return _sizeLabels[idx];
   }
 
+  /// Toggle inside the Body Chart tab: use the measurements entered above for
+  /// size alerts across the app (for another person), via the shared session.
+  /// The profile is never written; turning it off returns to the user's own.
+  Widget _guestAlertToggle(
+    bool isDark,
+    Color accent,
+    Color ink,
+    Color muted,
+    bool useForAlerts,
+    String guestName,
+    ValueChanged<String> onName,
+    ValueChanged<bool> onToggleAlerts,
+  ) {
+    const blue = Color(0xFF1E6FB8);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: useForAlerts
+            ? blue.withOpacity(isDark ? 0.18 : 0.10)
+            : (isDark ? Colors.white10 : const Color(0xFFF6F4F1)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: useForAlerts ? blue.withOpacity(0.5) : Colors.transparent),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.group_rounded, size: 18, color: accent),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text('Shopping for someone else?',
+                    style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: ink)),
+              ),
+              Switch(
+                value: useForAlerts,
+                activeColor: accent,
+                onChanged: onToggleAlerts,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            useForAlerts
+                ? 'Size alerts across the app (try-on, cart, checkout) now use THESE measurements — not your profile. Your profile stays unchanged. Turn off to switch back to you.'
+                : 'Turn on to use the measurements above for size alerts everywhere instead of your saved profile — for a friend or a gift. Your profile is never changed.',
+            style: GoogleFonts.outfit(fontSize: 12, height: 1.4, color: muted),
+          ),
+          if (useForAlerts) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              initialValue: guestName,
+              onChanged: onName,
+              style: GoogleFonts.outfit(color: ink, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Their name (optional) — e.g. Mom',
+                hintStyle: GoogleFonts.outfit(color: muted, fontSize: 13),
+                filled: true,
+                fillColor: isDark ? Colors.white10 : Colors.white,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   // Interactive Body Chart: reference table + body shape + measurements → size
   Widget _bodyChart(
     bool isDark,
@@ -1823,8 +1999,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     ValueChanged<String> onShape,
     ValueChanged<double> onBust,
     ValueChanged<double> onWaist,
-    ValueChanged<double> onHips,
-  ) {
+    ValueChanged<double> onHips, {
+    required bool useForAlerts,
+    required String guestName,
+    required ValueChanged<String> onName,
+    required ValueChanged<bool> onToggleAlerts,
+  }) {
     final headerBg = isDark ? Colors.white10 : const Color(0xFFF4F2EF);
     final line = isDark ? Colors.white12 : const Color(0xFFEDE9E4);
     const headers = ['Size', 'Height', 'Bust', 'Waist', 'Hip'];
@@ -2006,6 +2186,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+
+        // ── Use these measurements for someone else's size alerts ──
+        _guestAlertToggle(isDark, accent, ink, muted, useForAlerts, guestName,
+            onName, onToggleAlerts),
         const SizedBox(height: 20),
 
         // ── Fit + buyer reviews ──
@@ -2227,21 +2412,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  /// Resolves the chart for the Product Chart tab: the shop/admin chart if one
-  /// exists, otherwise a synthesised standard chart from the product's category
-  /// + gender (matching the fit-warning fallback). Returns (chart, isSynthetic).
-  Future<(ItemSizeChart?, bool)> _resolveShopChart() async {
-    final real = await ItemSizeChartService.instance
-        .forProduct(widget.productId, forceRefresh: true);
-    if (real != null && !real.isEmpty) return (real, false);
-    final p = ProductRepository.getProductById(widget.productId);
-    final synth = SizeRecommendationService.syntheticChart(
-      productId: widget.productId,
-      category: widget.category,
-      gender: p?.gender ?? 'Female',
-    );
-    return (synth, true);
-  }
+  /// Resolves the chart for the Product Chart tab via the shared resolver, so
+  /// the table, the "Your size" pill and the fit warnings all use one chart.
+  Future<(ItemSizeChart?, bool)> _resolveShopChart() =>
+      SizeAdvisor.resolveChart(widget.productId, forceRefresh: true);
 
   /// Renders the admin-filled size chart as a table: one row per measurement,
   /// one column per size. Values are the centimetre figures the admin entered.

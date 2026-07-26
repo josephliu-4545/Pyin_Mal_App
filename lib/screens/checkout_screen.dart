@@ -359,6 +359,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Prominent notice when sizes/checks are for someone else.
+              FittingForBanner(isDark: isDark),
+
               // ── Order Summary ─────────────────────────────────────────────
               _sectionCard(
                 isDark,
