@@ -2189,46 +2189,65 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _shopChart(bool isDark, Color accent, Color ink, Color muted) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.shopName != null
-              ? 'size_guide.chart_from'.tr(args: [widget.shopName!])
-              : 'size_guide.shop_chart'.tr(),
-          style: GoogleFonts.outfit(
-              fontSize: 13, fontWeight: FontWeight.w600, color: ink),
-        ),
-        const SizedBox(height: 12),
-        // The admin-entered chart for this exact product (sizeCharts/{id}).
-        FutureBuilder<ItemSizeChart?>(
-          future: ItemSizeChartService.instance
-              .forProduct(widget.productId, forceRefresh: true),
-          builder: (context, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
-              return SizedBox(
-                height: 120,
-                child: Center(
-                    child: CircularProgressIndicator(
-                        color: accent, strokeWidth: 2)),
-              );
-            }
-            final chart = snap.data;
-            if (chart != null && !chart.isEmpty) {
-              return _adminChartTable(chart, isDark, accent, ink, muted);
-            }
-            // No chart entered yet → fall back to the product photo.
-            return _shopChartFallback(isDark, accent, ink, muted);
-          },
-        ),
-      ],
+    // Prefer the shop/admin chart for this exact product; when none exists,
+    // fall back to the SAME estimated standard sizing the fit warnings use, so
+    // the user always sees a chart that agrees with the warnings they get.
+    return FutureBuilder<(ItemSizeChart?, bool)>(
+      future: _resolveShopChart(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return SizedBox(
+            height: 120,
+            child: Center(
+                child:
+                    CircularProgressIndicator(color: accent, strokeWidth: 2)),
+          );
+        }
+        final (chart, synthetic) = snap.data ?? (null, false);
+        if (chart == null || chart.isEmpty) {
+          return _shopChartFallback(isDark, accent, ink, muted);
+        }
+        final header = synthetic
+            ? 'Standard size guide'
+            : (widget.shopName != null
+                ? 'size_guide.chart_from'.tr(args: [widget.shopName!])
+                : 'size_guide.shop_chart'.tr());
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(header,
+                style: GoogleFonts.outfit(
+                    fontSize: 13, fontWeight: FontWeight.w600, color: ink)),
+            const SizedBox(height: 12),
+            _adminChartTable(chart, isDark, accent, ink, muted,
+                synthetic: synthetic),
+          ],
+        );
+      },
     );
+  }
+
+  /// Resolves the chart for the Product Chart tab: the shop/admin chart if one
+  /// exists, otherwise a synthesised standard chart from the product's category
+  /// + gender (matching the fit-warning fallback). Returns (chart, isSynthetic).
+  Future<(ItemSizeChart?, bool)> _resolveShopChart() async {
+    final real = await ItemSizeChartService.instance
+        .forProduct(widget.productId, forceRefresh: true);
+    if (real != null && !real.isEmpty) return (real, false);
+    final p = ProductRepository.getProductById(widget.productId);
+    final synth = SizeRecommendationService.syntheticChart(
+      productId: widget.productId,
+      category: widget.category,
+      gender: p?.gender ?? 'Female',
+    );
+    return (synth, true);
   }
 
   /// Renders the admin-filled size chart as a table: one row per measurement,
   /// one column per size. Values are the centimetre figures the admin entered.
   Widget _adminChartTable(
-      ItemSizeChart chart, bool isDark, Color accent, Color ink, Color muted) {
+      ItemSizeChart chart, bool isDark, Color accent, Color ink, Color muted,
+      {bool synthetic = false}) {
     final sizes = chart.sizes;
     // Show measurement rows in the standard display order, keeping any custom
     // keys the chart might have at the end.
@@ -2313,7 +2332,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Measurements in cm, as provided by the shop. Switch to Body Chart to get your recommended size.',
+                  synthetic
+                      ? "Estimated standard sizing in cm — the shop hasn't provided exact measurements for this item. Switch to Body Chart for your recommended size."
+                      : 'Measurements in cm, as provided by the shop. Switch to Body Chart to get your recommended size.',
                   style: GoogleFonts.outfit(fontSize: 12, color: ink),
                 ),
               ),
