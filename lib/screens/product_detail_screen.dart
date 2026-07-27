@@ -18,12 +18,8 @@ import 'package:pyin_mal_app/services/size_fit_service.dart';
 import 'package:pyin_mal_app/services/fitting_session.dart';
 import 'package:pyin_mal_app/models/item_size_chart.dart';
 import 'package:pyin_mal_app/models/body_measurements.dart';
-<<<<<<< HEAD
-=======
 import 'package:pyin_mal_app/widgets/size_fit_banner.dart';
 import 'package:pyin_mal_app/data/size_chart_presets.dart';
-import 'package:pyin_mal_app/models/clothing_item.dart';
->>>>>>> f0cb9d446a58d37a0ff1c954496aefa5d7e1b1ae
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
 import 'package:pyin_mal_app/screens/product_360_studio_screen.dart';
 import 'package:pyin_mal_app/core/favorites_notifier.dart';
@@ -2063,23 +2059,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     ValueChanged<String> onShape,
     ValueChanged<double> onBust,
     ValueChanged<double> onWaist,
-<<<<<<< HEAD
-    ValueChanged<double> onHips,
-  ) {
-    final headerBg = accent.withOpacity(isDark ? 0.22 : 0.14);
-    final line = isDark
-        ? Colors.white.withOpacity(0.08)
-        : const Color(0xFFEDE9E4).withOpacity(0.7);
-=======
     ValueChanged<double> onHips, {
     required bool useForAlerts,
     required String guestName,
     required ValueChanged<String> onName,
     required ValueChanged<bool> onToggleAlerts,
   }) {
-    final headerBg = isDark ? Colors.white10 : const Color(0xFFF4F2EF);
-    final line = isDark ? Colors.white12 : const Color(0xFFEDE9E4);
->>>>>>> f0cb9d446a58d37a0ff1c954496aefa5d7e1b1ae
+    final headerBg = accent.withOpacity(isDark ? 0.22 : 0.14);
+    final line = isDark
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFEDE9E4).withOpacity(0.7);
     const headers = ['Size', 'Height', 'Bust', 'Waist', 'Hip'];
     final recommended = _recommendSize(bust, waist, hips);
 
