@@ -214,12 +214,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Future Plan',
+                              Text('futureplan.tile_title'.tr(),
                                   style: GoogleFonts.outfit(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
                                       color: textCol)),
-                              Text('Upcoming features & AR try-on preview',
+                              Text('futureplan.tile_desc'.tr(),
                                   style: GoogleFonts.outfit(
                                       fontSize: 12,
                                       color: secondaryText)),

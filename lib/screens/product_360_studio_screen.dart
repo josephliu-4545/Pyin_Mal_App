@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/product_3d_viewer.dart';
 
@@ -34,7 +35,7 @@ class Product360StudioScreen extends StatelessWidget {
           icon: Icon(Icons.arrow_back_ios_rounded, color: ink, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('360° Studio',
+        title: Text('studio.title'.tr(),
             style: GoogleFonts.rufina(
                 color: ink, fontWeight: FontWeight.bold, fontSize: 22)),
         centerTitle: true,
@@ -69,7 +70,7 @@ class Product360StudioScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    'Drag to rotate · pinch to zoom for a full 360° view.',
+                    'studio.hint'.tr(),
                     style: GoogleFonts.outfit(fontSize: 12, color: muted),
                   ),
                 ),

@@ -893,5 +893,98 @@
     "permission": "Camera permission is needed to take your scan photos.",
     "open_settings": "Open settings",
     "go_back": "Go back"
+  },
+  "giftcard": {
+    "title": "Gift Cards",
+    "subtitle": "Give the gift of style, or redeem a card you received.",
+    "buy_tab": "Buy a card",
+    "redeem_tab": "Redeem code",
+    "value": "Value",
+    "badge": "GIFT CARD",
+    "choose_amount": "Choose an amount",
+    "recipient": "Recipient's name",
+    "message": "Personal message (optional)",
+    "buy_send": "Buy & send · {}",
+    "need_name": "Please enter the recipient's name",
+    "sent": "{amount} gift card sent to {name}!",
+    "buy_note": "Gift cards never expire and can be used on anything in the app.",
+    "enter_code": "Enter your gift card code",
+    "redeem_balance": "Redeem to my balance",
+    "invalid_code": "Enter a valid gift card code",
+    "redeemed": "Gift card redeemed! Balance added to your account.",
+    "redeem_note": "Your code is on the card or in the email you received. It adds instantly to your balance."
+  },
+  "futureplan": {
+    "title": "Future Plan",
+    "subtitle": "Features we are working on to make your styling experience even better. Try our early AR previews below.",
+    "tile_title": "Future Plan",
+    "tile_desc": "Upcoming features & AR try-on preview",
+    "coming_soon": "Coming soon · Preview",
+    "try_ar": "Try in AR",
+    "ar_clothing_title": "AR Try-On (Clothing)",
+    "ar_clothing_desc": "Try on clothes live through your camera in augmented reality. See how an outfit looks on you in real time, from every angle, before you buy.",
+    "ar_clothing_h1": "Real-time try-on using your phone camera",
+    "ar_clothing_h2": "Move and turn to see the fit from all sides",
+    "ar_clothing_h3": "Snap and save your AR looks",
+    "ar_hair_title": "AR Hair Try-On",
+    "ar_hair_desc": "Preview new hairstyles on yourself live with the AR hair filter. Find the cut and colour that suits your face before you book.",
+    "ar_hair_h1": "Live hairstyle filter on your camera",
+    "ar_hair_h2": "Switch styles instantly to compare",
+    "ar_hair_h3": "Great for planning your next salon visit"
+  },
+  "studio": {
+    "title": "360° Studio",
+    "hint": "Drag to rotate, pinch to zoom for a full 360° view.",
+    "button": "360 Studio",
+    "view_360": "360° View"
+  },
+  "haircare": {
+    "title": "Hair Care Products",
+    "subtitle": "Salon-quality products you can order from our partner salons. Tap a product for details.",
+    "from": "From {}",
+    "good_for": "Good for",
+    "how_to_use": "How to use",
+    "order_now": "Order now",
+    "added": "{name} added to cart, order from {salon}."
+  },
+  "savedx": {
+    "title": "Saved",
+    "header_sub": "Your favourite outfits and hairstyles, all in one place.",
+    "one_item": "1 item",
+    "many_items": "{} items",
+    "search_hint": "Search your saved items",
+    "filter_all": "All",
+    "filter_products": "Products",
+    "filter_hairstyles": "Hairstyles",
+    "chip_hairstyle": "Hairstyle",
+    "empty_title": "No saved items yet",
+    "empty_desc": "Tap the heart on any product or hairstyle to keep it here.",
+    "no_results": "Nothing matches your search.",
+    "saved_hairstyles": "Saved Hairstyles"
+  },
+  "savebtn": {
+    "save": "Save",
+    "saving": "Saving...",
+    "saved_photos": "Saved to your photos!",
+    "downloaded": "Image downloaded!",
+    "fail": "Could not save: {}",
+    "matching_tops": "Matching tops",
+    "try_ai": "Try AI Try-On"
+  },
+  "bodym": {
+    "section": "Body measurements",
+    "helps": "Helps us recommend the right size.",
+    "chest": "Chest",
+    "waist": "Waist",
+    "hip": "Hip"
+  },
+  "chartx": {
+    "size_cm": "Size (cm)",
+    "note": "Measurements in cm, as provided by the shop. Switch to Body Chart to get your recommended size.",
+    "no_chart": "No size chart yet",
+    "no_chart_desc": "The shop hasn't added measurements for this product yet. Switch to Body Chart to get your recommended size."
+  },
+  "hairx": {
+    "suits_intro": "Showing styles that suit your {}."
   }
 }

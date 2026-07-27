@@ -1058,7 +1058,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   ),
                                   icon: const Icon(Icons.threesixty_rounded, size: 18),
                                   label: Text(
-                                    '360 Studio',
+                                    'studio.button'.tr(),
                                     style: GoogleFonts.outfit(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14,
@@ -1982,16 +1982,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     ValueChanged<String> onName,
     ValueChanged<bool> onToggleAlerts,
   ) {
-    const blue = Color(0xFF1E6FB8);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: useForAlerts
-            ? blue.withOpacity(isDark ? 0.18 : 0.10)
+            ? accent.withOpacity(isDark ? 0.18 : 0.10)
             : (isDark ? Colors.white10 : const Color(0xFFF6F4F1)),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: useForAlerts ? blue.withOpacity(0.5) : Colors.transparent),
+            color: useForAlerts ? accent.withOpacity(0.5) : Colors.transparent),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2640,7 +2639,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   TableRow(
                     decoration: BoxDecoration(color: headerBg),
                     children: [
-                      _tableCell('Size (cm)', headStyle(ink), left: true),
+                      _tableCell('chartx.size_cm'.tr(), headStyle(ink), left: true),
                       ...sizes.map((s) =>
                           _tableCell(s, headStyle(accent), center: true)),
                     ],
@@ -2692,7 +2691,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 child: Text(
                   synthetic
                       ? "Estimated standard sizing in cm. The shop hasn't provided exact measurements for this item. Switch to Body Chart for your recommended size."
-                      : 'Measurements in cm, as provided by the shop. Switch to Body Chart to get your recommended size.',
+                      : 'chartx.note'.tr(),
                   style: GoogleFonts.outfit(
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
@@ -2752,15 +2751,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     size: 28, color: accent),
               ),
               const SizedBox(height: 16),
-              Text('No size chart yet',
+              Text('chartx.no_chart'.tr(),
                   style: GoogleFonts.outfit(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: ink)),
               const SizedBox(height: 8),
               Text(
-                "The shop hasn't added measurements for this product yet. "
-                'Switch to Body Chart to get your recommended size.',
+                'chartx.no_chart_desc'.tr(),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(
                     fontSize: 12,

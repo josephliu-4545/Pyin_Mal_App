@@ -90,9 +90,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         .map((path) => _SavedEntry(
               id: path,
               title: _hairstyleName(path),
-              meta: 'Hairstyle',
+              meta: 'savedx.chip_hairstyle'.tr(),
               image: path,
-              chip: 'Hairstyle',
+              chip: 'savedx.chip_hairstyle'.tr(),
               isHairstyle: true,
               onRemove: () => hairstyleFavoritesNotifier.toggle(path),
             ))
@@ -214,7 +214,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text('Saved',
+                child: Text('savedx.title'.tr(),
                     style: GoogleFonts.rufina(
                         fontSize: 34,
                         fontWeight: FontWeight.bold,
@@ -231,7 +231,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Text(
-                    total == 1 ? '1 item' : '$total items',
+                    total == 1
+                        ? 'savedx.one_item'.tr()
+                        : 'savedx.many_items'.tr(args: ['$total']),
                     style: GoogleFonts.outfit(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
@@ -242,7 +244,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Your favourite outfits and hairstyles, all in one place.',
+            'savedx.header_sub'.tr(),
             style: GoogleFonts.outfit(fontSize: 13.5, height: 1.4, color: muted),
           ),
         ],
@@ -256,7 +258,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       controller: _searchController,
       style: GoogleFonts.outfit(fontSize: 14, color: ink),
       decoration: InputDecoration(
-        hintText: 'Search your saved items',
+        hintText: 'savedx.search_hint'.tr(),
         hintStyle: GoogleFonts.outfit(fontSize: 14, color: muted),
         prefixIcon: Icon(Icons.search_rounded, color: accent, size: 20),
         suffixIcon: _searchController.text.isEmpty
@@ -322,9 +324,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       ),
       child: Row(
         children: [
-          seg(0, 'All', products + hairstyles),
-          seg(1, 'Products', products),
-          seg(2, 'Hairstyles', hairstyles),
+          seg(0, 'savedx.filter_all'.tr(), products + hairstyles),
+          seg(1, 'savedx.filter_products'.tr(), products),
+          seg(2, 'savedx.filter_hairstyles'.tr(), hairstyles),
         ],
       ),
     );
@@ -508,13 +510,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             child: Icon(Icons.favorite_border_rounded, size: 44, color: accent),
           ),
           const SizedBox(height: 22),
-          Text('No saved items yet',
+          Text('savedx.empty_title'.tr(),
               textAlign: TextAlign.center,
               style: GoogleFonts.rufina(
                   fontSize: 22, fontWeight: FontWeight.bold, color: ink)),
           const SizedBox(height: 8),
           Text(
-            'Tap the heart on any product or hairstyle to keep it here.',
+            'savedx.empty_desc'.tr(),
             textAlign: TextAlign.center,
             style: GoogleFonts.outfit(fontSize: 13.5, height: 1.5, color: muted),
           ),
@@ -531,7 +533,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         children: [
           Icon(Icons.search_off_rounded, size: 44, color: accent.withOpacity(0.6)),
           const SizedBox(height: 14),
-          Text('Nothing matches your search.',
+          Text('savedx.no_results'.tr(),
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(fontSize: 14, color: muted)),
         ],

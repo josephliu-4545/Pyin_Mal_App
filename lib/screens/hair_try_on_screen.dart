@@ -205,7 +205,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.green.shade600,
             content: Text(
-                kIsWeb ? 'Image downloaded!' : 'Saved to your photos!',
+                kIsWeb ? 'savebtn.downloaded'.tr() : 'savebtn.saved_photos'.tr(),
                 style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
         );
@@ -221,7 +221,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red.shade600,
             content:
-                Text('Could not save: $msg', style: GoogleFonts.outfit()),
+                Text('savebtn.fail'.tr(args: [msg]), style: GoogleFonts.outfit()),
           ),
         );
       }
@@ -290,7 +290,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
                       )
                     : const Icon(Icons.download_rounded, size: 18),
                 label: Text(
-                  _isSavingResult ? 'Saving...' : 'Save',
+                  _isSavingResult ? 'savebtn.saving'.tr() : 'savebtn.save'.tr(),
                   style: GoogleFonts.outfit(
                       fontWeight: FontWeight.bold, fontSize: 16),
                 ),

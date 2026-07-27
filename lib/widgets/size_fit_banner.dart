@@ -66,20 +66,22 @@ class FittingForBanner extends StatelessWidget {
         final who = session.guestName?.trim().isNotEmpty == true
             ? session.guestName!.trim()
             : 'another person';
-        // Blue "informational override" treatment — distinct from the amber
-        // size-mismatch banner so the two never read as the same thing.
-        const blue = Color(0xFF1E6FB8);
-        final bg = isDark ? const Color(0x331E6FB8) : const Color(0xFFE7F1FA);
+        // Brand-accent "informational override" treatment — distinct from the
+        // amber size-mismatch banner so the two never read as the same thing.
+        final accent = isDark ? AppColors.gold : AppColors.burgundy;
+        final bg = accent.withOpacity(isDark ? 0.16 : 0.10);
+        final textCol =
+            isDark ? AppColors.goldLight : AppColors.burgundy;
         return Container(
           padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: blue.withOpacity(0.5)),
+            border: Border.all(color: accent.withOpacity(0.5)),
           ),
           child: Row(
             children: [
-              const Icon(Icons.group_rounded, size: 18, color: blue),
+              Icon(Icons.group_rounded, size: 18, color: accent),
               const SizedBox(width: 10),
               Expanded(
                 child: RichText(
@@ -87,7 +89,7 @@ class FittingForBanner extends StatelessWidget {
                     style: GoogleFonts.outfit(
                       fontSize: 12.5,
                       height: 1.35,
-                      color: isDark ? const Color(0xFFBFDCF2) : const Color(0xFF14507F),
+                      color: textCol,
                     ),
                     children: [
                       const TextSpan(text: 'Sizes shown are for '),
@@ -106,14 +108,14 @@ class FittingForBanner extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    color: blue,
+                    color: accent,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text('Switch to you',
                       style: GoogleFonts.outfit(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white)),
+                          color: isDark ? AppColors.charcoal : Colors.white)),
                 ),
               ),
             ],

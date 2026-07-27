@@ -476,22 +476,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         const SizedBox(height: 24),
 
         // Body measurements — used to recommend the right clothing size.
-        Text('Body measurements',
+        Text('bodym.section'.tr(),
             style: GoogleFonts.outfit(
                 fontSize: 13, fontWeight: FontWeight.w600, color: ink)),
         const SizedBox(height: 4),
-        Text('Helps us recommend the right size.',
+        Text('bodym.helps'.tr(),
             style: GoogleFonts.outfit(
                 fontSize: 11,
                 color: isDark ? AppColors.paleText : AppColors.inkGrey)),
         const SizedBox(height: 16),
-        _slider('Chest', _chest, 60, 140, 'cm', accent, isDark, ink,
+        _slider('bodym.chest'.tr(), _chest, 60, 140, 'cm', accent, isDark, ink,
             (v) => setState(() => _chest = v)),
         const SizedBox(height: 20),
-        _slider('Waist', _waist, 50, 130, 'cm', accent, isDark, ink,
+        _slider('bodym.waist'.tr(), _waist, 50, 130, 'cm', accent, isDark, ink,
             (v) => setState(() => _waist = v)),
         const SizedBox(height: 20),
-        _slider('Hip', _hip, 60, 150, 'cm', accent, isDark, ink,
+        _slider('bodym.hip'.tr(), _hip, 60, 150, 'cm', accent, isDark, ink,
             (v) => setState(() => _hip = v)),
       ],
     );

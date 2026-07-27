@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/ar_fitting_room_screen.dart';
 import 'package:pyin_mal_app/screens/ar_hair_filter_screen.dart';
@@ -28,7 +29,7 @@ class FuturePlanScreen extends StatelessWidget {
           icon: Icon(Icons.arrow_back_ios_rounded, color: ink, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Future Plan',
+        title: Text('futureplan.title'.tr(),
             style: GoogleFonts.rufina(
                 color: ink, fontWeight: FontWeight.bold, fontSize: 22)),
         centerTitle: true,
@@ -37,8 +38,7 @@ class FuturePlanScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
           Text(
-            'Features we are working on to make your styling experience even better. '
-            'Try our early AR previews below.',
+            'futureplan.subtitle'.tr(),
             style: GoogleFonts.outfit(fontSize: 13, height: 1.5, color: muted),
           ),
           const SizedBox(height: 20),
@@ -50,17 +50,14 @@ class FuturePlanScreen extends StatelessWidget {
             ink: ink,
             muted: muted,
             icon: Icons.view_in_ar_rounded,
-            title: 'AR Try-On (Clothing)',
-            description:
-                'Try on clothes live through your camera in augmented reality — '
-                'see how an outfit looks on you in real time, from every angle, '
-                'before you buy.',
-            highlights: const [
-              'Real-time try-on using your phone camera',
-              'Move and turn to see the fit from all sides',
-              'Snap and save your AR looks',
+            title: 'futureplan.ar_clothing_title'.tr(),
+            description: 'futureplan.ar_clothing_desc'.tr(),
+            highlights: [
+              'futureplan.ar_clothing_h1'.tr(),
+              'futureplan.ar_clothing_h2'.tr(),
+              'futureplan.ar_clothing_h3'.tr(),
             ],
-            buttonLabel: 'Try in AR',
+            buttonLabel: 'futureplan.try_ar'.tr(),
             onTry: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ARFittingRoomScreen()),
@@ -75,16 +72,14 @@ class FuturePlanScreen extends StatelessWidget {
             ink: ink,
             muted: muted,
             icon: Icons.face_retouching_natural_rounded,
-            title: 'AR Hair Try-On',
-            description:
-                'Preview new hairstyles on yourself live with the AR hair filter — '
-                'find the cut and colour that suits your face before you book.',
-            highlights: const [
-              'Live hairstyle filter on your camera',
-              'Switch styles instantly to compare',
-              'Great for planning your next salon visit',
+            title: 'futureplan.ar_hair_title'.tr(),
+            description: 'futureplan.ar_hair_desc'.tr(),
+            highlights: [
+              'futureplan.ar_hair_h1'.tr(),
+              'futureplan.ar_hair_h2'.tr(),
+              'futureplan.ar_hair_h3'.tr(),
             ],
-            buttonLabel: 'Try in AR',
+            buttonLabel: 'futureplan.try_ar'.tr(),
             onTry: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ARHairFilterScreen()),
@@ -152,7 +147,7 @@ class FuturePlanScreen extends StatelessWidget {
                         children: [
                           Icon(Icons.schedule_rounded, size: 12, color: accent),
                           const SizedBox(width: 5),
-                          Text('Coming soon · Preview',
+                          Text('futureplan.coming_soon'.tr(),
                               style: GoogleFonts.outfit(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,

@@ -971,7 +971,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
           SnackBar(
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.green.shade600,
-            content: Text(kIsWeb ? 'Image downloaded!' : 'Saved to your photos!',
+            content: Text(kIsWeb ? 'savebtn.downloaded'.tr() : 'savebtn.saved_photos'.tr(),
                 style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
         );
@@ -986,7 +986,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
           SnackBar(
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red.shade600,
-            content: Text('Could not save: $msg',
+            content: Text('savebtn.fail'.tr(args: [msg]),
                 style: GoogleFonts.outfit()),
           ),
         );
@@ -1067,7 +1067,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                                 strokeWidth: 2, color: _accent),
                           )
                         : const Icon(Icons.download_rounded, size: 18),
-                    label: Text(_isSavingResult ? 'Saving...' : 'Save',
+                    label: Text(_isSavingResult ? 'savebtn.saving'.tr() : 'savebtn.save'.tr(),
                         style: GoogleFonts.outfit(
                             fontWeight: FontWeight.w700, fontSize: 15)),
                     style: OutlinedButton.styleFrom(
@@ -1137,7 +1137,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
     if (tops.isNotEmpty) {
       sections.add(const SizedBox(height: 18));
       sections.add(
-          _matchRow('Matching tops', Icons.checkroom_rounded, tops));
+          _matchRow('savebtn.matching_tops'.tr(), Icons.checkroom_rounded, tops));
     }
     if (bottoms.isNotEmpty) {
       sections.add(const SizedBox(height: 18));

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 
 /// "Gift Card" quick-access — buy a Ta Chat Nhate gift card for someone, or
@@ -50,14 +51,14 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         iconTheme: IconThemeData(color: ink),
-        title: Text('Gift Cards',
+        title: Text('giftcard.title'.tr(),
             style: GoogleFonts.rufina(
                 fontWeight: FontWeight.bold, color: ink, fontSize: 22)),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
         children: [
-          Text('Give the gift of style — or redeem a card you received.',
+          Text('giftcard.subtitle'.tr(),
               style: GoogleFonts.outfit(fontSize: 13, color: muted)),
           const SizedBox(height: 16),
 
@@ -76,9 +77,9 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
             ),
             child: Row(
               children: [
-                _tabBtn(0, 'Buy a card', Icons.card_giftcard_rounded, accent,
+                _tabBtn(0, 'giftcard.buy_tab'.tr(), Icons.card_giftcard_rounded, accent,
                     ink, muted, isDark),
-                _tabBtn(1, 'Redeem code', Icons.redeem_rounded, accent, ink,
+                _tabBtn(1, 'giftcard.redeem_tab'.tr(), Icons.redeem_rounded, accent, ink,
                     muted, isDark),
               ],
             ),
@@ -153,7 +154,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
                                 letterSpacing: 2,
                                 color: Colors.white)),
                         const Spacer(),
-                        Text('GIFT CARD',
+                        Text('giftcard.badge'.tr(),
                             style: GoogleFonts.outfit(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
@@ -162,7 +163,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
                       ],
                     ),
                     const Spacer(),
-                    Text('Value',
+                    Text('giftcard.value'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 11, color: Colors.white60)),
                     Text(_money(_amount),
@@ -228,7 +229,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Choose an amount',
+        Text('giftcard.choose_amount'.tr(),
             style: GoogleFonts.outfit(
                 fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
         const SizedBox(height: 10),
@@ -265,10 +266,10 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
           }).toList(),
         ),
         const SizedBox(height: 18),
-        _field(_nameCtrl, "Recipient's name", Icons.person_outline_rounded,
+        _field(_nameCtrl, 'giftcard.recipient'.tr(), Icons.person_outline_rounded,
             isDark, accent),
         const SizedBox(height: 12),
-        _field(_msgCtrl, 'Personal message (optional)',
+        _field(_msgCtrl, 'giftcard.message'.tr(),
             Icons.edit_note_rounded, isDark, accent,
             maxLines: 2),
         const SizedBox(height: 20),
@@ -277,16 +278,18 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
           child: ElevatedButton.icon(
             onPressed: () {
               if (_nameCtrl.text.trim().isEmpty) {
-                _toast("Please enter the recipient's name");
+                _toast('giftcard.need_name'.tr());
                 return;
               }
-              _toast(
-                  '${_money(_amount)} gift card sent to ${_nameCtrl.text.trim()}! 🎁');
+              _toast('giftcard.sent'.tr(namedArgs: {
+                'amount': _money(_amount),
+                'name': _nameCtrl.text.trim(),
+              }));
               _nameCtrl.clear();
               _msgCtrl.clear();
             },
             icon: const Icon(Icons.card_giftcard_rounded, size: 18),
-            label: Text('Buy & send · ${_money(_amount)}',
+            label: Text('giftcard.buy_send'.tr(args: [_money(_amount)]),
                 style: GoogleFonts.outfit(
                     fontWeight: FontWeight.w700, fontSize: 14)),
             style: ElevatedButton.styleFrom(
@@ -301,7 +304,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
         ),
         const SizedBox(height: 14),
         _infoNote(
-            'Gift cards never expire and can be used on anything in the app.',
+            'giftcard.buy_note'.tr(),
             isDark,
             accent,
             muted),
@@ -314,7 +317,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Enter your gift card code',
+        Text('giftcard.enter_code'.tr(),
             style: GoogleFonts.outfit(
                 fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
         const SizedBox(height: 10),
@@ -329,14 +332,14 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
           child: ElevatedButton.icon(
             onPressed: () {
               if (_codeCtrl.text.trim().length < 6) {
-                _toast('Enter a valid gift card code');
+                _toast('giftcard.invalid_code'.tr());
                 return;
               }
-              _toast('Gift card redeemed! Balance added to your account. 🎉');
+              _toast('giftcard.redeemed'.tr());
               _codeCtrl.clear();
             },
             icon: const Icon(Icons.redeem_rounded, size: 18),
-            label: Text('Redeem to my balance',
+            label: Text('giftcard.redeem_balance'.tr(),
                 style: GoogleFonts.outfit(
                     fontWeight: FontWeight.w700, fontSize: 14)),
             style: ElevatedButton.styleFrom(
@@ -351,7 +354,7 @@ class _GiftCardScreenState extends State<GiftCardScreen> {
         ),
         const SizedBox(height: 14),
         _infoNote(
-            'Your code is on the card or in the email you received. It adds instantly to your balance.',
+            'giftcard.redeem_note'.tr(),
             isDark,
             accent,
             muted),

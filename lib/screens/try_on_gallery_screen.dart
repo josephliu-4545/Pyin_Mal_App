@@ -244,7 +244,7 @@ class _GalleryBody extends StatelessWidget {
                     Icon(Icons.auto_awesome_rounded, size: 14, color: _accent),
                     const SizedBox(width: 8),
                     Text(
-                      'Try AI Try-On',
+                      'savebtn.try_ai'.tr(),
                       style: GoogleFonts.outfit(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -513,7 +513,7 @@ class _GalleryDetailViewState extends State<_GalleryDetailView> {
             : e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not save: $msg',
+            content: Text('savebtn.fail'.tr(args: [msg]),
                 style: GoogleFonts.outfit()),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
@@ -673,8 +673,8 @@ class _GalleryDetailViewState extends State<_GalleryDetailView> {
                           : const Icon(Icons.download_rounded, size: 20),
                       label: Text(
                         _isSaving
-                            ? 'Saving...'
-                            : 'Save',
+                            ? 'savebtn.saving'.tr()
+                            : 'savebtn.save'.tr(),
                         style: GoogleFonts.outfit(
                             fontWeight: FontWeight.w700, fontSize: 15),
                       ),

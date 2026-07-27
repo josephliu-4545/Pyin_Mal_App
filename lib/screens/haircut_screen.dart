@@ -38,6 +38,34 @@ class _HaircutScreenState extends State<HaircutScreen> {
   List<String> get _hairCategories =>
       _hairGender == 'Women' ? _womenCategories : _menCategories;
 
+  // Which style keywords flatter each face shape. Women's assets are already
+  // sorted into per-face-shape folders, so this drives the MEN'S list (organised
+  // by cut type, not face shape) — matched against the style name in the file.
+  // An empty list means "everything suits" (oval is the balanced all-rounder).
+  static const Map<String, List<String>> _faceShapeStyles = {
+    'Oval Face': [],
+    'Round Face': [
+      'fade', 'taper', 'quiff', 'pompadour', 'undercut', 'crop', 'wolf',
+      'french', 'textured', 'spiky',
+    ],
+    'Square Face': [
+      'buzz', 'crop', 'quiff', 'fade', 'wavy', 'caesar', 'textured', 'french',
+      'side',
+    ],
+    'Diamond Face': [
+      'crop', 'curly', 'wavy', 'mullet', 'wolf', 'fringe', 'shag', 'layered',
+      'textured', 'french',
+    ],
+  };
+
+  /// True when [path]'s style suits [faceShape]. Empty keyword list → suits all.
+  bool _suitsFaceShape(String path, String faceShape) {
+    final keys = _faceShapeStyles[faceShape] ?? const <String>[];
+    if (keys.isEmpty) return true;
+    final name = path.toLowerCase();
+    return keys.any(name.contains);
+  }
+
   List<String> _allAssetPaths = [];
   List<String> _visibleHairstyles = [];
 
@@ -67,20 +95,29 @@ class _HaircutScreenState extends State<HaircutScreen> {
 
   void _updateVisibleHairstyles() {
     final genderPath = _hairGender == 'Women' ? 'Female' : 'Male';
+    // Women's assets live in per-face-shape folders (already curated for the
+    // shape). Men's live in cut-type folders, so we filter the whole Male set
+    // by which styles flatter the selected face shape.
     final targetFolder = _hairGender == 'Women'
         ? 'pyin-mal-assets/assets/images/Hair/$genderPath/$_selectedFaceShape/'
         : 'pyin-mal-assets/assets/images/Hair/$genderPath/';
-    
+
+    bool suitsShape(String p) =>
+        _hairGender == 'Women' || _suitsFaceShape(p, _selectedFaceShape);
+
     _visibleHairstyles = _allAssetPaths.where((p) {
       if (!p.startsWith(targetFolder)) return false;
+      if (!suitsShape(p)) return false;
       return _matchesCategory(p, _hairCategory, _hairGender);
     }).toList();
-    
-    // If no styles match the category, fallback to showing all for that face shape
+
+    // If nothing matches this category for the shape, show all suitable styles.
     if (_visibleHairstyles.isEmpty && _hairCategory != 'Hot') {
-        _visibleHairstyles = _allAssetPaths.where((p) => p.startsWith(targetFolder)).toList();
+      _visibleHairstyles = _allAssetPaths
+          .where((p) => p.startsWith(targetFolder) && suitsShape(p))
+          .toList();
     }
-    
+
     _selectedHairstyle = null;
   }
 
@@ -210,30 +247,52 @@ class _HaircutScreenState extends State<HaircutScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 32),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 16,
-            runSpacing: 16,
+          Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const HairTryOnScreen()),
-                  );
-                },
-                icon: const Icon(Icons.auto_awesome),
-                label: Text('haircut.ai_try_on'.tr()),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accent,
-                  foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 8,
-                  shadowColor: accent.withOpacity(0.4),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HairTryOnScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.auto_awesome),
+                    label: Text('haircut.ai_try_on'.tr()),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 8,
+                      shadowColor: accent.withOpacity(0.4),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const Hair360Screen()),
+                      );
+                    },
+                    icon: const Icon(Icons.threed_rotation_rounded),
+                    label: const Text('360 Studio'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 8,
+                      shadowColor: accent.withOpacity(0.4),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 16),
               // General "Book now" — for anyone who just wants to book a salon
               ElevatedButton.icon(
                 onPressed: () => Navigator.push(
@@ -248,7 +307,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                   backgroundColor: isDark ? Colors.white : AppColors.inkBlack,
                   foregroundColor: isDark ? AppColors.charcoal : Colors.white,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16)),
                   elevation: 2,
@@ -437,8 +496,11 @@ class _HaircutScreenState extends State<HaircutScreen> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
-          child: Text('haircut.discover_subtitle'.tr(),
-              style: GoogleFonts.outfit(fontSize: 13, color: muted)),
+          child: Text(
+            'hairx.suits_intro'.tr(args: [_selectedFaceShape]),
+            style: GoogleFonts.outfit(
+                fontSize: 13, fontWeight: FontWeight.w600, color: accent),
+          ),
         ),
 
         // ── Women / Men toggle ───────────────────────────────────────────
@@ -637,70 +699,68 @@ class _HaircutScreenState extends State<HaircutScreen> {
   // Preview on me / Try On / Book — shown under whichever section the
   // selected hairstyle was picked from.
   Widget _selectedStyleActions(bool isDark, Color accent) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => HairTryOnScreen(
-                      initialHairstylePath: _selectedHairstyle,
+    final outlined = OutlinedButton.styleFrom(
+      foregroundColor: accent,
+      side: BorderSide(color: accent, width: 1.5),
+      padding: const EdgeInsets.symmetric(vertical: 13),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
+      child: Column(
+        children: [
+          // Two preview actions side by side.
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => HairTryOnScreen(
+                        initialHairstylePath: _selectedHairstyle,
+                      ),
                     ),
                   ),
-                );
-              },
-              icon: const Icon(Icons.face_retouching_natural_rounded, size: 18),
-              label: Text('product.try_on'.tr(),
-                  style: GoogleFonts.outfit(
-                      fontSize: 14, fontWeight: FontWeight.w700)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accent,
-                foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-            ),
-          ),
-        ),
-        // See the cut from every angle (AI head-turn video)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
-          child: SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => Hair360Screen(
-                    initialStylePath: _selectedHairstyle,
+                  icon: const Icon(
+                      Icons.face_retouching_natural_rounded, size: 17),
+                  label: Text('product.try_on'.tr(),
+                      style: GoogleFonts.outfit(
+                          fontSize: 13, fontWeight: FontWeight.w700)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: isDark ? AppColors.charcoal : Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
               ),
-              icon: const Icon(Icons.threed_rotation_rounded, size: 18),
-              label: Text('See it in 360°',
-                  style: GoogleFonts.outfit(
-                      fontSize: 14, fontWeight: FontWeight.w700)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: accent,
-                side: BorderSide(color: accent, width: 1.5),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => Hair360Screen(
+                        initialStylePath: _selectedHairstyle,
+                      ),
+                    ),
+                  ),
+                  icon: const Icon(Icons.threed_rotation_rounded, size: 17),
+                  label: Text('studio.view_360'.tr(),
+                      style: GoogleFonts.outfit(
+                          fontSize: 13, fontWeight: FontWeight.w700)),
+                  style: outlined,
+                ),
               ),
-            ),
+            ],
           ),
-        ),
-        // Book now with the chosen hairstyle
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
-          child: SizedBox(
+          const SizedBox(height: 10),
+          // Primary conversion action — full width.
+          SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => Navigator.push(
@@ -716,17 +776,11 @@ class _HaircutScreenState extends State<HaircutScreen> {
               label: Text('haircut.book_with_style'.tr(),
                   style: GoogleFonts.outfit(
                       fontSize: 14, fontWeight: FontWeight.w700)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: accent,
-                side: BorderSide(color: accent, width: 1.5),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
+              style: outlined,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -753,12 +807,18 @@ class _HaircutScreenState extends State<HaircutScreen> {
   }
 
   Widget _buildHairstyleSection(BuildContext context, bool isMobile, bool isDark, Color accent) {
-    // Recommendations come from the real hairstyle assets for the current
-    // gender — spread across the catalog so the picks feel varied.
+    // Recommendations come from the styles that suit the selected face shape
+    // (women: the face-shape folder; men: filtered by flattering keywords),
+    // spread across cut categories so the picks feel varied.
     final genderPath = _hairGender == 'Women' ? 'Female' : 'Male';
+    final folder = _hairGender == 'Women'
+        ? 'pyin-mal-assets/assets/images/Hair/$genderPath/$_selectedFaceShape/'
+        : 'pyin-mal-assets/assets/images/Hair/$genderPath/';
     final pool = _allAssetPaths
         .where((p) =>
-            p.startsWith('pyin-mal-assets/assets/images/Hair/$genderPath/'))
+            p.startsWith(folder) &&
+            (_hairGender == 'Women' ||
+                _suitsFaceShape(p, _selectedFaceShape)))
         .toList();
     final recommended = <String>[];
     if (pool.isNotEmpty) {
@@ -980,7 +1040,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                 children: [
                   Icon(Icons.spa_rounded, color: AppColors.gold, size: 22),
                   const SizedBox(width: 10),
-                  Text('Hair Care Products',
+                  Text('haircare.title'.tr(),
                       style: GoogleFonts.rufina(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -989,7 +1049,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                  'Salon-quality products you can order from our partner salons. Tap a product for details.',
+                  'haircare.subtitle'.tr(),
                   style: GoogleFonts.outfit(fontSize: 13, color: muted)),
             ],
           ),
@@ -1096,7 +1156,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                       Icon(Icons.storefront_rounded, size: 12, color: accent),
                       const SizedBox(width: 3),
                       Expanded(
-                        child: Text('From ${p.salon}',
+                        child: Text('haircare.from'.tr(args: [p.salon]),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.outfit(
@@ -1178,7 +1238,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: ink)),
                           const SizedBox(height: 4),
-                          Text('From ${p.salon}',
+                          Text('haircare.from'.tr(args: [p.salon]),
                               style: GoogleFonts.outfit(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -1195,10 +1255,10 @@ class _HaircutScreenState extends State<HaircutScreen> {
                   ],
                 ),
                 const SizedBox(height: 18),
-                _careMeta(Icons.favorite_border_rounded, 'Good for',
+                _careMeta(Icons.favorite_border_rounded, 'haircare.good_for'.tr(),
                     p.goodFor, accent, ink, muted),
                 const SizedBox(height: 12),
-                _careMeta(Icons.info_outline_rounded, 'How to use',
+                _careMeta(Icons.info_outline_rounded, 'haircare.how_to_use'.tr(),
                     p.howToUse, accent, ink, muted),
                 const SizedBox(height: 20),
                 SizedBox(
@@ -1209,7 +1269,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                       _orderHairCareProduct(p);
                     },
                     icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-                    label: Text('Order now',
+                    label: Text('haircare.order_now'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 14, fontWeight: FontWeight.w700)),
                     style: ElevatedButton.styleFrom(
@@ -1275,7 +1335,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        content: Text('${p.name} added to cart — order from ${p.salon}.'),
+        content: Text('haircare.added'.tr(namedArgs: {'name': p.name, 'salon': p.salon})),
       ),
     );
   }
