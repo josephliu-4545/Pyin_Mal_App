@@ -186,6 +186,7 @@ flutter:
     - pyin-mal-assets/assets/images/shops/T8/
     - pyin-mal-assets/assets/images/shops/Tony Tun Tun/
     - pyin-mal-assets/assets/images/shops/the neighbour hood project/
+    - pyin-mal-assets/assets/images/shops/sis burma/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

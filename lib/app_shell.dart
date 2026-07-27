@@ -297,48 +297,8 @@ class _HomeTabState extends State<_HomeTab> {
   late DateTime _saleEndsAt;
   Duration _saleRemaining = const Duration(hours: 2, minutes: 45, seconds: 30);
 
-  // Static promo slides — always shown
-  static const _staticAds = <(String, String, List<Color>, IconData, String, String, String)>[
-    ('New season drop', 'Up to 40% off select styles',
-        [Color(0xFF6B2737), Color(0xFFB0293F)], Icons.local_offer_rounded,
-        'assets/images/ad_sale.jpg', 'HOT DEAL', 'Shop now'),
-    ('AI styling, free', 'Get outfit ideas tailored to you',
-        [Color(0xFF1F3A5F), Color(0xFF3D6CA8)], Icons.auto_awesome_rounded,
-        'assets/images/ad_ai.jpg', 'NEW', 'Try now'),
-    ('Donate & earn', 'Give clothes, earn reward points',
-        [Color(0xFF2E6B4F), Color(0xFF4FA37A)], Icons.volunteer_activism_rounded,
-        'assets/images/ad_donate.jpg', 'REWARDS', 'Donate'),
-  ];
-
-  // Shop slides — shops that have uploaded cover.jpg
+  // Shop slides — brand banners only (shops that ship banner.jpg)
   List<ShopInfo> _shopAdSlides = [];
-
-  // Where each promo banner navigates when tapped (index-aligned with _ads).
-  static Future<bool> _assetExists(String path) async {
-    try {
-      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-      return manifest.listAssets().contains(path);
-    } catch (_) {
-      return false;
-    }
-  }
-
-  void _onAdTap(int i) {
-    switch (i) {
-      case 0:
-        Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const SaleScreen()));
-        break;
-      case 1:
-        Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const AiChatScreen()));
-        break;
-      case 2:
-        Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const DonateScreen()));
-        break;
-    }
-  }
 
   // Bordered shortcuts — "For You" = quick ways to discover products.
   late final List<(String, IconData, VoidCallback)> _forYouFeatures = [
@@ -378,9 +338,9 @@ class _HomeTabState extends State<_HomeTab> {
       _homeTab == 0 ? _forYouFeatures : _servicesFeatures;
 
   List<ShopInfo> get _effectiveShopSlides =>
-      _shopAdSlides.isNotEmpty ? _shopAdSlides : ShopConstants.shops;
+      _shopAdSlides.isNotEmpty ? _shopAdSlides : ShopConstants.bannerShops;
 
-  int get _totalAdCount => _staticAds.length + _effectiveShopSlides.length;
+  int get _totalAdCount => _effectiveShopSlides.length;
 
   @override
   void initState() {
@@ -390,7 +350,7 @@ class _HomeTabState extends State<_HomeTab> {
         context, Theme.of(context).brightness == Brightness.dark);
     _loadShopAdSlides();
     _adTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!_adController.hasClients) return;
+      if (!_adController.hasClients || _totalAdCount == 0) return;
       _adPage = (_adPage + 1) % _totalAdCount;
       _adController.animateToPage(
         _adPage,
@@ -804,178 +764,8 @@ class _HomeTabState extends State<_HomeTab> {
             controller: _adController,
             itemCount: _totalAdCount,
             onPageChanged: (i) => setState(() => _adPage = i),
-            itemBuilder: (_, i) {
-              // Shop slides come after static slides
-              if (i >= _staticAds.length) {
-                final shop = _effectiveShopSlides[i - _staticAds.length];
-                return _buildShopAdSlide(shop);
-              }
-              final ad = _staticAds[i];
-              return GestureDetector(
-                onTap: () => _onAdTap(i),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: ad.$3.first.withOpacity(0.35),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Gradient base (fallback + tint behind the image)
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: ad.$3,
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                        ),
-                        // Optional banner image — only shown if asset exists.
-                        // Place ad_sale.jpg / ad_ai.jpg / ad_donate.jpg in
-                        // assets/images/ to enable; gradient shows as fallback.
-                        if (ad.$5.isNotEmpty)
-                          FutureBuilder<bool>(
-                            future: _assetExists(ad.$5),
-                            builder: (_, snap) => (snap.data == true)
-                                ? Image.asset(ad.$5, fit: BoxFit.cover)
-                                : const SizedBox(),
-                          ),
-                        // Decorative translucent circles (promo-banner feel)
-                        Positioned(
-                          top: -28,
-                          right: -10,
-                          child: Container(
-                            width: 90,
-                            height: 90,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.08),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: -34,
-                          right: 40,
-                          child: Container(
-                            width: 70,
-                            height: 70,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.06),
-                            ),
-                          ),
-                        ),
-                        // Dark scrim so text stays readable over any image
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                Colors.black.withOpacity(0.55),
-                                Colors.black.withOpacity(0.10),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // Content
-                        Padding(
-                          padding: const EdgeInsets.all(18),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Badge tag (e.g. HOT DEAL / NEW / REWARDS)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.22),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(ad.$6,
-                                          style: GoogleFonts.outfit(
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 1,
-                                              color: Colors.white)),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(ad.$1,
-                                        style: GoogleFonts.rufina(
-                                            fontSize: 19,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white)),
-                                    const SizedBox(height: 4),
-                                    Text(ad.$2,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.outfit(
-                                            fontSize: 12,
-                                            height: 1.3,
-                                            color:
-                                                Colors.white.withOpacity(0.9))),
-                                    const SizedBox(height: 10),
-                                    // Call-to-action button
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 14, vertical: 7),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Flexible(
-                                            child: Text(ad.$7,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: GoogleFonts.outfit(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: ad.$3.last)),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Icon(Icons.arrow_forward_rounded,
-                                              size: 13, color: ad.$3.last),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: 54,
-                                height: 54,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.18),
-                                  shape: BoxShape.circle,
-                                ),
-                                child:
-                                    Icon(ad.$4, color: Colors.white, size: 26),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
+            itemBuilder: (_, i) =>
+                _buildShopAdSlide(_effectiveShopSlides[i]),
           ),
         ),
         const SizedBox(height: 10),
