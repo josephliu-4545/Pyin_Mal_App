@@ -496,7 +496,9 @@ class _TryOnScreenState extends State<TryOnScreen> {
                 Text('try_on.desc'.tr(),
                     style: GoogleFonts.outfit(
                         fontSize: 13, height: 1.4, color: _muted)),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                FittingForBanner(isDark: _isDark),
+                const SizedBox(height: 8),
 
                 // Step 1 — your photo
                 _stepLabel('1', 'try_on.person'.tr(), 'try_on.required'.tr()),

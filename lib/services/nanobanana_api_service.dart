@@ -201,8 +201,22 @@ class NanoBananaApiService {
         'person_hair': userPhoto,
         'reference_hair': referenceHairPhoto,
       },
+      // The reference images in this app are salon-style charts: male ones are
+      // a grid of several views of the SAME cut (often with a caption and a
+      // watermark), female ones are a wig on a mannequin. Spelling that out
+      // stops the model from copying the grid layout, the text, or the
+      // mannequin into the result.
       prompt: promptOverride ??
-          'Virtual hair try-on, replace the person\'s hairstyle with the reference hairstyle or style described, realistic, high quality.',
+          'Virtual hair try-on. Give the person in the first photo the '
+          'hairstyle shown in the reference image. The reference may show '
+          'several views (front, side, back) of the SAME hairstyle, and may '
+          'be worn by a mannequin or wig head — use it only to understand the '
+          'cut, length, texture and colour. Ignore any text, captions, '
+          'watermarks, mannequin or background in the reference. Output a '
+          'SINGLE realistic photo of ONLY the real person from the first '
+          'photo, facing the camera, with their face, skin tone and identity '
+          'completely unchanged and the new hairstyle applied. Do NOT create '
+          'a collage, grid, or before-and-after.',
     );
   }
 }

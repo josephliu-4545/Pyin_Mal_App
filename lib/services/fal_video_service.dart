@@ -31,13 +31,36 @@ class FalVideoService {
         'Content-Type': 'application/json',
       };
 
+  /// Head-turn prompt for hairstyle results: the camera stays put while the
+  /// person turns their head, which shows the cut from front, profile and back
+  /// without pulling the framing away from the hair.
+  static const String _headTurnPrompt =
+      'The person slowly turns their head to the left, then to the right, '
+      'showing their hairstyle from the front, both profiles and the back. '
+      'The camera stays completely fixed and framed on the head and '
+      'shoulders. The hair moves naturally with the motion. The face and '
+      'hairstyle stay exactly the same. Soft studio lighting, photorealistic.';
+
+  /// Generates a head-turn video from a hairstyle try-on image.
+  static Future<String?> generateHeadTurnVideo({
+    required String imageUrl,
+    void Function(VideoGenStatus status)? onStatus,
+  }) =>
+      generateTurnaroundVideo(
+        imageUrl: imageUrl,
+        onStatus: onStatus,
+        prompt: _headTurnPrompt,
+      );
+
   /// Generates a 360° turnaround video from [imageUrl].
   ///
   /// Reports progress via [onStatus] and returns the mp4 URL, or null on any
-  /// failure (details are debug-logged).
+  /// failure (details are debug-logged). [prompt] overrides the default
+  /// full-body spin (see [generateHeadTurnVideo]).
   static Future<String?> generateTurnaroundVideo({
     required String imageUrl,
     void Function(VideoGenStatus status)? onStatus,
+    String? prompt,
   }) async {
     if (_apiKey.isEmpty) {
       debugPrint('❗ FAL_API_KEY missing from .env');
@@ -55,7 +78,7 @@ class FalVideoService {
         Uri.parse('$_queueBase/$_model'),
         headers: _headers,
         body: jsonEncode({
-          'prompt': _turnaroundPrompt,
+          'prompt': prompt ?? _turnaroundPrompt,
           'image_url': imageUrl,
           'resolution': '720p', // 1080p costs ~2x and adds little on a phone
           'duration': '5',
