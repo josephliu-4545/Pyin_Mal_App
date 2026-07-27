@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
+import 'package:pyin_mal_app/screens/hair_360_screen.dart';
 import 'package:pyin_mal_app/screens/hair_try_on_screen.dart';
 import 'package:pyin_mal_app/screens/haircut_booking_screen.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
@@ -665,6 +666,34 @@ class _HaircutScreenState extends State<HaircutScreen> {
                 foregroundColor: isDark ? AppColors.charcoal : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+        ),
+        // See the cut from every angle (AI head-turn video)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Hair360Screen(
+                    initialStylePath: _selectedHairstyle,
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.threed_rotation_rounded, size: 18),
+              label: Text('See it in 360°',
+                  style: GoogleFonts.outfit(
+                      fontSize: 14, fontWeight: FontWeight.w700)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: accent,
+                side: BorderSide(color: accent, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),

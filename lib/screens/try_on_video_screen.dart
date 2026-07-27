@@ -21,8 +21,16 @@ class TryOnVideoScreen extends StatefulWidget {
   /// for the default 360° spin.
   final String? motionVideoUrl;
 
-  const TryOnVideoScreen(
-      {super.key, required this.tryOnImageUrl, this.motionVideoUrl});
+  /// Hair mode: frame on the head and turn it side to side instead of
+  /// spinning the whole body.
+  final bool headTurn;
+
+  const TryOnVideoScreen({
+    super.key,
+    required this.tryOnImageUrl,
+    this.motionVideoUrl,
+    this.headTurn = false,
+  });
 
   @override
   State<TryOnVideoScreen> createState() => _TryOnVideoScreenState();
@@ -53,12 +61,19 @@ class _TryOnVideoScreenState extends State<TryOnVideoScreen> {
               if (mounted) setState(() => _status = s);
             },
           )
-        : await FalVideoService.generateTurnaroundVideo(
-            imageUrl: widget.tryOnImageUrl,
-            onStatus: (s) {
-              if (mounted) setState(() => _status = s);
-            },
-          );
+        : widget.headTurn
+            ? await FalVideoService.generateHeadTurnVideo(
+                imageUrl: widget.tryOnImageUrl,
+                onStatus: (s) {
+                  if (mounted) setState(() => _status = s);
+                },
+              )
+            : await FalVideoService.generateTurnaroundVideo(
+                imageUrl: widget.tryOnImageUrl,
+                onStatus: (s) {
+                  if (mounted) setState(() => _status = s);
+                },
+              );
     if (!mounted) return;
     if (url == null) {
       setState(() => _status = VideoGenStatus.failed);
@@ -102,7 +117,9 @@ class _TryOnVideoScreenState extends State<TryOnVideoScreen> {
         VideoGenStatus.queued => 'Waiting in line…',
         VideoGenStatus.generating => _isMotion
             ? 'Recreating your movement in the new outfit…\nThis can take a few minutes'
-            : 'Creating your 360° view…\nThis takes 1-3 minutes',
+            : widget.headTurn
+                ? 'Showing your new hair from every angle…\nThis takes 1-3 minutes'
+                : 'Creating your 360° view…\nThis takes 1-3 minutes',
         VideoGenStatus.done => '',
         VideoGenStatus.failed => 'Something went wrong',
       };
@@ -257,11 +274,18 @@ class _TryOnVideoScreenState extends State<TryOnVideoScreen> {
                   Icon(
                       _isMotion
                           ? Icons.directions_run_rounded
-                          : Icons.threed_rotation_rounded,
+                          : widget.headTurn
+                              ? Icons.face_retouching_natural_rounded
+                              : Icons.threed_rotation_rounded,
                       size: 15,
                       color: _accent),
                   const SizedBox(width: 6),
-                  Text(_isMotion ? 'Your Moves' : '360° View',
+                  Text(
+                      _isMotion
+                          ? 'Your Moves'
+                          : widget.headTurn
+                              ? 'Hair 360°'
+                              : '360° View',
                       style: GoogleFonts.outfit(
                           color: Colors.white,
                           fontSize: 13,
