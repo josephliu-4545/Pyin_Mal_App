@@ -7,21 +7,25 @@ import 'package:pyin_mal_app/core/favorites_notifier.dart';
 import 'package:pyin_mal_app/core/hairstyle_favorites_notifier.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 
-class SavedItem {
+/// One saved entry in the collection — a product or a hairstyle, unified so
+/// they render with the same card and live in the same filterable grid.
+class _SavedEntry {
   final String id;
   final String title;
-  final String description;
+  final String meta; // shop name (product) or "Hairstyle"
   final String image;
-  final String category;
-  final String shop;
+  final String chip; // category (product) or "Hairstyle"
+  final bool isHairstyle;
+  final VoidCallback onRemove;
 
-  SavedItem({
+  _SavedEntry({
     required this.id,
     required this.title,
-    required this.description,
+    required this.meta,
     required this.image,
-    required this.category,
-    required this.shop,
+    required this.chip,
+    required this.isHairstyle,
+    required this.onRemove,
   });
 }
 
@@ -34,384 +38,18 @@ class FavoritesScreen extends StatefulWidget {
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
   final TextEditingController _searchController = TextEditingController();
-  
+  int _filter = 0; // 0 = All, 1 = Products, 2 = Hairstyles
+
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
-      setState(() {});
-    });
-  }
-
-  void _remove(String id) {
-    favoritesNotifier.toggleFavorite(id);
+    _searchController.addListener(() => setState(() {}));
   }
 
   @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 1024;
-    final isMobile = screenWidth < 640;
-    final accent = isDark ? AppColors.gold : AppColors.burgundy;
-
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
-      appBar: AppBar(
-        backgroundColor: isDark ? AppColors.charcoal : AppColors.cream,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text('favorites.title'.tr(), style: GoogleFonts.rufina(
-          fontWeight: FontWeight.bold,
-          color: accent,
-        )),
-        centerTitle: true,
-      ),
-      body: ValueListenableBuilder<Set<String>>(
-        valueListenable: favoritesNotifier,
-        builder: (context, favorites, _) {
-          final query = _searchController.text.toLowerCase();
-          
-          // Build one SavedItem per favorited id — from the catalog when the
-          // product exists there, otherwise from the cached info captured when
-          // it was favorited (so items outside the catalog still show).
-          final allFavoritedItems = <SavedItem>[];
-          for (final id in favorites) {
-            final p = ProductRepository.getProductById(id);
-            if (p != null) {
-              allFavoritedItems.add(SavedItem(
-                id: p.id,
-                title: p.name,
-                description: p.description ?? '',
-                image: p.image,
-                category: p.category,
-                shop: p.shopName ?? p.brand,
-              ));
-              continue;
-            }
-            final info = favoritesNotifier.infoCache[id];
-            if (info != null) {
-              allFavoritedItems.add(SavedItem(
-                id: info.id,
-                title: info.title,
-                description: info.description,
-                image: info.image,
-                category: info.category,
-                shop: info.shop,
-              ));
-            }
-          }
-              
-          final filteredFavorites = query.isEmpty 
-              ? allFavoritedItems
-              : allFavoritedItems.where((item) {
-                  return item.title.toLowerCase().contains(query) || 
-                         item.description.toLowerCase().contains(query) || 
-                         item.shop.toLowerCase().contains(query);
-                }).toList();
-
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Premium Header Section
-                _buildHeader(isMobile, isDark, accent),
-
-                // 2. Search & Grid Container
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                  child: Column(
-                    children: [
-                      // Search Bar
-                      _buildSearchBar(isDark, accent, filteredFavorites.length),
-
-                      const SizedBox(height: 32),
-
-                      // Saved hairstyles (from the Hair screen).
-                      ValueListenableBuilder<Set<String>>(
-                        valueListenable: hairstyleFavoritesNotifier,
-                        builder: (context, hairs, _) {
-                          final paths = hairs.toList();
-                          if (paths.isEmpty) return const SizedBox.shrink();
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 28),
-                            child: _buildHairstylesSection(
-                                paths, isDark, accent, isMobile, isDesktop),
-                          );
-                        },
-                      ),
-
-                      // Grid / Empty State
-                      if (filteredFavorites.isEmpty &&
-                          hairstyleFavoritesNotifier.value.isEmpty)
-                        _buildEmptyState(isDark, accent)
-                      else if (filteredFavorites.isNotEmpty)
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: isDesktop ? 4 : (isMobile ? 2 : 3),
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.68,
-                          ),
-                          itemCount: filteredFavorites.length,
-                          itemBuilder: (context, index) {
-                            final item = filteredFavorites[index];
-                            return _buildSavedCard(item, isDark, accent);
-                          },
-                        )
-                    ],
-                  ),
-                )
-              ],
-            ),
-          );
-        }
-      ),
-    );
-  }
-
-  Widget _buildHeader(bool isMobile, bool isDark, Color accent) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: isMobile ? 32 : 48, horizontal: 24),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              'favorites.header_subtitle'.tr(),
-              style: GoogleFonts.outfit(
-                color: AppColors.charcoal,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'favorites.header_title'.tr(),
-            style: GoogleFonts.rufina(
-              color: isDark ? Colors.white : AppColors.inkBlack,
-              fontSize: isMobile ? 36 : 48,
-              fontWeight: FontWeight.bold,
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'favorites.header_desc'.tr(),
-            style: GoogleFonts.outfit(
-              color: isDark ? AppColors.paleText : AppColors.inkGrey,
-              fontSize: 15,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar(bool isDark, Color accent, int count) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          )
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'favorites.collection_items'.tr(),
-                style: GoogleFonts.rufina(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.inkBlack,
-                ),
-              ),
-              Text(
-                'favorites.saved_count'.tr(args: [count.toString()]),
-                style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  style: GoogleFonts.outfit(fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: 'favorites.search_hint'.tr(),
-                    prefixIcon: Icon(Icons.search, color: accent, size: 20),
-                    filled: true,
-                    fillColor: isDark ? AppColors.charcoal : AppColors.creamAlt,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: accent,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(Icons.tune, color: isDark ? AppColors.charcoal : Colors.white, size: 20),
-                ),
-              )
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSavedCard(SavedItem item, bool isDark, Color accent) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkWarm : AppColors.creamCard,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            flex: 4,
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                  child: CdnImage(
-                    item.image,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (c, e, s) => Container(
-                      color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
-                      child: const Center(child: Icon(Icons.image, size: 50, color: Colors.grey)),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: GestureDetector(
-                    onTap: () => _remove(item.id),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.favorite, size: 18, color: AppColors.burgundy),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: accent.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      item.category,
-                      style: GoogleFonts.outfit(
-                        color: isDark ? AppColors.charcoal : Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: GoogleFonts.rufina(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.inkBlack,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    item.description,
-                    style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.storefront, size: 12, color: accent),
-                          const SizedBox(width: 4),
-                          Text(
-                            item.shop,
-                            style: GoogleFonts.outfit(fontSize: 10, color: accent, fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        'favorites.saved_recently'.tr(),
-                        style: GoogleFonts.outfit(fontSize: 9, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          )
-        ],
-      ),
-    );
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   String _hairstyleName(String path) {
@@ -427,158 +65,475 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         .join(' ');
   }
 
-  Widget _buildHairstylesSection(
-      List<String> paths, bool isDark, Color accent, bool isMobile, bool isDesktop) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.content_cut_rounded, size: 18, color: accent),
-            const SizedBox(width: 8),
-            Text('Saved Hairstyles',
-                style: GoogleFonts.rufina(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppColors.inkBlack)),
-            const Spacer(),
-            Text('${paths.length}',
-                style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
-          ],
-        ),
-        const SizedBox(height: 14),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isDesktop ? 4 : (isMobile ? 2 : 3),
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.74,
-          ),
-          itemCount: paths.length,
-          itemBuilder: (context, i) {
-            final path = paths[i];
-            return Container(
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkWarm : AppColors.creamCard,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(20)),
-                          child: Image.asset(
-                            path,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: isDark
-                                  ? AppColors.darkBorder
-                                  : AppColors.creamAlt,
-                              child: Icon(Icons.content_cut_rounded,
-                                  color: accent),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: GestureDetector(
-                            onTap: () =>
-                                hairstyleFavoritesNotifier.toggle(path),
-                            child: Container(
-                              padding: const EdgeInsets.all(7),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.favorite,
-                                  size: 16, color: AppColors.burgundy),
-                            ),
-                          ),
-                        ),
-                      ],
+  List<_SavedEntry> _products(Set<String> favorites) {
+    final out = <_SavedEntry>[];
+    for (final id in favorites) {
+      final p = ProductRepository.getProductById(id);
+      final title = p?.name ?? favoritesNotifier.infoCache[id]?.title;
+      final image = p?.image ?? favoritesNotifier.infoCache[id]?.image;
+      if (title == null || image == null) continue;
+      out.add(_SavedEntry(
+        id: id,
+        title: title,
+        meta: p?.shopName ?? p?.brand ?? favoritesNotifier.infoCache[id]?.shop ?? '',
+        image: image,
+        chip: p?.category ?? favoritesNotifier.infoCache[id]?.category ?? 'Item',
+        isHairstyle: false,
+        onRemove: () => favoritesNotifier.toggleFavorite(id),
+      ));
+    }
+    return out;
+  }
+
+  List<_SavedEntry> _hairstyles(Set<String> paths) {
+    return paths
+        .map((path) => _SavedEntry(
+              id: path,
+              title: _hairstyleName(path),
+              meta: 'Hairstyle',
+              image: path,
+              chip: 'Hairstyle',
+              isHairstyle: true,
+              onRemove: () => hairstyleFavoritesNotifier.toggle(path),
+            ))
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final w = MediaQuery.of(context).size.width;
+    final cols = w >= 1024 ? 4 : (w >= 640 ? 3 : 2);
+    final accent = isDark ? AppColors.gold : AppColors.burgundy;
+    final bg = isDark ? AppColors.charcoal : AppColors.cream;
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+
+    return Scaffold(
+      backgroundColor: bg,
+      body: SafeArea(
+        bottom: false,
+        child: ValueListenableBuilder<Set<String>>(
+          valueListenable: favoritesNotifier,
+          builder: (context, favorites, _) {
+            return ValueListenableBuilder<Set<String>>(
+              valueListenable: hairstyleFavoritesNotifier,
+              builder: (context, hairs, __) {
+                final products = _products(favorites);
+                final hairstyles = _hairstyles(hairs);
+                final total = products.length + hairstyles.length;
+
+                final q = _searchController.text.trim().toLowerCase();
+                List<_SavedEntry> base = switch (_filter) {
+                  1 => products,
+                  2 => hairstyles,
+                  _ => [...products, ...hairstyles],
+                };
+                final items = q.isEmpty
+                    ? base
+                    : base
+                        .where((e) =>
+                            e.title.toLowerCase().contains(q) ||
+                            e.meta.toLowerCase().contains(q) ||
+                            e.chip.toLowerCase().contains(q))
+                        .toList();
+
+                return CustomScrollView(
+                  slivers: [
+                    // ── Header ──
+                    SliverToBoxAdapter(
+                      child: _buildHeader(ink, muted, accent, total),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Text(
-                      _hairstyleName(path),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : AppColors.inkBlack,
+
+                    if (total > 0) ...[
+                      // ── Search ──
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+                          child: _buildSearch(isDark, ink, muted, accent),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
+                      // ── Filter segmented control ──
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                          child: _buildFilters(
+                              isDark, ink, muted, accent,
+                              products.length, hairstyles.length),
+                        ),
+                      ),
+                    ],
+
+                    // ── Grid / empty ──
+                    if (total == 0)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _buildEmptyState(ink, muted, accent, isDark),
+                      )
+                    else if (items.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _buildNoResults(muted, accent),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+                        sliver: SliverGrid(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: cols,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 14,
+                            childAspectRatio: 0.66,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, i) =>
+                                _buildCard(items[i], isDark, ink, muted, accent),
+                            childCount: items.length,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             );
           },
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildEmptyState(bool isDark, Color accent) {
+  // ── Header ────────────────────────────────────────────────────────────────
+  Widget _buildHeader(Color ink, Color muted, Color accent, int total) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 80),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text('Saved',
+                    style: GoogleFonts.rufina(
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                        height: 1.0,
+                        color: ink)),
+              ),
+              if (total > 0)
+                Container(
+                  margin: const EdgeInsets.only(top: 6),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Text(
+                    total == 1 ? '1 item' : '$total items',
+                    style: GoogleFonts.outfit(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: accent),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Your favourite outfits and hairstyles, all in one place.',
+            style: GoogleFonts.outfit(fontSize: 13.5, height: 1.4, color: muted),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Search ────────────────────────────────────────────────────────────────
+  Widget _buildSearch(bool isDark, Color ink, Color muted, Color accent) {
+    return TextField(
+      controller: _searchController,
+      style: GoogleFonts.outfit(fontSize: 14, color: ink),
+      decoration: InputDecoration(
+        hintText: 'Search your saved items',
+        hintStyle: GoogleFonts.outfit(fontSize: 14, color: muted),
+        prefixIcon: Icon(Icons.search_rounded, color: accent, size: 20),
+        suffixIcon: _searchController.text.isEmpty
+            ? null
+            : IconButton(
+                icon: Icon(Icons.close_rounded, size: 18, color: muted),
+                onPressed: () => _searchController.clear(),
+              ),
+        filled: true,
+        fillColor: isDark ? AppColors.darkWarm : Colors.white,
+        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+              color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: accent, width: 1.4),
+        ),
+      ),
+    );
+  }
+
+  // ── Filter segmented control ────────────────────────────────────────────────
+  Widget _buildFilters(bool isDark, Color ink, Color muted, Color accent,
+      int products, int hairstyles) {
+    Widget seg(int idx, String label, int count) {
+      final sel = _filter == idx;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => setState(() => _filter = idx),
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            decoration: BoxDecoration(
+              color: sel ? accent : Colors.transparent,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Text(
+              count > 0 ? '$label · $count' : label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: sel ? (isDark ? AppColors.charcoal : Colors.white) : ink,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkWarm : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
+      ),
+      child: Row(
+        children: [
+          seg(0, 'All', products + hairstyles),
+          seg(1, 'Products', products),
+          seg(2, 'Hairstyles', hairstyles),
+        ],
+      ),
+    );
+  }
+
+  // ── Unified saved card ──────────────────────────────────────────────────────
+  Widget _buildCard(
+      _SavedEntry e, bool isDark, Color ink, Color muted, Color accent) {
+    final cardBg = isDark ? AppColors.darkWarm : Colors.white;
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.creamAlt),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.22 : 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            flex: 5,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(17)),
+                  child: e.isHairstyle
+                      ? Image.asset(
+                          e.image,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _imgFallback(isDark, accent, e.isHairstyle),
+                        )
+                      : CdnImage(
+                          e.image,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (_, __, ___) =>
+                              _imgFallback(isDark, accent, e.isHairstyle),
+                        ),
+                ),
+                // type chip
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.55),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                            e.isHairstyle
+                                ? Icons.content_cut_rounded
+                                : Icons.checkroom_rounded,
+                            size: 10,
+                            color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(e.chip,
+                            style: GoogleFonts.outfit(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                ),
+                // remove heart
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: e.onRemove,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.92),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 6),
+                        ],
+                      ),
+                      child: const Icon(Icons.favorite_rounded,
+                          size: 16, color: AppColors.burgundy),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(11, 9, 11, 9),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    e.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: ink),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Icon(
+                          e.isHairstyle
+                              ? Icons.content_cut_rounded
+                              : Icons.storefront_rounded,
+                          size: 11,
+                          color: accent),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          e.meta,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: accent),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _imgFallback(bool isDark, Color accent, bool isHairstyle) {
+    return Container(
+      color: isDark ? AppColors.darkBorder : AppColors.creamAlt,
+      child: Icon(
+          isHairstyle ? Icons.content_cut_rounded : Icons.image_rounded,
+          size: 34,
+          color: accent.withOpacity(0.5)),
+    );
+  }
+
+  // ── Empty states ────────────────────────────────────────────────────────────
+  Widget _buildEmptyState(
+      Color ink, Color muted, Color accent, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(40, 20, 40, 100),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            width: 96,
+            height: 96,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.1),
+              color: accent.withOpacity(0.10),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.bookmark_outline, size: 64, color: accent),
+            child: Icon(Icons.favorite_border_rounded, size: 44, color: accent),
           ),
-          const SizedBox(height: 24),
-          Text(
-            'favorites.empty_title'.tr(),
-            style: GoogleFonts.rufina(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppColors.inkBlack,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              'favorites.empty_desc'.tr(),
+          const SizedBox(height: 22),
+          Text('No saved items yet',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(color: Colors.grey, fontSize: 14),
-            ),
+              style: GoogleFonts.rufina(
+                  fontSize: 22, fontWeight: FontWeight.bold, color: ink)),
+          const SizedBox(height: 8),
+          Text(
+            'Tap the heart on any product or hairstyle to keep it here.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.outfit(fontSize: 13.5, height: 1.5, color: muted),
           ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () {
-              // Usually navigate to shop, but we stay within current logic
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: accent,
-              foregroundColor: isDark ? AppColors.charcoal : Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            child: Text('favorites.explore'.tr(), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoResults(Color muted, Color accent) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(40, 20, 40, 100),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off_rounded, size: 44, color: accent.withOpacity(0.6)),
+          const SizedBox(height: 14),
+          Text('Nothing matches your search.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(fontSize: 14, color: muted)),
         ],
       ),
     );
