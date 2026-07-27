@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/theme_notifier.dart';
+import 'package:pyin_mal_app/screens/future_plan_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,7 +16,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Local state for settings preferences
   bool _pushNotifications = true;
   bool _hapticFeedback = true;
-  bool _biometricsEnabled = false;
 
   @override
   Widget build(BuildContext context) {
@@ -165,27 +165,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       value: _hapticFeedback,
                       isDark: isDark,
                       accent: accent,
+                      isLast: true,
                       onChanged: (val) {
                         setState(() {
                           _hapticFeedback = val;
                         });
                       },
                     ),
-                    Divider(height: 1, color: isDark ? AppColors.darkBorder : AppColors.creamAlt, indent: 56),
-                    _buildSwitchTile(
-                      icon: Icons.fingerprint_rounded,
-                      label: 'Biometric Login',
-                      value: _biometricsEnabled,
-                      isDark: isDark,
-                      accent: accent,
-                      isLast: true,
-                      onChanged: (val) {
-                        setState(() {
-                          _biometricsEnabled = val;
-                        });
-                      },
-                    ),
                   ],
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              // ── Future Plan ─────────────────────────────────────────────────
+              _buildSectionTitle('More', secondaryText),
+              const SizedBox(height: 10),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFC9A96E).withOpacity(isDark ? 0.15 : 0.20),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFC9A96E).withOpacity(0.35)),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FuturePlanScreen()),
+                  ),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: accent.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.rocket_launch_rounded,
+                              color: accent, size: 18),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Future Plan',
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                      color: textCol)),
+                              Text('Upcoming features & AR try-on preview',
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      color: secondaryText)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios_rounded,
+                            size: 16, color: secondaryText),
+                      ],
+                    ),
+                  ),
                 ),
               ),
 

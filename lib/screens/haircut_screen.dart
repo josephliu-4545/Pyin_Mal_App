@@ -5,6 +5,7 @@ import 'package:pyin_mal_app/main.dart';
 import 'package:pyin_mal_app/screens/hair_try_on_screen.dart';
 import 'package:pyin_mal_app/screens/haircut_booking_screen.dart';
 import 'package:pyin_mal_app/services/cart_service.dart';
+import 'package:pyin_mal_app/core/hairstyle_favorites_notifier.dart';
 import '../widgets/cdn_image.dart';
 import 'package:flutter/services.dart';
 
@@ -25,7 +26,6 @@ class _HaircutScreenState extends State<HaircutScreen> {
   // Which section the selection came from: 'gallery' | 'recommended'.
   // Controls where the Preview / Try On / Book buttons appear.
   String _selectionSource = 'gallery';
-  final Set<String> _favHairstyles = {}; // Fav asset paths
 
   static const _womenCategories = [
     'Hot', 'Bangs', 'Curls', 'Straight', 'Short', 'Wavy', 'Updo'
@@ -520,7 +520,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
               final path = _visibleHairstyles[i];
               final label = _extractHairstyleName(path);
               final sel = _selectedHairstyle == path;
-              final fav = _favHairstyles.contains(path);
+              final fav = hairstyleFavoritesNotifier.value.contains(path);
               return GestureDetector(
                 onTap: () => setState(() {
                   _selectedHairstyle = path;
@@ -562,11 +562,8 @@ class _HaircutScreenState extends State<HaircutScreen> {
                             top: 6,
                             left: 6,
                             child: GestureDetector(
-                              onTap: () => setState(() {
-                                fav
-                                    ? _favHairstyles.remove(path)
-                                    : _favHairstyles.add(path);
-                              }),
+                              onTap: () => setState(
+                                  () => hairstyleFavoritesNotifier.toggle(path)),
                               child: Container(
                                 width: 26,
                                 height: 26,
@@ -786,7 +783,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
 
   Widget _buildRecommendedCard(String path, bool isDark, Color accent) {
     final name = _extractHairstyleName(path);
-    final fav = _favHairstyles.contains(path);
+    final fav = hairstyleFavoritesNotifier.value.contains(path);
     final sel = _selectedHairstyle == path;
 
     return GestureDetector(
@@ -854,11 +851,8 @@ class _HaircutScreenState extends State<HaircutScreen> {
                     top: 12,
                     right: 12,
                     child: GestureDetector(
-                      onTap: () => setState(() {
-                        fav
-                            ? _favHairstyles.remove(path)
-                            : _favHairstyles.add(path);
-                      }),
+                      onTap: () => setState(
+                          () => hairstyleFavoritesNotifier.toggle(path)),
                       child: Container(
                         width: 32,
                         height: 32,

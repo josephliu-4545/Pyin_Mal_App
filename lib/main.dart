@@ -5,6 +5,7 @@ import 'package:pyin_mal_app/theme_notifier.dart';
 import 'package:pyin_mal_app/app_shell.dart';
 import 'package:pyin_mal_app/overlay/overlay_entry.dart';
 import 'package:pyin_mal_app/services/floating_scanner_service.dart';
+import 'package:pyin_mal_app/services/favorites_sync_service.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:pyin_mal_app/firebase_options.dart';
@@ -30,6 +31,9 @@ Future<void> main() async {
 
   // Set up overlay listener before the app renders
   FloatingScannerService.initialize();
+
+  // Keep saved favorites in sync per account (load on login, clear on logout).
+  FavoritesSyncService.instance.init();
 
   runApp(
     EasyLocalization(

@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:pyin_mal_app/main.dart';
 import '../widgets/cdn_image.dart';
 import 'package:pyin_mal_app/core/favorites_notifier.dart';
+import 'package:pyin_mal_app/core/hairstyle_favorites_notifier.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 
 class SavedItem {
@@ -71,17 +72,35 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         builder: (context, favorites, _) {
           final query = _searchController.text.toLowerCase();
           
-          final allFavoritedItems = ProductRepository.allProducts
-              .where((p) => favorites.contains(p.id))
-              .map((p) => SavedItem(
-                    id: p.id,
-                    title: p.name,
-                    description: p.description ?? '',
-                    image: p.image,
-                    category: p.category,
-                    shop: p.shopName ?? p.brand,
-                  ))
-              .toList();
+          // Build one SavedItem per favorited id — from the catalog when the
+          // product exists there, otherwise from the cached info captured when
+          // it was favorited (so items outside the catalog still show).
+          final allFavoritedItems = <SavedItem>[];
+          for (final id in favorites) {
+            final p = ProductRepository.getProductById(id);
+            if (p != null) {
+              allFavoritedItems.add(SavedItem(
+                id: p.id,
+                title: p.name,
+                description: p.description ?? '',
+                image: p.image,
+                category: p.category,
+                shop: p.shopName ?? p.brand,
+              ));
+              continue;
+            }
+            final info = favoritesNotifier.infoCache[id];
+            if (info != null) {
+              allFavoritedItems.add(SavedItem(
+                id: info.id,
+                title: info.title,
+                description: info.description,
+                image: info.image,
+                category: info.category,
+                shop: info.shop,
+              ));
+            }
+          }
               
           final filteredFavorites = query.isEmpty 
               ? allFavoritedItems
@@ -105,13 +124,28 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     children: [
                       // Search Bar
                       _buildSearchBar(isDark, accent, filteredFavorites.length),
-                      
+
                       const SizedBox(height: 32),
 
+                      // Saved hairstyles (from the Hair screen).
+                      ValueListenableBuilder<Set<String>>(
+                        valueListenable: hairstyleFavoritesNotifier,
+                        builder: (context, hairs, _) {
+                          final paths = hairs.toList();
+                          if (paths.isEmpty) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 28),
+                            child: _buildHairstylesSection(
+                                paths, isDark, accent, isMobile, isDesktop),
+                          );
+                        },
+                      ),
+
                       // Grid / Empty State
-                      if (filteredFavorites.isEmpty)
+                      if (filteredFavorites.isEmpty &&
+                          hairstyleFavoritesNotifier.value.isEmpty)
                         _buildEmptyState(isDark, accent)
-                      else
+                      else if (filteredFavorites.isNotEmpty)
                         GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -377,6 +411,127 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           )
         ],
       ),
+    );
+  }
+
+  String _hairstyleName(String path) {
+    var name = path.split('/').last;
+    final dot = name.lastIndexOf('.');
+    if (dot > 0) name = name.substring(0, dot);
+    name = name.replaceAll(RegExp(r'[_\-]+'), ' ').trim();
+    if (name.isEmpty) return 'Hairstyle';
+    return name
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .map((w) => w[0].toUpperCase() + w.substring(1))
+        .join(' ');
+  }
+
+  Widget _buildHairstylesSection(
+      List<String> paths, bool isDark, Color accent, bool isMobile, bool isDesktop) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.content_cut_rounded, size: 18, color: accent),
+            const SizedBox(width: 8),
+            Text('Saved Hairstyles',
+                style: GoogleFonts.rufina(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.inkBlack)),
+            const Spacer(),
+            Text('${paths.length}',
+                style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+        const SizedBox(height: 14),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: isDesktop ? 4 : (isMobile ? 2 : 3),
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.74,
+          ),
+          itemCount: paths.length,
+          itemBuilder: (context, i) {
+            final path = paths[i];
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(20)),
+                          child: Image.asset(
+                            path,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.creamAlt,
+                              child: Icon(Icons.content_cut_rounded,
+                                  color: accent),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: GestureDetector(
+                            onTap: () =>
+                                hairstyleFavoritesNotifier.toggle(path),
+                            child: Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.favorite,
+                                  size: 16, color: AppColors.burgundy),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Text(
+                      _hairstyleName(path),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : AppColors.inkBlack,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 

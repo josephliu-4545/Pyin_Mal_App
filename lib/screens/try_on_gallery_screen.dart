@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'dart:ui';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:pyin_mal_app/utils/web_download.dart' as web_dl;
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -434,25 +438,52 @@ class _GalleryDetailViewState extends State<_GalleryDetailView> {
         final response =
             await http.get(Uri.parse(Uri.encodeFull(_currentUrl)));
         if (response.statusCode != 200) {
-          throw Exception('HTTP ${response.statusCode}');
+          throw Exception('Download failed (HTTP ${response.statusCode})');
         }
         bytes = response.bodyBytes;
       }
 
-      // Ensure gallery write access before saving (no-op on Android 10+ for the
-      // shared gallery, but required on older versions and iOS).
-      final hasAccess = await Gal.hasAccess();
-      if (!hasAccess) {
-        final granted = await Gal.requestAccess();
-        if (!granted) {
-          throw Exception('Gallery access denied');
+      // On web, trigger a normal browser download (Gal has no web support).
+      if (kIsWeb) {
+        web_dl.downloadBytes(
+            bytes, 'tryon_${DateTime.now().millisecondsSinceEpoch}.jpg');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('gallery.saved_success'.tr(),
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+              backgroundColor: Colors.green.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
         }
+        return;
       }
 
-      await Gal.putImageBytes(
-        bytes,
-        name: 'tryon_${DateTime.now().millisecondsSinceEpoch}',
-      );
+      // Write the bytes to a temp file first — Gal.putImage (file path) is more
+      // reliable across devices than putImageBytes, which fails on some OEMs.
+      final tmpDir = await getTemporaryDirectory();
+      final tmpPath =
+          '${tmpDir.path}/tryon_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      await File(tmpPath).writeAsBytes(bytes, flush: true);
+
+      try {
+        await Gal.putImage(tmpPath);
+      } on GalException catch (e) {
+        // Most likely a permission issue on first save — ask, then retry once.
+        if (e.type == GalExceptionType.accessDenied) {
+          final granted = await Gal.requestAccess();
+          if (!granted) {
+            throw Exception('Photo permission denied. Enable it in Settings.');
+          }
+          await Gal.putImage(tmpPath);
+        } else {
+          rethrow;
+        }
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -477,9 +508,12 @@ class _GalleryDetailViewState extends State<_GalleryDetailView> {
     } catch (e) {
       debugPrint('Save to phone error: $e');
       if (mounted) {
+        final msg = e is GalException
+            ? e.type.message
+            : e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('gallery.save_error'.tr(),
+            content: Text('Could not save: $msg',
                 style: GoogleFonts.outfit()),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,

@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
+import '../utils/web_download.dart' as web_dl;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -43,6 +47,7 @@ class TryOnScreen extends StatefulWidget {
 
 class _TryOnScreenState extends State<TryOnScreen> {
   bool _isLoading = false;
+  bool _isSavingResult = false;
   String? _resultImageUrl;
 
   final ImagePicker _picker = ImagePicker();
@@ -925,6 +930,70 @@ class _TryOnScreenState extends State<TryOnScreen> {
   }
 
   // ── Result view ────────────────────────────────────────────────────────────
+  // Save the generated look to the device gallery (or download it on web).
+  Future<void> _saveResultToDevice() async {
+    final url = _resultImageUrl;
+    if (url == null || _isSavingResult) return;
+    setState(() => _isSavingResult = true);
+    try {
+      final response = await http.get(Uri.parse(Uri.encodeFull(url)));
+      if (response.statusCode != 200) {
+        throw Exception('Download failed (HTTP ${response.statusCode})');
+      }
+      final bytes = response.bodyBytes;
+      final fileName = 'tryon_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      if (kIsWeb) {
+        web_dl.downloadBytes(bytes, fileName);
+      } else {
+        final tmpDir = await getTemporaryDirectory();
+        final tmpPath = '${tmpDir.path}/$fileName';
+        await File(tmpPath).writeAsBytes(bytes, flush: true);
+        try {
+          await Gal.putImage(tmpPath);
+        } on GalException catch (e) {
+          if (e.type == GalExceptionType.accessDenied) {
+            final granted = await Gal.requestAccess();
+            if (!granted) {
+              throw Exception('Photo permission denied.');
+            }
+            await Gal.putImage(tmpPath);
+          } else {
+            rethrow;
+          }
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green.shade600,
+            content: Text(kIsWeb ? 'Image downloaded!' : 'Saved to your photos!',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Save try-on result error: $e');
+      if (mounted) {
+        final msg = e is GalException
+            ? e.type.message
+            : e.toString().replaceFirst('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red.shade600,
+            content: Text('Could not save: $msg',
+                style: GoogleFonts.outfit()),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingResult = false);
+    }
+  }
+
   Widget _buildResult() {
     return Column(
       children: [
@@ -977,6 +1046,31 @@ class _TryOnScreenState extends State<TryOnScreen> {
                       foregroundColor:
                           _isDark ? AppColors.charcoal : Colors.white,
                       elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: OutlinedButton.icon(
+                    onPressed: _isSavingResult ? null : _saveResultToDevice,
+                    icon: _isSavingResult
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: _accent),
+                          )
+                        : const Icon(Icons.download_rounded, size: 18),
+                    label: Text(_isSavingResult ? 'Saving...' : 'Save',
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w700, fontSize: 15)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _accent,
+                      side: BorderSide(color: _accent, width: 1.5),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
                     ),

@@ -1,10 +1,16 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:http/http.dart' as http;
+import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
 import '../services/nanobanana_api_service.dart';
 import '../services/database_service.dart';
+import '../utils/web_download.dart' as web_dl;
 
 class HairTryOnScreen extends StatefulWidget {
   final String? initialPrompt;
@@ -26,6 +32,7 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
   Uint8List? _hairPhotoBytes;
 
   String? _resultImageUrl;
+  bool _isSavingResult = false;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -160,6 +167,69 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
     );
   }
 
+  // Save the generated hairstyle look to the device (or download it on web).
+  Future<void> _saveResultToDevice() async {
+    final url = _resultImageUrl;
+    if (url == null || _isSavingResult) return;
+    setState(() => _isSavingResult = true);
+    try {
+      final response = await http.get(Uri.parse(Uri.encodeFull(url)));
+      if (response.statusCode != 200) {
+        throw Exception('Download failed (HTTP ${response.statusCode})');
+      }
+      final bytes = response.bodyBytes;
+      final fileName = 'hairtryon_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      if (kIsWeb) {
+        web_dl.downloadBytes(bytes, fileName);
+      } else {
+        final tmpDir = await getTemporaryDirectory();
+        final tmpPath = '${tmpDir.path}/$fileName';
+        await File(tmpPath).writeAsBytes(bytes, flush: true);
+        try {
+          await Gal.putImage(tmpPath);
+        } on GalException catch (e) {
+          if (e.type == GalExceptionType.accessDenied) {
+            final granted = await Gal.requestAccess();
+            if (!granted) throw Exception('Photo permission denied.');
+            await Gal.putImage(tmpPath);
+          } else {
+            rethrow;
+          }
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green.shade600,
+            content: Text(
+                kIsWeb ? 'Image downloaded!' : 'Saved to your photos!',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Save hair try-on result error: $e');
+      if (mounted) {
+        final msg = e is GalException
+            ? e.type.message
+            : e.toString().replaceFirst('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red.shade600,
+            content:
+                Text('Could not save: $msg', style: GoogleFonts.outfit()),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingResult = false);
+    }
+  }
+
   Widget _buildBody() {
     // If result exists, show the result
     if (_resultImageUrl != null) {
@@ -205,6 +275,32 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: _isSavingResult ? null : _saveResultToDevice,
+                icon: _isSavingResult
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Color(0xFFD4AF37)),
+                      )
+                    : const Icon(Icons.download_rounded, size: 18),
+                label: Text(
+                  _isSavingResult ? 'Saving...' : 'Save',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFD4AF37),
+                  side: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
                   ),
                 ),
               ),

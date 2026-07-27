@@ -215,6 +215,21 @@ class DatabaseService {
     return snap.data();
   }
 
+  // ── Favorites (persist per account) ──────────────────────────────────────────
+
+  /// Persist the user's favorited products (id + display info) and favorited
+  /// hairstyle asset paths, so they come back when they log in again.
+  Future<void> saveFavorites({
+    required List<Map<String, dynamic>> products,
+    required List<String> hairstyles,
+  }) async {
+    if (_uid == null) return;
+    await _db.collection('users').doc(_uid).set({
+      'favoriteProducts': products,
+      'favoriteHairstyles': hairstyles,
+    }, SetOptions(merge: true));
+  }
+
   /// One-shot read of the account holder's saved body measurements (from a
   /// Bodygram scan or manual entry), or null when none are on file.
   Future<BodyMeasurements?> getBodyMeasurements() async {

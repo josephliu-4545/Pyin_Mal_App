@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:pyin_mal_app/main.dart';
-import 'package:pyin_mal_app/core/constants/api_constants.dart';
 import 'package:pyin_mal_app/core/constants/shop_constants.dart';
 import '../widgets/product_3d_viewer.dart';
 import '../widgets/cdn_image.dart';
@@ -20,9 +18,9 @@ import 'package:pyin_mal_app/services/item_size_chart_service.dart';
 import 'package:pyin_mal_app/models/item_size_chart.dart';
 import 'package:pyin_mal_app/data/size_chart_presets.dart';
 import 'package:pyin_mal_app/models/body_measurements.dart';
-import 'package:pyin_mal_app/models/clothing_item.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
-import 'package:pyin_mal_app/screens/ar_fitting_room_screen.dart';
+import 'package:pyin_mal_app/screens/product_360_studio_screen.dart';
+import 'package:pyin_mal_app/core/favorites_notifier.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
 import 'package:pyin_mal_app/services/outfit_recommendation_service.dart';
@@ -87,7 +85,6 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String _selectedSize = 'M';
-  bool _isFavorite = false;
   late String _selectedColor;
 
   // Size recommendation from the user's saved Bodygram measurements.
@@ -549,11 +546,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   Row(
                     children: [
-                      _NavBtn(
-                        icon: _isFavorite ? Icons.favorite : Icons.favorite_outline,
-                        isDark: isDark,
-                        iconColor: _isFavorite ? AppColors.burgundy : null,
-                        onTap: () => setState(() => _isFavorite = !_isFavorite),
+                      ValueListenableBuilder<Set<String>>(
+                        valueListenable: favoritesNotifier,
+                        builder: (_, favs, __) {
+                          final fav = favs.contains(widget.productId);
+                          return _NavBtn(
+                            icon: fav
+                                ? Icons.favorite
+                                : Icons.favorite_outline,
+                            isDark: isDark,
+                            iconColor: fav ? AppColors.burgundy : null,
+                            onTap: () => favoritesNotifier.toggleFavorite(
+                              widget.productId,
+                              info: FavoriteProductInfo(
+                                id: widget.productId,
+                                title: widget.name,
+                                image: widget.image,
+                                category: widget.category,
+                                shop: widget.shopName ?? widget.brand,
+                                description: widget.description ?? '',
+                              ),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(width: 10),
                       _NavBtn(icon: Icons.share_rounded, isDark: isDark),
@@ -948,75 +963,73 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // ── Live AR try-on ──────────────────────────────────
-                          ElevatedButton.icon(
+                          // AR try-on moved to Settings → Future Plan.
+                          // ── AI Try-On ──────────────────────────────────────
+                          OutlinedButton.icon(
                             onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ARFittingRoomScreen(
-                                  productId: widget.productId,
-                                  productName: widget.name,
-                                  productPrice: widget.price,
-                                  productImage: widget.image,
-                                  productBrand: widget.brand,
-                                  initialItem: mockClothingItems.first,
-                                ),
-                              ),
-                            ),
-                            icon: const Icon(Icons.view_in_ar_rounded, size: 18),
-                            label: Text(
-                              'Try in AR',
-                              style: GoogleFonts.outfit(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              backgroundColor:
-                                  isDark ? AppColors.gold : AppColors.burgundy,
-                              foregroundColor:
-                                  isDark ? AppColors.charcoal : Colors.white,
-                              elevation: 0,
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => TryOnScreen(
+                                          initialImageUrl: widget.image,
+                                          initialCategory: widget.category,
+                                          initialProductId: widget.productId,
+                                          initialSize: _selectedSize,
+                                        ))),
+                            icon: const Icon(
+                                Icons.face_retouching_natural_rounded,
+                                size: 16),
+                            label: Text('product.try_on'.tr(),
+                                style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13)),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 13),
+                              side: BorderSide(
+                                  color: isDark
+                                      ? Colors.white24
+                                      : const Color(0xFFCCCCCC),
+                                  width: 1.5),
+                              foregroundColor: isDark
+                                  ? Colors.white
+                                  : AppColors.inkBlack,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                                  borderRadius:
+                                      BorderRadius.circular(12)),
                             ),
                           ),
                           const SizedBox(height: 10),
-                          // ── AI try-on + Shop Now row ────────────────────────
+                          // ── 360° Studio + Shop Now row ────────────────────────
                           Row(
                             children: [
                               Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () => Navigator.push(context,
-                                      MaterialPageRoute(
-                                          builder: (_) => TryOnScreen(
-                                            initialImageUrl: widget.image,
-                                            initialCategory: widget.category,
-                                            initialProductId: widget.productId,
-                                            initialSize: _selectedSize,
-                                          ))),
-                                  icon: const Icon(
-                                      Icons.face_retouching_natural_rounded,
-                                      size: 16),
-                                  label: Text('product.try_on'.tr(),
-                                      style: GoogleFonts.outfit(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13)),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 13),
-                                    side: BorderSide(
-                                        color: isDark
-                                            ? Colors.white24
-                                            : const Color(0xFFCCCCCC),
-                                        width: 1.5),
-                                    foregroundColor: isDark
-                                        ? Colors.white
-                                        : AppColors.inkBlack,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => Product360StudioScreen(
+                                        productName: widget.name,
+                                        modelAsset: _model3dAsset,
+                                      ),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.threesixty_rounded, size: 18),
+                                  label: Text(
+                                    '360 Studio',
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    backgroundColor:
+                                        isDark ? AppColors.gold : AppColors.burgundy,
+                                    foregroundColor:
+                                        isDark ? AppColors.charcoal : Colors.white,
+                                    elevation: 0,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
+                                        borderRadius: BorderRadius.circular(12)),
                                   ),
                                 ),
                               ),
@@ -1680,53 +1693,89 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             maxChildSize: 0.95,
             expand: false,
             builder: (_, scroll) => Container(
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: cardBg,
                 borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
+                    const BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withOpacity(0.12),
+                    blurRadius: 24,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
-                  const SizedBox(height: 12),
+                  // Accent shimmer line at top
                   Container(
-                    width: 40,
-                    height: 4,
+                    height: 3,
                     decoration: BoxDecoration(
-                        color: isDark ? Colors.white24 : Colors.black12,
-                        borderRadius: BorderRadius.circular(2)),
+                      gradient: LinearGradient(
+                        colors: [
+                          accent.withOpacity(0.0),
+                          accent.withOpacity(0.5),
+                          accent.withOpacity(0.0),
+                        ],
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 14),
-                  Text('size_guide.size_guide'.tr(),
-                      style: GoogleFonts.rufina(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: ink)),
-                  const SizedBox(height: 14),
-                  // Tabs
+                  const SizedBox(height: 12),
+                  // Wider, accent-tinted drag handle
+                  Container(
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(isDark ? 0.35 : 0.25),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  // Title with inline ruler icon
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.straighten_rounded,
+                          size: 20, color: accent),
+                      const SizedBox(width: 8),
+                      Text('size_guide.size_guide'.tr(),
+                          style: GoogleFonts.rufina(
+                              fontSize: 21,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: ink)),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  // Tabs — pill-shaped segmented control
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white10 : const Color(0xFFF2F2F2),
-                        borderRadius: BorderRadius.circular(12),
+                        color: isDark
+                            ? Colors.white.withOpacity(0.06)
+                            : const Color(0xFFF0EDE8),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Row(
                         children: [
                           _sizeTab('size_guide.product_chart'.tr(), 0, tab,
-                              accent, ink, isDark,
+                              accent, ink, isDark, muted,
                               () => setSheet(() => tab = 0)),
                           _sizeTab('size_guide.body_chart'.tr(), 1, tab, accent,
-                              ink, isDark, () => setSheet(() => tab = 1)),
+                              ink, isDark, muted,
+                              () => setSheet(() => tab = 1)),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                   Expanded(
                     child: SingleChildScrollView(
                       controller: scroll,
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                       child: tab == 0
                           ? _shopChart(isDark, accent, ink, muted)
                           : _bodyChart(
@@ -1755,25 +1804,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _sizeTab(String label, int idx, int current, Color accent, Color ink,
-      bool isDark, VoidCallback onTap) {
+      bool isDark, Color muted, VoidCallback onTap) {
     final sel = current == idx;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(vertical: 12),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: sel ? accent : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: sel
+                ? [
+                    BoxShadow(
+                      color: accent.withOpacity(0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Text(label,
               style: GoogleFonts.outfit(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5,
+                  fontWeight: sel ? FontWeight.w700 : FontWeight.w600,
                   color: sel
                       ? (isDark ? AppColors.charcoal : Colors.white)
-                      : ink)),
+                      : muted)),
         ),
       ),
     );
@@ -1825,8 +1885,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     ValueChanged<double> onWaist,
     ValueChanged<double> onHips,
   ) {
-    final headerBg = isDark ? Colors.white10 : const Color(0xFFF4F2EF);
-    final line = isDark ? Colors.white12 : const Color(0xFFEDE9E4);
+    final headerBg = accent.withOpacity(isDark ? 0.22 : 0.14);
+    final line = isDark
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFEDE9E4).withOpacity(0.7);
     const headers = ['Size', 'Height', 'Bust', 'Waist', 'Hip'];
     final recommended = _recommendSize(bust, waist, hips);
 
@@ -1845,77 +1907,91 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         // ── Reference table ──
         Text('size_guide.body_reference'.tr(),
             style: GoogleFonts.outfit(
-                fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
+                fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.3, color: muted)),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: line),
-          ),
-          child: Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: headerBg,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(13)),
-                ),
-                child: Row(
-                  children: headers
-                      .map((h) => Expanded(
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 11),
-                              child: Text(h,
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.outfit(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: ink)),
-                            ),
-                          ))
-                      .toList(),
-                ),
+            border: Border.all(color: line, width: 0.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.12 : 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
-              ..._bodyChartRows.map((row) {
-                final isMine = row[0] == recommended;
-                return Container(
-                  decoration: BoxDecoration(
-                    color: isMine ? accent.withOpacity(0.10) : null,
-                    border: Border(top: BorderSide(color: line)),
-                  ),
-                  child: Row(
-                    children: List.generate(row.length, (c) {
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(row[c],
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(
-                                  fontSize: 11,
-                                  fontWeight: c == 0 || isMine
-                                      ? FontWeight.w700
-                                      : FontWeight.w400,
-                                  color: isMine ? accent : ink)),
-                        ),
-                      );
-                    }),
-                  ),
-                );
-              }),
             ],
           ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: headerBg,
+                  ),
+                  child: Row(
+                    children: headers
+                        .map((h) => Expanded(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 13),
+                                child: Text(h,
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.3,
+                                        color: ink)),
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                ),
+                ..._bodyChartRows.asMap().entries.map((entry) {
+                  final rowIdx = entry.key;
+                  final row = entry.value;
+                  final isMine = row[0] == recommended;
+                  final stripeBg = rowIdx.isOdd
+                      ? (isDark ? Colors.white.withOpacity(0.03) : const Color(0xFFFAF8F5))
+                      : null;
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: isMine ? accent.withOpacity(0.12) : stripeBg,
+                      border: Border(top: BorderSide(color: line, width: 0.5)),
+                    ),
+                    child: Row(
+                      children: List.generate(row.length, (c) {
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            child: Text(row[c],
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: c == 0 || isMine
+                                        ? FontWeight.w700
+                                        : FontWeight.w400,
+                                    color: isMine ? accent : ink)),
+                          ),
+                        );
+                      }),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Text('size_guide.reference_only'.tr(),
-            style: GoogleFonts.outfit(fontSize: 11, color: muted)),
-        const SizedBox(height: 24),
+            style: GoogleFonts.outfit(fontSize: 11, fontStyle: FontStyle.italic, color: muted)),
+        const SizedBox(height: 28),
 
         // ── Your Body Shape ──
         Text('size_guide.your_body_shape'.tr(),
             style: GoogleFonts.outfit(
-                fontSize: 14, fontWeight: FontWeight.w700, color: ink)),
-        const SizedBox(height: 12),
+                fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 0.2, color: ink)),
+        const SizedBox(height: 14),
         Wrap(
           spacing: 10,
           runSpacing: 10,
@@ -1923,38 +1999,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             final sel = bodyShape == s[0];
             return GestureDetector(
               onTap: () => onShape(s[0]),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
                 width: 96,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
                   color: sel
-                      ? accent.withOpacity(0.12)
-                      : (isDark ? Colors.white10 : const Color(0xFFF6F4F1)),
+                      ? accent.withOpacity(0.14)
+                      : (isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFF7F5F2)),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                       color: sel ? accent : Colors.transparent, width: 1.5),
+                  boxShadow: sel
+                      ? [
+                          BoxShadow(
+                            color: accent.withOpacity(0.18),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Column(
                   children: [
                     Text(s[1],
                         style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 24,
                             color: sel ? accent : ink)),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text('size_guide.shapes.${s[0]}'.tr(),
                         textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
                             fontSize: 11,
                             fontWeight:
                                 sel ? FontWeight.w700 : FontWeight.w500,
-                            color: sel ? accent : ink)),
+                            color: sel ? accent : muted)),
                   ],
                 ),
               ),
             );
           }).toList(),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
 
         // ── Your Measurements ──
         Text('size_guide.your_measurements'.tr(),
@@ -1974,34 +2061,57 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         // ── Recommendation ──
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 18),
           decoration: BoxDecoration(
-            color: accent.withOpacity(isDark ? 0.16 : 0.10),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                accent.withOpacity(isDark ? 0.18 : 0.12),
+                accent.withOpacity(isDark ? 0.08 : 0.04),
+              ],
+            ),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: accent.withOpacity(0.4)),
+            border: Border.all(color: accent.withOpacity(0.3), width: 0.5),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withOpacity(0.10),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.thumb_up_alt_rounded, size: 18, color: accent),
-                  const SizedBox(width: 8),
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.check_rounded, size: 16, color: accent),
+                  ),
+                  const SizedBox(width: 10),
                   Text('size_guide.best_fit'.tr(args: [recommended]),
                       style: GoogleFonts.outfit(
-                          fontSize: 16,
+                          fontSize: 17,
                           fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
                           color: accent)),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 bodyShape == null
                     ? 'size_guide.based_on'.tr()
                     : 'size_guide.based_on_shape'.tr(
                         args: ['size_guide.shapes.$bodyShape'.tr()]),
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(fontSize: 12, color: ink),
+                style: GoogleFonts.outfit(fontSize: 12, height: 1.4, color: ink),
               ),
             ],
           ),
@@ -2061,20 +2171,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             Text(label,
                 style: GoogleFonts.outfit(
                     fontSize: 13, fontWeight: FontWeight.w600, color: ink)),
-            Text('${value.toStringAsFixed(1)} in',
-                style: GoogleFonts.outfit(
-                    fontSize: 14, fontWeight: FontWeight.w800, color: accent)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: accent.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('${value.toStringAsFixed(1)} in',
+                  style: GoogleFonts.outfit(
+                      fontSize: 14, fontWeight: FontWeight.w800, color: accent)),
+            ),
           ],
         ),
+        const SizedBox(height: 4),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            trackHeight: 4,
+            trackHeight: 5,
             activeTrackColor: accent,
             inactiveTrackColor:
-                isDark ? Colors.white12 : const Color(0xFFEDE9E4),
+                isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFEDE9E4),
             thumbColor: accent,
-            overlayColor: accent.withOpacity(0.15),
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
+            overlayColor: accent.withOpacity(0.12),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+            trackShape: const RoundedRectSliderTrackShape(),
           ),
           child: Slider(
             value: value,
@@ -2104,25 +2223,45 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       children: [
         Text(label,
             style: GoogleFonts.outfit(
-                fontSize: 13, fontWeight: FontWeight.w600, color: ink)),
-        const SizedBox(height: 10),
+                fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 0.2, color: ink)),
+        const SizedBox(height: 12),
         LayoutBuilder(builder: (context, c) {
           final w = c.maxWidth;
-          final dotX = (w - 16) * (active / (stops.length - 1));
+          final dotX = (w - 18) * (active / (stops.length - 1));
           return SizedBox(
-            height: 26,
+            height: 28,
             child: Stack(
               clipBehavior: Clip.none,
               children: [
                 Positioned(
-                  top: 7,
+                  top: 8,
                   left: 0,
                   right: 0,
                   child: Container(
-                    height: 4,
+                    height: 5,
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white12 : const Color(0xFFEDE9E4),
-                      borderRadius: BorderRadius.circular(2),
+                      color: isDark
+                          ? Colors.white.withOpacity(0.08)
+                          : const Color(0xFFEDE9E4),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                // Active fill up to the dot
+                Positioned(
+                  top: 8,
+                  left: 0,
+                  width: dotX + 9,
+                  child: Container(
+                    height: 5,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          accent.withOpacity(0.6),
+                          accent,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
                 ),
@@ -2130,12 +2269,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   top: 2,
                   left: dotX,
                   child: Container(
-                    width: 16,
-                    height: 16,
+                    width: 18,
+                    height: 18,
                     decoration: BoxDecoration(
                       color: accent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(
+                          color: isDark ? AppColors.darkWarm : Colors.white,
+                          width: 2.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withOpacity(0.35),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -2143,7 +2291,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           );
         }),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: stops
@@ -2157,34 +2305,43 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _fitReview(String label, int pct, Color accent, Color ink, Color muted,
       bool isDark) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 84,
-          child: Text(label,
-              style: GoogleFonts.outfit(fontSize: 12, color: ink)),
-        ),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: pct / 100,
-              minHeight: 8,
-              backgroundColor:
-                  isDark ? Colors.white12 : const Color(0xFFEDE9E4),
-              valueColor: AlwaysStoppedAnimation(accent),
+    final isHighlight = pct > 50;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(label,
+                style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: isHighlight ? FontWeight.w600 : FontWeight.w400,
+                    color: ink)),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(5),
+              child: LinearProgressIndicator(
+                value: pct / 100,
+                minHeight: 10,
+                backgroundColor:
+                    isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFEDE9E4),
+                valueColor: AlwaysStoppedAnimation(accent),
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 36,
-          child: Text('$pct%',
-              textAlign: TextAlign.right,
-              style: GoogleFonts.outfit(
-                  fontSize: 12, fontWeight: FontWeight.w700, color: ink)),
-        ),
-      ],
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 38,
+            child: Text('$pct%',
+                textAlign: TextAlign.right,
+                style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isHighlight ? accent : ink)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2256,8 +2413,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ...SizeMeasurements.all.where(present.contains),
       ...present.where((m) => !SizeMeasurements.all.contains(m)),
     ];
-    final headerBg = accent.withOpacity(isDark ? 0.22 : 0.12);
-    final borderColor = isDark ? Colors.white12 : const Color(0xFFE7E2DB);
+    final headerBg = accent.withOpacity(isDark ? 0.28 : 0.18);
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFE7E2DB).withOpacity(0.6);
+    final stripeBg = isDark
+        ? Colors.white.withOpacity(0.03)
+        : const Color(0xFFFAF8F5);
 
     String cell(String measure, String size) {
       final band = chart.bandFor(measure, size);
@@ -2269,27 +2431,34 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
 
     TextStyle headStyle(Color c) => GoogleFonts.outfit(
-        fontSize: 12.5, fontWeight: FontWeight.w700, color: c);
+        fontSize: 12.5, fontWeight: FontWeight.w700, letterSpacing: 0.3, color: c);
     TextStyle bodyStyle(Color c) =>
         GoogleFonts.outfit(fontSize: 12.5, color: c);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: borderColor),
-                borderRadius: BorderRadius.circular(14),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderColor, width: 0.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.15 : 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               child: Table(
                 defaultColumnWidth: const FixedColumnWidth(72),
                 columnWidths: const {0: FixedColumnWidth(150)},
                 border: TableBorder.symmetric(
-                  inside: BorderSide(color: borderColor),
+                  inside: BorderSide(color: borderColor, width: 0.5),
                 ),
                 defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                 children: [
@@ -2302,11 +2471,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           _tableCell(s, headStyle(accent), center: true)),
                     ],
                   ),
-                  // One row per measurement.
-                  ...measures.map((m) {
+                  // One row per measurement with alternating stripes.
+                  ...measures.asMap().entries.map((entry) {
+                    final idx = entry.key;
+                    final m = entry.value;
                     return TableRow(
+                      decoration: idx.isOdd
+                          ? BoxDecoration(color: stripeBg)
+                          : null,
                       children: [
-                        _tableCell(SizeMeasurements.label(m), bodyStyle(ink),
+                        _tableCell(SizeMeasurements.label(m),
+                            bodyStyle(ink).copyWith(fontWeight: FontWeight.w600),
                             left: true),
                         ...sizes.map((s) => _tableCell(
                             cell(m, s), bodyStyle(muted),
@@ -2319,23 +2494,37 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
+        // Info tip card
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
-            color: accent.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(12),
+            color: accent.withOpacity(isDark ? 0.10 : 0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: accent.withOpacity(0.15),
+              width: 0.5,
+            ),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline_rounded, size: 16, color: accent),
-              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(Icons.info_outline_rounded, size: 16, color: accent),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   synthetic
-                      ? "Estimated standard sizing in cm — the shop hasn't provided exact measurements for this item. Switch to Body Chart for your recommended size."
+                      ? "Estimated standard sizing in cm. The shop hasn't provided exact measurements for this item. Switch to Body Chart for your recommended size."
                       : 'Measurements in cm, as provided by the shop. Switch to Body Chart to get your recommended size.',
-                  style: GoogleFonts.outfit(fontSize: 12, color: ink),
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                    height: 1.5,
+                    color: muted,
+                  ),
                 ),
               ),
             ],
@@ -2348,7 +2537,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _tableCell(String text, TextStyle style,
       {bool center = false, bool left = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
       child: Text(
         text,
         textAlign: center ? TextAlign.center : TextAlign.left,
@@ -2365,27 +2554,45 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white10 : const Color(0xFFF4F2EF),
+            color: isDark
+                ? Colors.white.withOpacity(0.05)
+                : const Color(0xFFF7F5F1),
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: accent.withOpacity(0.12),
+              width: 0.5,
+            ),
           ),
           child: Column(
             children: [
-              Icon(Icons.straighten_rounded, size: 40, color: muted),
-              const SizedBox(height: 12),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.straighten_rounded,
+                    size: 28, color: accent),
+              ),
+              const SizedBox(height: 16),
               Text('No size chart yet',
                   style: GoogleFonts.outfit(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: ink)),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 "The shop hasn't added measurements for this product yet. "
                 'Switch to Body Chart to get your recommended size.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(
-                    fontSize: 12, height: 1.5, color: muted),
+                    fontSize: 12,
+                    height: 1.6,
+                    fontStyle: FontStyle.italic,
+                    color: muted),
               ),
             ],
           ),
