@@ -56,6 +56,20 @@ class _HaircutScreenState extends State<HaircutScreen> {
       'crop', 'curly', 'wavy', 'mullet', 'wolf', 'fringe', 'shag', 'layered',
       'textured', 'french',
     ],
+    'Triangle Face': [
+      'pixie', 'short', 'crop', 'bang', 'fringe', 'layer', 'wav', 'curl',
+      'quiff', 'fade', 'side', 'updo', 'pomp',
+    ],
+    'Heart Face': [
+      'bob', 'bang', 'fringe', 'side', 'wav', 'curl', 'layer', 'shag', 'crop',
+      'curtain', 'medium', 'long', 'mullet',
+    ],
+  };
+
+  // Face shapes that have their own curated women's asset folders. Others
+  // (Triangle, Heart) fall back to filtering the whole set by suitability.
+  static const _womenFolderShapes = {
+    'Oval Face', 'Round Face', 'Square Face', 'Diamond Face'
   };
 
   /// True when [path]'s style suits [faceShape]. Empty keyword list → suits all.
@@ -95,15 +109,18 @@ class _HaircutScreenState extends State<HaircutScreen> {
 
   void _updateVisibleHairstyles() {
     final genderPath = _hairGender == 'Women' ? 'Female' : 'Male';
-    // Women's assets live in per-face-shape folders (already curated for the
-    // shape). Men's live in cut-type folders, so we filter the whole Male set
-    // by which styles flatter the selected face shape.
-    final targetFolder = _hairGender == 'Women'
+    // Women's assets live in per-face-shape folders for the four original
+    // shapes (already curated). For Men, and for the newer women's shapes with
+    // no dedicated folder (Triangle, Heart), we take the whole gender set and
+    // filter by which styles flatter the selected face shape.
+    final usesFolder =
+        _hairGender == 'Women' && _womenFolderShapes.contains(_selectedFaceShape);
+    final targetFolder = usesFolder
         ? 'pyin-mal-assets/assets/images/Hair/$genderPath/$_selectedFaceShape/'
         : 'pyin-mal-assets/assets/images/Hair/$genderPath/';
 
     bool suitsShape(String p) =>
-        _hairGender == 'Women' || _suitsFaceShape(p, _selectedFaceShape);
+        usesFolder || _suitsFaceShape(p, _selectedFaceShape);
 
     _visibleHairstyles = _allAssetPaths.where((p) {
       if (!p.startsWith(targetFolder)) return false;
@@ -326,6 +343,8 @@ class _HaircutScreenState extends State<HaircutScreen> {
       {'name': 'Round Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/R.jpg'},
       {'name': 'Square Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/S.jpg'},
       {'name': 'Diamond Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/D.jpg'},
+      {'name': 'Triangle Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/T.jpg'},
+      {'name': 'Heart Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/H.jpg'},
     ];
 
     return Column(
@@ -811,14 +830,15 @@ class _HaircutScreenState extends State<HaircutScreen> {
     // (women: the face-shape folder; men: filtered by flattering keywords),
     // spread across cut categories so the picks feel varied.
     final genderPath = _hairGender == 'Women' ? 'Female' : 'Male';
-    final folder = _hairGender == 'Women'
+    final usesFolder =
+        _hairGender == 'Women' && _womenFolderShapes.contains(_selectedFaceShape);
+    final folder = usesFolder
         ? 'pyin-mal-assets/assets/images/Hair/$genderPath/$_selectedFaceShape/'
         : 'pyin-mal-assets/assets/images/Hair/$genderPath/';
     final pool = _allAssetPaths
         .where((p) =>
             p.startsWith(folder) &&
-            (_hairGender == 'Women' ||
-                _suitsFaceShape(p, _selectedFaceShape)))
+            (usesFolder || _suitsFaceShape(p, _selectedFaceShape)))
         .toList();
     final recommended = <String>[];
     if (pool.isNotEmpty) {
