@@ -20,6 +20,8 @@ import '../widgets/size_fit_banner.dart';
 import '../models/product.dart';
 import '../data/product_repository.dart';
 import '../widgets/cdn_image.dart';
+import '../widgets/generating_overlay.dart';
+import '../widgets/generating_silhouettes.dart';
 import '../services/pose_guide_validator.dart';
 import 'pose_guide_camera_screen.dart';
 import 'product_detail_screen.dart';
@@ -56,25 +58,29 @@ class _TryOnScreenState extends State<TryOnScreen> {
   set _userPhoto(XFile? val) => TryOnService.instance.userPhoto = val;
 
   Uint8List? get _userPhotoBytes => TryOnService.instance.userPhotoBytes;
-  set _userPhotoBytes(Uint8List? val) => TryOnService.instance.userPhotoBytes = val;
+  set _userPhotoBytes(Uint8List? val) =>
+      TryOnService.instance.userPhotoBytes = val;
 
   XFile? get _shirtPhoto => TryOnService.instance.shirtPhoto;
   set _shirtPhoto(XFile? val) => TryOnService.instance.shirtPhoto = val;
 
   Uint8List? get _shirtPhotoBytes => TryOnService.instance.shirtPhotoBytes;
-  set _shirtPhotoBytes(Uint8List? val) => TryOnService.instance.shirtPhotoBytes = val;
+  set _shirtPhotoBytes(Uint8List? val) =>
+      TryOnService.instance.shirtPhotoBytes = val;
 
   XFile? get _pantsPhoto => TryOnService.instance.pantsPhoto;
   set _pantsPhoto(XFile? val) => TryOnService.instance.pantsPhoto = val;
 
   Uint8List? get _pantsPhotoBytes => TryOnService.instance.pantsPhotoBytes;
-  set _pantsPhotoBytes(Uint8List? val) => TryOnService.instance.pantsPhotoBytes = val;
+  set _pantsPhotoBytes(Uint8List? val) =>
+      TryOnService.instance.pantsPhotoBytes = val;
 
   XFile? get _shoesPhoto => TryOnService.instance.shoesPhoto;
   set _shoesPhoto(XFile? val) => TryOnService.instance.shoesPhoto = val;
 
   Uint8List? get _shoesPhotoBytes => TryOnService.instance.shoesPhotoBytes;
-  set _shoesPhotoBytes(Uint8List? val) => TryOnService.instance.shoesPhotoBytes = val;
+  set _shoesPhotoBytes(Uint8List? val) =>
+      TryOnService.instance.shoesPhotoBytes = val;
 
   // Size-fit feedback for the current wearer. Messages drive the inline banner;
   // hints are handed to NanoBanana so the render reflects the true fit.
@@ -192,7 +198,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
             idx >= 0 ? imageUrl.substring(idx + marker.length) : imageUrl;
         imageUrl = '${ApiConstants.cdnBaseUrl}$cdnPath';
       }
-      
+
       // Encode URL to handle spaces in filenames. Use package:http (not
       // dart:io HttpClient, which throws on Flutter Web) so the item image
       // downloads and pre-fills its slot on every platform.
@@ -200,7 +206,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
       debugPrint('👕 Downloading initial item from: $encodedUrl');
       final response = await http.get(Uri.parse(encodedUrl));
       if (response.statusCode != 200) {
-        debugPrint('❗ Failed to load initial image: HTTP ${response.statusCode}');
+        debugPrint(
+            '❗ Failed to load initial image: HTTP ${response.statusCode}');
         return;
       }
       final bytes = response.bodyBytes;
@@ -212,7 +219,10 @@ class _TryOnScreenState extends State<TryOnScreen> {
           final svc = TryOnService.instance;
           final pid = widget.initialProductId;
           final size = widget.initialSize;
-          if (cat.contains('pant') || cat.contains('skirt') || cat.contains('bottom') || cat.contains('short')) {
+          if (cat.contains('pant') ||
+              cat.contains('skirt') ||
+              cat.contains('bottom') ||
+              cat.contains('short')) {
             _pantsPhotoBytes = bytes;
             _pantsPhoto = newFile;
             svc.pantsProductId = pid;
@@ -262,7 +272,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
           children: [
             const SizedBox(height: 8),
             Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: _muted.withOpacity(0.4),
                 borderRadius: BorderRadius.circular(2),
@@ -295,8 +306,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
       final bytes = await Navigator.push<Uint8List>(
         context,
         MaterialPageRoute(
-            builder: (_) =>
-                const PoseGuideCameraScreen(shot: BodyShot.front)),
+            builder: (_) => const PoseGuideCameraScreen(shot: BodyShot.front)),
       );
       if (bytes != null && mounted) {
         setState(() {
@@ -376,7 +386,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
         });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('try_on.error'.tr(args: [e.toString()]))));
+        ).showSnackBar(
+            SnackBar(content: Text('try_on.error'.tr(args: [e.toString()]))));
       }
     }
   }
@@ -389,8 +400,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
   }
 
   // Theme helpers
-  bool get _isDark =>
-      Theme.of(context).brightness == Brightness.dark;
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
   Color get _accent => _isDark ? AppColors.gold : AppColors.burgundy;
   Color get _bg => _isDark ? AppColors.charcoal : const Color(0xFFF5F2EE);
   Color get _surface => _isDark ? AppColors.darkWarm : Colors.white;
@@ -409,8 +419,16 @@ class _TryOnScreenState extends State<TryOnScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      body: SafeArea(
-        child: _resultImageUrl != null ? _buildResult() : _buildBody(),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: _resultImageUrl != null ? _buildResult() : _buildBody(),
+          ),
+          GeneratingOverlay(
+            visible: _isLoading,
+            silhouette: GeneratingSilhouette.shirt,
+          ),
+        ],
       ),
     );
   }
@@ -484,115 +502,114 @@ class _TryOnScreenState extends State<TryOnScreen> {
                 constraints:
                     BoxConstraints(minHeight: constraints.maxHeight - 44),
                 child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('try_on.mix_match'.tr(),
-                    style: GoogleFonts.rufina(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: _ink)),
-                const SizedBox(height: 6),
-                Text('try_on.desc'.tr(),
-                    style: GoogleFonts.outfit(
-                        fontSize: 13, height: 1.4, color: _muted)),
-                const SizedBox(height: 16),
-                FittingForBanner(isDark: _isDark),
-                const SizedBox(height: 8),
-
-                // Step 1 — your photo
-                _stepLabel('1', 'try_on.person'.tr(), 'try_on.required'.tr()),
-                const SizedBox(height: 12),
-                _personCard(),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: WhoIsThisForSelector(
-                    isDark: _isDark,
-                    onChanged: _recomputeFit,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Step 2 — your pieces
-                _stepLabel('2', 'try_on.pieces'.tr(),
-                    'try_on.selected'.tr(args: [_itemsAdded.toString()])),
-                const SizedBox(height: 12),
-                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _garmentCard(
-                        title: 'try_on.shirt'.tr(),
-                        icon: Icons.checkroom_rounded,
-                        imageBytes: _shirtPhotoBytes,
-                        onTap: () => _pickImage((f, b) {
-                          _shirtPhoto = f;
-                          _shirtPhotoBytes = b;
-                        }),
-                        onRemove: () => setState(() {
-                          _shirtPhoto = null;
-                          _shirtPhotoBytes = null;
-                        }),
+                    Text('try_on.mix_match'.tr(),
+                        style: GoogleFonts.rufina(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: _ink)),
+                    const SizedBox(height: 6),
+                    Text('try_on.desc'.tr(),
+                        style: GoogleFonts.outfit(
+                            fontSize: 13, height: 1.4, color: _muted)),
+                    const SizedBox(height: 16),
+                    FittingForBanner(isDark: _isDark),
+                    const SizedBox(height: 8),
+
+                    // Step 1 — your photo
+                    _stepLabel(
+                        '1', 'try_on.person'.tr(), 'try_on.required'.tr()),
+                    const SizedBox(height: 12),
+                    _personCard(),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: WhoIsThisForSelector(
+                        isDark: _isDark,
+                        onChanged: _recomputeFit,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _garmentCard(
-                        title: 'try_on.pants'.tr(),
-                        icon: Icons.dry_cleaning_rounded,
-                        imageBytes: _pantsPhotoBytes,
-                        onTap: () => _pickImage((f, b) {
-                          _pantsPhoto = f;
-                          _pantsPhotoBytes = b;
-                        }),
-                        onRemove: () => setState(() {
-                          _pantsPhoto = null;
-                          _pantsPhotoBytes = null;
-                        }),
-                      ),
+                    const SizedBox(height: 24),
+
+                    // Step 2 — your pieces
+                    _stepLabel('2', 'try_on.pieces'.tr(),
+                        'try_on.selected'.tr(args: [_itemsAdded.toString()])),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _garmentCard(
+                            title: 'try_on.shirt'.tr(),
+                            icon: Icons.checkroom_rounded,
+                            imageBytes: _shirtPhotoBytes,
+                            onTap: () => _pickImage((f, b) {
+                              _shirtPhoto = f;
+                              _shirtPhotoBytes = b;
+                            }),
+                            onRemove: () => setState(() {
+                              _shirtPhoto = null;
+                              _shirtPhotoBytes = null;
+                            }),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _garmentCard(
+                            title: 'try_on.pants'.tr(),
+                            icon: Icons.dry_cleaning_rounded,
+                            imageBytes: _pantsPhotoBytes,
+                            onTap: () => _pickImage((f, b) {
+                              _pantsPhoto = f;
+                              _pantsPhotoBytes = b;
+                            }),
+                            onRemove: () => setState(() {
+                              _pantsPhoto = null;
+                              _pantsPhotoBytes = null;
+                            }),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _garmentCard(
+                            title: 'try_on.shoes'.tr(),
+                            icon: Icons.ice_skating_rounded,
+                            imageBytes: _shoesPhotoBytes,
+                            onTap: () => _pickImage((f, b) {
+                              _shoesPhoto = f;
+                              _shoesPhotoBytes = b;
+                            }),
+                            onRemove: () => setState(() {
+                              _shoesPhoto = null;
+                              _shoesPhotoBytes = null;
+                            }),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _garmentCard(
-                        title: 'try_on.shoes'.tr(),
-                        icon: Icons.ice_skating_rounded,
-                        imageBytes: _shoesPhotoBytes,
-                        onTap: () => _pickImage((f, b) {
-                          _shoesPhoto = f;
-                          _shoesPhotoBytes = b;
-                        }),
-                        onRemove: () => setState(() {
-                          _shoesPhoto = null;
-                          _shoesPhotoBytes = null;
-                        }),
+
+                    // Size selectors for any garment linked to a real product, so
+                    // the user can try different sizes and see the fit change.
+                    ..._buildSizeSelectors(),
+
+                    // Non-blocking size-fit notices for the active wearer.
+                    for (final msg in _sizeWarnings) ...[
+                      const SizedBox(height: 12),
+                      SizeFitBanner(message: msg, isDark: _isDark),
+                    ],
+
+                    const SizedBox(height: 28),
+
+                    _generateButton(canGenerate),
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Text(
+                        canGenerate ? 'try_on.ready'.tr() : 'try_on.hint'.tr(),
+                        style: GoogleFonts.outfit(fontSize: 12, color: _muted),
                       ),
                     ),
                   ],
-                ),
-
-                // Size selectors for any garment linked to a real product, so
-                // the user can try different sizes and see the fit change.
-                ..._buildSizeSelectors(),
-
-                // Non-blocking size-fit notices for the active wearer.
-                for (final msg in _sizeWarnings) ...[
-                  const SizedBox(height: 12),
-                  SizeFitBanner(message: msg, isDark: _isDark),
-                ],
-
-                const SizedBox(height: 28),
-
-                _generateButton(canGenerate),
-                const SizedBox(height: 10),
-                Center(
-                  child: Text(
-                    canGenerate
-                        ? 'try_on.ready'.tr()
-                        : 'try_on.hint'.tr(),
-                    style: GoogleFonts.outfit(fontSize: 12, color: _muted),
-                  ),
-                ),
-              ],
                 ),
               ),
             ),
@@ -815,7 +832,9 @@ class _TryOnScreenState extends State<TryOnScreen> {
             color: _surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: has ? _accent : (_isDark ? AppColors.darkBorder : AppColors.creamAlt),
+              color: has
+                  ? _accent
+                  : (_isDark ? AppColors.darkBorder : AppColors.creamAlt),
               width: has ? 2 : 1,
             ),
           ),
@@ -907,8 +926,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
               _isDark ? AppColors.darkBorder : Colors.grey.shade300,
           foregroundColor: _isDark ? AppColors.charcoal : Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: _isLoading
             ? const SizedBox(
@@ -971,7 +990,10 @@ class _TryOnScreenState extends State<TryOnScreen> {
           SnackBar(
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.green.shade600,
-            content: Text(kIsWeb ? 'savebtn.downloaded'.tr() : 'savebtn.saved_photos'.tr(),
+            content: Text(
+                kIsWeb
+                    ? 'savebtn.downloaded'.tr()
+                    : 'savebtn.saved_photos'.tr(),
                 style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
         );
@@ -1067,7 +1089,10 @@ class _TryOnScreenState extends State<TryOnScreen> {
                                 strokeWidth: 2, color: _accent),
                           )
                         : const Icon(Icons.download_rounded, size: 18),
-                    label: Text(_isSavingResult ? 'savebtn.saving'.tr() : 'savebtn.save'.tr(),
+                    label: Text(
+                        _isSavingResult
+                            ? 'savebtn.saving'.tr()
+                            : 'savebtn.save'.tr(),
                         style: GoogleFonts.outfit(
                             fontWeight: FontWeight.w700, fontSize: 15)),
                     style: OutlinedButton.styleFrom(
@@ -1090,8 +1115,16 @@ class _TryOnScreenState extends State<TryOnScreen> {
   // ── "Complete the look" — matching pants & shoes from the catalog ─────────
 
   static const _topCats = {
-    'Top', 'T-Shirt', 'Tee', 'Shirt', 'Hoodie', 'Sweater', 'Jacket', 'Coat',
-    'Jersey', 'Blouse'
+    'Top',
+    'T-Shirt',
+    'Tee',
+    'Shirt',
+    'Hoodie',
+    'Sweater',
+    'Jacket',
+    'Coat',
+    'Jersey',
+    'Blouse'
   };
   static const _bottomCats = {'Pants', 'Jeans', 'Skirt', 'Short'};
   static const _shoeCats = {'Shoes', 'Sneakers', 'Footwear'};
@@ -1099,8 +1132,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
   List<Product> _matchesFor(Set<String> cats, {int count = 6}) {
     final all = ProductRepository.allProducts;
     final hits = all
-        .where((p) => cats.any(
-            (c) => p.category.toLowerCase().contains(c.toLowerCase())))
+        .where((p) =>
+            cats.any((c) => p.category.toLowerCase().contains(c.toLowerCase())))
         .toList();
     return hits.take(count).toList();
   }
@@ -1136,8 +1169,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
 
     if (tops.isNotEmpty) {
       sections.add(const SizedBox(height: 18));
-      sections.add(
-          _matchRow('savebtn.matching_tops'.tr(), Icons.checkroom_rounded, tops));
+      sections.add(_matchRow(
+          'savebtn.matching_tops'.tr(), Icons.checkroom_rounded, tops));
     }
     if (bottoms.isNotEmpty) {
       sections.add(const SizedBox(height: 18));
@@ -1227,9 +1260,8 @@ class _TryOnScreenState extends State<TryOnScreen> {
                         p.image,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
-                          color: _isDark
-                              ? AppColors.charcoal
-                              : AppColors.creamAlt,
+                          color:
+                              _isDark ? AppColors.charcoal : AppColors.creamAlt,
                           child: Icon(Icons.checkroom_rounded,
                               size: 30, color: _muted),
                         ),
@@ -1281,8 +1313,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                   Text(p.shopName ?? p.brand,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          GoogleFonts.outfit(fontSize: 10.5, color: _muted)),
+                      style: GoogleFonts.outfit(fontSize: 10.5, color: _muted)),
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -1304,8 +1335,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                         ),
                         child: Icon(Icons.arrow_forward_rounded,
                             size: 14,
-                            color:
-                                _isDark ? AppColors.charcoal : Colors.white),
+                            color: _isDark ? AppColors.charcoal : Colors.white),
                       ),
                     ],
                   ),

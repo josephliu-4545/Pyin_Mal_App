@@ -986,5 +986,14 @@
   },
   "hairx": {
     "suits_intro": "Showing styles that suit your {}."
+  },
+  "generating": {
+    "label": "Generating…",
+    "tip_1": "Touch the dots — they scatter, then find their way back.",
+    "tip_2": "A clear, well-lit photo gives the AI far more to work with.",
+    "tip_3": "Plain backgrounds usually produce a cleaner result.",
+    "tip_4": "Add your measurements once and every fit gets more accurate.",
+    "tip_5": "Stand square to the camera so the fit lands where it should.",
+    "tip_6": "This usually takes under a minute. Feel free to keep tapping."
   }
 }

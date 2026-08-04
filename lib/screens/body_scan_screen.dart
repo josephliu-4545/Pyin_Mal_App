@@ -9,6 +9,8 @@ import 'package:pyin_mal_app/services/bodygram_service.dart';
 import 'package:pyin_mal_app/services/database_service.dart';
 import 'package:pyin_mal_app/services/pose_guide_validator.dart';
 import 'package:pyin_mal_app/screens/pose_guide_camera_screen.dart';
+import 'package:pyin_mal_app/widgets/generating_overlay.dart';
+import 'package:pyin_mal_app/widgets/generating_silhouettes.dart';
 
 /// Bodygram body scan: front + right-side photo plus height/weight/age/gender
 /// → precise body measurements, saved to the user profile for sizing.
@@ -35,6 +37,10 @@ class _BodyScanScreenState extends State<BodyScanScreen>
   Uint8List? _rightPhoto;
 
   bool _busy = false;
+
+  /// True only during the Bodygram round-trip. [_busy] also covers the quick
+  /// manual save, which is too short to warrant the full-screen overlay.
+  bool _scanning = false;
   BodyMeasurements? _result;
 
   /// Measurements a user can realistically take themselves with a tape,
@@ -154,7 +160,8 @@ class _BodyScanScreenState extends State<BodyScanScreen>
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: Text('bodygram.from_gallery'.tr(), style: GoogleFonts.outfit()),
+              title: Text('bodygram.from_gallery'.tr(),
+                  style: GoogleFonts.outfit()),
               onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             const SizedBox(height: 8),
@@ -212,15 +219,24 @@ class _BodyScanScreenState extends State<BodyScanScreen>
     final age = int.tryParse(_ageCtrl.text.trim());
     final height = int.tryParse(_heightCtrl.text.trim());
     final weight = double.tryParse(_weightCtrl.text.trim());
-    if (age == null || height == null || weight == null ||
-        age < 5 || age > 110 || height < 80 || height > 250 ||
-        weight < 20 || weight > 300) {
+    if (age == null ||
+        height == null ||
+        weight == null ||
+        age < 5 ||
+        age > 110 ||
+        height < 80 ||
+        height > 250 ||
+        weight < 20 ||
+        weight > 300) {
       _showError('bodygram.invalid_stats'.tr());
       return;
     }
 
     final hasPhotos = _frontPhoto != null && _rightPhoto != null;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _scanning = true;
+    });
     try {
       final result = hasPhotos
           ? await BodygramService.photoScan(
@@ -249,7 +265,12 @@ class _BodyScanScreenState extends State<BodyScanScreen>
     } catch (e) {
       _showError('bodygram.generic_error'.tr());
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _scanning = false;
+        });
+      }
     }
   }
 
@@ -283,11 +304,19 @@ class _BodyScanScreenState extends State<BodyScanScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabs,
+      body: Stack(
         children: [
-          _buildScanTab(isDark, ink, muted, card, border),
-          _buildManualTab(isDark, ink, muted, card, border),
+          TabBarView(
+            controller: _tabs,
+            children: [
+              _buildScanTab(isDark, ink, muted, card, border),
+              _buildManualTab(isDark, ink, muted, card, border),
+            ],
+          ),
+          GeneratingOverlay(
+            visible: _scanning,
+            silhouette: GeneratingSilhouette.person,
+          ),
         ],
       ),
     );
@@ -325,11 +354,14 @@ class _BodyScanScreenState extends State<BodyScanScreen>
               const SizedBox(height: 14),
               Row(
                 children: [
-                  _statField(_ageCtrl, 'profile.age'.tr(), 'profile.yrs'.tr(), ink, muted, border),
+                  _statField(_ageCtrl, 'profile.age'.tr(), 'profile.yrs'.tr(),
+                      ink, muted, border),
                   const SizedBox(width: 10),
-                  _statField(_heightCtrl, 'profile.height'.tr(), 'profile.cm'.tr(), ink, muted, border),
+                  _statField(_heightCtrl, 'profile.height'.tr(),
+                      'profile.cm'.tr(), ink, muted, border),
                   const SizedBox(width: 10),
-                  _statField(_weightCtrl, 'profile.weight'.tr(), 'profile.kg'.tr(), ink, muted, border),
+                  _statField(_weightCtrl, 'profile.weight'.tr(),
+                      'profile.kg'.tr(), ink, muted, border),
                 ],
               ),
             ],
@@ -346,7 +378,9 @@ class _BodyScanScreenState extends State<BodyScanScreen>
               bytes: _frontPhoto,
               label: 'bodygram.front_photo'.tr(),
               icon: Icons.accessibility_new_rounded,
-              card: card, border: border, muted: muted,
+              card: card,
+              border: border,
+              muted: muted,
             ),
             const SizedBox(width: 12),
             _photoCard(
@@ -354,7 +388,9 @@ class _BodyScanScreenState extends State<BodyScanScreen>
               bytes: _rightPhoto,
               label: 'bodygram.right_photo'.tr(),
               icon: Icons.directions_walk_rounded,
-              card: card, border: border, muted: muted,
+              card: card,
+              border: border,
+              muted: muted,
             ),
           ],
         ),
@@ -393,7 +429,8 @@ class _BodyScanScreenState extends State<BodyScanScreen>
             ),
             child: _busy
                 ? const SizedBox(
-                    width: 22, height: 22,
+                    width: 22,
+                    height: 22,
                     child: CircularProgressIndicator(
                         strokeWidth: 2.5, color: Colors.white),
                   )
@@ -402,7 +439,8 @@ class _BodyScanScreenState extends State<BodyScanScreen>
                         ? 'bodygram.scan_btn'.tr()
                         : 'bodygram.estimate_btn'.tr(),
                     style: GoogleFonts.outfit(
-                        fontSize: 16, fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                         color: Colors.white),
                   ),
           ),
@@ -492,7 +530,8 @@ class _BodyScanScreenState extends State<BodyScanScreen>
             ),
             child: _busy
                 ? const SizedBox(
-                    width: 22, height: 22,
+                    width: 22,
+                    height: 22,
                     child: CircularProgressIndicator(
                         strokeWidth: 2.5, color: Colors.white),
                   )
@@ -511,8 +550,8 @@ class _BodyScanScreenState extends State<BodyScanScreen>
 
   /// A single "how to measure X" row with a cm input. Shared shape with the
   /// scan results so both tabs feel like one feature.
-  Widget _manualRow(int num, String key, Color ink, Color muted, Color card,
-      Color border) {
+  Widget _manualRow(
+      int num, String key, Color ink, Color muted, Color card, Color border) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -542,9 +581,7 @@ class _BodyScanScreenState extends State<BodyScanScreen>
               children: [
                 Text('bodygram.m.$key'.tr(),
                     style: GoogleFonts.outfit(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: ink)),
+                        fontSize: 14, fontWeight: FontWeight.w600, color: ink)),
                 const SizedBox(height: 3),
                 Text('measure.how.$key'.tr(),
                     style: GoogleFonts.outfit(
@@ -634,8 +671,10 @@ class _BodyScanScreenState extends State<BodyScanScreen>
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(text,
             style: GoogleFonts.outfit(
-                fontSize: 11, fontWeight: FontWeight.bold,
-                color: muted, letterSpacing: 1.2)),
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: muted,
+                letterSpacing: 1.2)),
       );
 
   Widget _genderChip(String value, String label, Color ink) {
@@ -722,13 +761,14 @@ class _BodyScanScreenState extends State<BodyScanScreen>
                   children: [
                     Image.memory(bytes, fit: BoxFit.cover),
                     Positioned(
-                      right: 8, top: 8,
+                      right: 8,
+                      top: 8,
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: const BoxDecoration(
                             color: AppColors.gold, shape: BoxShape.circle),
-                        child: const Icon(Icons.edit, size: 14,
-                            color: Colors.white),
+                        child: const Icon(Icons.edit,
+                            size: 14, color: Colors.white),
                       ),
                     ),
                   ],
@@ -741,7 +781,8 @@ class _BodyScanScreenState extends State<BodyScanScreen>
                     Text(label,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.outfit(
-                            fontSize: 13, fontWeight: FontWeight.w500,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                             color: muted)),
                     const SizedBox(height: 4),
                     Icon(Icons.add_circle_outline, size: 18, color: muted),
@@ -775,9 +816,7 @@ class _BodyScanScreenState extends State<BodyScanScreen>
   /// Fit-relevant measurements first, everything else Bodygram returned after.
   List<String> _orderedMeasurementNames() {
     final all = _result!.valuesMm.keys.toSet();
-    final key = BodyMeasurements.keyMeasurements
-        .where(all.contains)
-        .toList();
+    final key = BodyMeasurements.keyMeasurements.where(all.contains).toList();
     final rest = (all.difference(key.toSet()).toList())..sort();
     return [...key, ...rest];
   }
@@ -810,7 +849,8 @@ class _BodyScanScreenState extends State<BodyScanScreen>
           ),
           Text('${cm.toStringAsFixed(1)} cm',
               style: GoogleFonts.outfit(
-                  fontSize: 14, fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.burgundy)),
         ],
       ),

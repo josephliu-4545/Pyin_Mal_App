@@ -11,12 +11,15 @@ import 'package:path_provider/path_provider.dart';
 import '../services/nanobanana_api_service.dart';
 import '../services/database_service.dart';
 import '../utils/web_download.dart' as web_dl;
+import '../widgets/generating_overlay.dart';
+import '../widgets/generating_silhouettes.dart';
 
 class HairTryOnScreen extends StatefulWidget {
   final String? initialPrompt;
   final String? initialHairstylePath;
 
-  const HairTryOnScreen({super.key, this.initialPrompt, this.initialHairstylePath});
+  const HairTryOnScreen(
+      {super.key, this.initialPrompt, this.initialHairstylePath});
 
   @override
   State<HairTryOnScreen> createState() => _HairTryOnScreenState();
@@ -43,13 +46,15 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
   }
 
   Future<void> _loadInitialHairstyle() async {
-    if (widget.initialHairstylePath != null && widget.initialHairstylePath!.isNotEmpty) {
+    if (widget.initialHairstylePath != null &&
+        widget.initialHairstylePath!.isNotEmpty) {
       try {
         final byteData = await rootBundle.load(widget.initialHairstylePath!);
         final bytes = byteData.buffer.asUint8List();
         setState(() {
           _hairPhotoBytes = bytes;
-          _hairPhoto = XFile.fromData(bytes, name: widget.initialHairstylePath!.split('/').last);
+          _hairPhoto = XFile.fromData(bytes,
+              name: widget.initialHairstylePath!.split('/').last);
         });
       } catch (e) {
         debugPrint('Failed to load initial hairstyle from assets: $e');
@@ -128,7 +133,8 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
         });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('hair_try_on.error'.tr(args: [e.toString()]))));
+        ).showSnackBar(SnackBar(
+            content: Text('hair_try_on.error'.tr(args: [e.toString()]))));
       }
     }
   }
@@ -163,7 +169,15 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
         ),
         centerTitle: true,
       ),
-      body: _buildBody(),
+      body: Stack(
+        children: [
+          _buildBody(),
+          GeneratingOverlay(
+            visible: _isLoading,
+            silhouette: GeneratingSilhouette.head,
+          ),
+        ],
+      ),
     );
   }
 
@@ -205,7 +219,9 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.green.shade600,
             content: Text(
-                kIsWeb ? 'savebtn.downloaded'.tr() : 'savebtn.saved_photos'.tr(),
+                kIsWeb
+                    ? 'savebtn.downloaded'.tr()
+                    : 'savebtn.saved_photos'.tr(),
                 style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
           ),
         );
@@ -220,8 +236,8 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
           SnackBar(
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red.shade600,
-            content:
-                Text('savebtn.fail'.tr(args: [msg]), style: GoogleFonts.outfit()),
+            content: Text('savebtn.fail'.tr(args: [msg]),
+                style: GoogleFonts.outfit()),
           ),
         );
       }
@@ -297,8 +313,8 @@ class _HairTryOnScreenState extends State<HairTryOnScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFD4AF37),
                   side: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 32, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),

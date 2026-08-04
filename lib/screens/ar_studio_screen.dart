@@ -8,6 +8,8 @@ import '../main.dart'; // AppColors
 import '../services/image_host_service.dart';
 import '../services/nanobanana_api_service.dart';
 import '../services/pose_guide_validator.dart';
+import '../widgets/generating_overlay.dart';
+import '../widgets/generating_silhouettes.dart';
 import 'pose_guide_camera_screen.dart';
 import 'try_on_video_screen.dart';
 
@@ -79,7 +81,8 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
               title: Text('Upload a full-body photo',
                   style: GoogleFonts.outfit(
                       fontWeight: FontWeight.w700, color: _ink)),
-              subtitle: Text('Standing, facing the camera, head to feet visible',
+              subtitle: Text(
+                  'Standing, facing the camera, head to feet visible',
                   style: GoogleFonts.outfit(fontSize: 12, color: _muted)),
               onTap: () => Navigator.pop(context, 'gallery'),
             ),
@@ -228,155 +231,169 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
         (!_useMotion || _motionVideo != null);
     return Scaffold(
       backgroundColor: _bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _topBar(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('360° Studio',
-                        style: GoogleFonts.rufina(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: _ink)),
-                    const SizedBox(height: 6),
-                    Text(
-                        'Capture yourself with the guided camera, pick an outfit, '
-                        'and watch yourself wearing it from every angle.',
-                        style: GoogleFonts.outfit(
-                            fontSize: 13, height: 1.4, color: _muted)),
-                    const SizedBox(height: 24),
-                    _stepLabel('1', 'Capture yourself'),
-                    const SizedBox(height: 12),
-                    _captureCard(),
-                    const SizedBox(height: 24),
-                    _stepLabel('2', 'Pick the outfit'),
-                    const SizedBox(height: 12),
-                    Row(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                _topBar(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                            child: _garmentCard('Top', Icons.checkroom_rounded,
-                                _shirtBytes, () => _pickGarment(true), () {
-                          setState(() {
-                            _shirt = null;
-                            _shirtBytes = null;
-                          });
-                        })),
-                        const SizedBox(width: 12),
-                        Expanded(
-                            child: _garmentCard(
-                                'Bottom',
-                                Icons.dry_cleaning_rounded,
-                                _pantsBytes,
-                                () => _pickGarment(false), () {
-                          setState(() {
-                            _pants = null;
-                            _pantsBytes = null;
-                          });
-                        })),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    _stepLabel('3', 'How should it move?'),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _modeCard(
-                            selected: !_useMotion,
-                            icon: Icons.threed_rotation_rounded,
-                            title: '360° Spin',
-                            desc: 'A smooth turnaround of your look',
-                            onTap: () => setState(() => _useMotion = false),
-                          ),
+                        Text('360° Studio',
+                            style: GoogleFonts.rufina(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: _ink)),
+                        const SizedBox(height: 6),
+                        Text(
+                            'Capture yourself with the guided camera, pick an outfit, '
+                            'and watch yourself wearing it from every angle.',
+                            style: GoogleFonts.outfit(
+                                fontSize: 13, height: 1.4, color: _muted)),
+                        const SizedBox(height: 24),
+                        _stepLabel('1', 'Capture yourself'),
+                        const SizedBox(height: 12),
+                        _captureCard(),
+                        const SizedBox(height: 24),
+                        _stepLabel('2', 'Pick the outfit'),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: _garmentCard(
+                                    'Top',
+                                    Icons.checkroom_rounded,
+                                    _shirtBytes,
+                                    () => _pickGarment(true), () {
+                              setState(() {
+                                _shirt = null;
+                                _shirtBytes = null;
+                              });
+                            })),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: _garmentCard(
+                                    'Bottom',
+                                    Icons.dry_cleaning_rounded,
+                                    _pantsBytes,
+                                    () => _pickGarment(false), () {
+                              setState(() {
+                                _pants = null;
+                                _pantsBytes = null;
+                              });
+                            })),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _modeCard(
-                            selected: _useMotion,
-                            icon: Icons.directions_run_rounded,
-                            title: 'My Movement',
-                            desc: 'Record a video — the outfit follows you',
-                            onTap: () => setState(() => _useMotion = true),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_useMotion) ...[
-                      const SizedBox(height: 12),
-                      _motionVideoCard(),
-                    ],
-                    const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: (ready && !_working) ? _generate : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _accent,
-                          disabledBackgroundColor: _isDark
-                              ? AppColors.darkBorder
-                              : Colors.grey.shade300,
-                          foregroundColor:
-                              _isDark ? AppColors.charcoal : Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: _working
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                        color: Colors.white, strokeWidth: 2),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(_workingLabel,
-                                      style: GoogleFonts.outfit(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 15)),
-                                ],
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.threed_rotation_rounded,
-                                      size: 20),
-                                  const SizedBox(width: 8),
-                                  Text('Generate 360° Video',
-                                      style: GoogleFonts.outfit(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 16)),
-                                ],
+                        const SizedBox(height: 24),
+                        _stepLabel('3', 'How should it move?'),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _modeCard(
+                                selected: !_useMotion,
+                                icon: Icons.threed_rotation_rounded,
+                                title: '360° Spin',
+                                desc: 'A smooth turnaround of your look',
+                                onTap: () => setState(() => _useMotion = false),
                               ),
-                      ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _modeCard(
+                                selected: _useMotion,
+                                icon: Icons.directions_run_rounded,
+                                title: 'My Movement',
+                                desc: 'Record a video — the outfit follows you',
+                                onTap: () => setState(() => _useMotion = true),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_useMotion) ...[
+                          const SizedBox(height: 12),
+                          _motionVideoCard(),
+                        ],
+                        const SizedBox(height: 28),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: (ready && !_working) ? _generate : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _accent,
+                              disabledBackgroundColor: _isDark
+                                  ? AppColors.darkBorder
+                                  : Colors.grey.shade300,
+                              foregroundColor:
+                                  _isDark ? AppColors.charcoal : Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: _working
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(_workingLabel,
+                                          style: GoogleFonts.outfit(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15)),
+                                    ],
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.threed_rotation_rounded,
+                                          size: 20),
+                                      const SizedBox(width: 8),
+                                      Text('Generate 360° Video',
+                                          style: GoogleFonts.outfit(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 16)),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Center(
+                          child: Text(
+                            !ready
+                                ? (_useMotion && _motionVideo == null
+                                    ? 'Add your movement video to continue'
+                                    : 'Capture yourself and add at least one piece')
+                                : (_useMotion
+                                    ? 'Takes a few minutes in total'
+                                    : 'Takes 2-4 minutes in total'),
+                            style:
+                                GoogleFonts.outfit(fontSize: 12, color: _muted),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    Center(
-                      child: Text(
-                        !ready
-                            ? (_useMotion && _motionVideo == null
-                                ? 'Add your movement video to continue'
-                                : 'Capture yourself and add at least one piece')
-                            : (_useMotion
-                                ? 'Takes a few minutes in total'
-                                : 'Takes 2-4 minutes in total'),
-                        style: GoogleFonts.outfit(fontSize: 12, color: _muted),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          GeneratingOverlay(
+            visible: _working,
+            silhouette: GeneratingSilhouette.person,
+            label: _workingLabel,
+          ),
+        ],
       ),
     );
   }
@@ -562,9 +579,7 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
             const SizedBox(height: 8),
             Text(title,
                 style: GoogleFonts.outfit(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: _ink)),
+                    fontSize: 13.5, fontWeight: FontWeight.w700, color: _ink)),
             const SizedBox(height: 2),
             Text(desc,
                 style: GoogleFonts.outfit(

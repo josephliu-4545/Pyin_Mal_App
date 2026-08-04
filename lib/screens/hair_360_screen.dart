@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../main.dart'; // AppColors
 import '../services/nanobanana_api_service.dart';
+import '../widgets/generating_overlay.dart';
+import '../widgets/generating_silhouettes.dart';
 import 'try_on_video_screen.dart';
 
 /// Standalone "Hair 360": take/upload a photo, pick a hairstyle from the
@@ -173,101 +175,111 @@ class _Hair360ScreenState extends State<Hair360Screen> {
     final ready = _userPhotoBytes != null && _styleBytes != null;
     return Scaffold(
       backgroundColor: _bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _topBar(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Hair 360',
-                        style: GoogleFonts.rufina(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: _ink)),
-                    const SizedBox(height: 6),
-                    Text(
-                        'Try a new cut and watch it from every angle before you '
-                        'sit in the chair.',
-                        style: GoogleFonts.outfit(
-                            fontSize: 13, height: 1.4, color: _muted)),
-                    const SizedBox(height: 24),
-                    _stepLabel('1', 'Your photo'),
-                    const SizedBox(height: 12),
-                    _photoCard(),
-                    const SizedBox(height: 24),
-                    _stepLabel('2', 'Pick a hairstyle'),
-                    const SizedBox(height: 12),
-                    _genderToggle(),
-                    const SizedBox(height: 12),
-                    _styleGrid(),
-                    const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: (ready && !_working) ? _generate : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _accent,
-                          disabledBackgroundColor: _isDark
-                              ? AppColors.darkBorder
-                              : Colors.grey.shade300,
-                          foregroundColor:
-                              _isDark ? AppColors.charcoal : Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: _working
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                        color: Colors.white, strokeWidth: 2),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                _topBar(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Hair 360',
+                            style: GoogleFonts.rufina(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: _ink)),
+                        const SizedBox(height: 6),
+                        Text(
+                            'Try a new cut and watch it from every angle before you '
+                            'sit in the chair.',
+                            style: GoogleFonts.outfit(
+                                fontSize: 13, height: 1.4, color: _muted)),
+                        const SizedBox(height: 24),
+                        _stepLabel('1', 'Your photo'),
+                        const SizedBox(height: 12),
+                        _photoCard(),
+                        const SizedBox(height: 24),
+                        _stepLabel('2', 'Pick a hairstyle'),
+                        const SizedBox(height: 12),
+                        _genderToggle(),
+                        const SizedBox(height: 12),
+                        _styleGrid(),
+                        const SizedBox(height: 28),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: (ready && !_working) ? _generate : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _accent,
+                              disabledBackgroundColor: _isDark
+                                  ? AppColors.darkBorder
+                                  : Colors.grey.shade300,
+                              foregroundColor:
+                                  _isDark ? AppColors.charcoal : Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: _working
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text('Cutting your hair…',
+                                          style: GoogleFonts.outfit(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15)),
+                                    ],
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                          Icons.face_retouching_natural_rounded,
+                                          size: 20),
+                                      const SizedBox(width: 8),
+                                      Text('Generate Hair Video',
+                                          style: GoogleFonts.outfit(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 16)),
+                                    ],
                                   ),
-                                  const SizedBox(width: 12),
-                                  Text('Cutting your hair…',
-                                      style: GoogleFonts.outfit(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 15)),
-                                ],
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                      Icons.face_retouching_natural_rounded,
-                                      size: 20),
-                                  const SizedBox(width: 8),
-                                  Text('Generate Hair Video',
-                                      style: GoogleFonts.outfit(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 16)),
-                                ],
-                              ),
-                      ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Center(
+                          child: Text(
+                            ready
+                                ? 'Takes 2-4 minutes in total'
+                                : 'Add your photo and choose a style',
+                            style:
+                                GoogleFonts.outfit(fontSize: 12, color: _muted),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    Center(
-                      child: Text(
-                        ready
-                            ? 'Takes 2-4 minutes in total'
-                            : 'Add your photo and choose a style',
-                        style: GoogleFonts.outfit(fontSize: 12, color: _muted),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          GeneratingOverlay(
+            visible: _working,
+            silhouette: GeneratingSilhouette.head,
+          ),
+        ],
       ),
     );
   }
