@@ -114,15 +114,18 @@ flutter:
     - pyin-mal-assets/assets/images/Hair/Female/Oval Face/
     - pyin-mal-assets/assets/images/Hair/Female/Round Face/
     - pyin-mal-assets/assets/images/Hair/Female/Square Face/
+    - pyin-mal-assets/assets/images/Hair/Product/
     - pyin-mal-assets/assets/images/Hair/Male/
     - pyin-mal-assets/assets/images/Hair/Male/Buzz_Cut/
     - pyin-mal-assets/assets/images/Hair/Male/Crop/
     - pyin-mal-assets/assets/images/Hair/Male/Curly/
     - pyin-mal-assets/assets/images/Hair/Male/Fade/
-    - pyin-mal-assets/assets/images/Hair/Male/Mullet/
     - pyin-mal-assets/assets/images/Hair/Male/Quiff/
     - pyin-mal-assets/assets/images/Hair/Male/Wavy/
     - pyin-mal-assets/assets/images/Hair/Male/Wolf_Cut/
+    - pyin-mal-assets/assets/images/FaceShape/
+    - pyin-mal-assets/assets/images/FaceShape/Female/
+    - pyin-mal-assets/assets/images/FaceShape/Male/
     - pyin-mal-assets/assets/images/HairStyle/
     - pyin-mal-assets/assets/images/HairStyle/Female/
     - pyin-mal-assets/assets/images/HairStyle/Female/Diamond Face/

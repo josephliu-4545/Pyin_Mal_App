@@ -8,6 +8,7 @@ class CdnImage extends StatelessWidget {
   final double? height;
   final BoxFit? fit;
   final Color? color;
+  final Alignment alignment;
   final Widget Function(BuildContext, Object, StackTrace?)? errorBuilder;
 
   const CdnImage(
@@ -17,6 +18,7 @@ class CdnImage extends StatelessWidget {
     this.height,
     this.fit,
     this.color,
+    this.alignment = Alignment.center,
     this.errorBuilder,
   });
 
@@ -64,6 +66,7 @@ class CdnImage extends StatelessWidget {
         height: height,
         fit: fit,
         color: color,
+        alignment: alignment,
         errorBuilder: (ctx, err, stack) {
           debugPrint('🖼️ Asset failed: $assetPath | $err');
           if (errorBuilder != null) return errorBuilder!(ctx, err, stack);
@@ -82,6 +85,7 @@ class CdnImage extends StatelessWidget {
       height: height,
       fit: fit,
       color: color,
+      alignment: alignment,
       placeholder: (context, url) => SizedBox(
         width: width,
         height: height,

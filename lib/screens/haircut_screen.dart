@@ -18,7 +18,9 @@ class HaircutScreen extends StatefulWidget {
 }
 
 class _HaircutScreenState extends State<HaircutScreen> {
-  String _selectedFaceShape = 'Oval Face';
+  // Null means "no shape filter" — the gallery then shows every style for the
+  // selected gender. Tapping the active shape again clears it, like a chip.
+  String? _selectedFaceShape = 'Oval Face';
 
   // ── Hairstyle try-on gallery ──────────────────────────────────────────────
   String _hairGender = 'Women'; // 'Women' | 'Men'
@@ -38,9 +40,17 @@ class _HaircutScreenState extends State<HaircutScreen> {
   List<String> get _hairCategories =>
       _hairGender == 'Women' ? _womenCategories : _menCategories;
 
-  // Which style keywords flatter each face shape. Women's assets are already
-  // sorted into per-face-shape folders, so this drives the MEN'S list (organised
-  // by cut type, not face shape) — matched against the style name in the file.
+  // The six shapes, in the order they appear in the selector.
+  static const _faceShapes = [
+    'Oval Face', 'Round Face', 'Square Face',
+    'Diamond Face', 'Triangle Face', 'Heart Face',
+  ];
+
+  static const _styleRoot = 'pyin-mal-assets/assets/images/Hair/';
+
+  // Which style keywords flatter each face shape. Women's assets are sorted
+  // into per-face-shape folders, so this drives the MEN'S list (organised by
+  // cut type, not face shape) — matched against the style name in the file.
   // An empty list means "everything suits" (oval is the balanced all-rounder).
   static const Map<String, List<String>> _faceShapeStyles = {
     'Oval Face': [],
@@ -80,6 +90,12 @@ class _HaircutScreenState extends State<HaircutScreen> {
     return keys.any(name.contains);
   }
 
+  /// Reference portrait for [shape] in the currently selected gender.
+  String _faceShapeImage(String shape) =>
+      'pyin-mal-assets/assets/images/FaceShape/$_genderPath/$shape.jpg';
+
+  String get _genderPath => _hairGender == 'Women' ? 'Female' : 'Male';
+
   List<String> _allAssetPaths = [];
   List<String> _visibleHairstyles = [];
 
@@ -92,10 +108,12 @@ class _HaircutScreenState extends State<HaircutScreen> {
   Future<void> _loadHairstyles() async {
     final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
     final allAssets = manifest.listAssets();
-    final prefix = 'pyin-mal-assets/assets/images/Hair/';
-    
-    final hairstyles = allAssets.where((p) => 
-      p.startsWith(prefix) && 
+
+    // Only the gendered style folders — Hair/ also holds Product/, which is
+    // salon stock, not hairstyles.
+    final hairstyles = allAssets.where((p) =>
+      (p.startsWith('${_styleRoot}Female/') ||
+       p.startsWith('${_styleRoot}Male/')) &&
       (p.endsWith('.jpg') || p.endsWith('.png') || p.endsWith('.webp'))
     ).toList();
     
@@ -107,32 +125,41 @@ class _HaircutScreenState extends State<HaircutScreen> {
     }
   }
 
-  void _updateVisibleHairstyles() {
-    final genderPath = _hairGender == 'Women' ? 'Female' : 'Male';
-    // Women's assets live in per-face-shape folders for the four original
-    // shapes (already curated). For Men, and for the newer women's shapes with
-    // no dedicated folder (Triangle, Heart), we take the whole gender set and
-    // filter by which styles flatter the selected face shape.
-    final usesFolder =
-        _hairGender == 'Women' && _womenFolderShapes.contains(_selectedFaceShape);
-    final targetFolder = usesFolder
-        ? 'pyin-mal-assets/assets/images/Hair/$genderPath/$_selectedFaceShape/'
-        : 'pyin-mal-assets/assets/images/Hair/$genderPath/';
+  /// Every style for the current gender, narrowed to the face shape when one
+  /// is selected. With no shape selected this is the whole gender catalogue.
+  ///
+  /// Women's styles live in per-face-shape folders for the four curated shapes,
+  /// so those are a direct folder lookup. Men's styles are filed by cut type,
+  /// and women's Triangle/Heart have no folder yet — both fall back to taking
+  /// the whole gender set and keeping the cuts that flatter the shape.
+  List<String> get _shapePool {
+    final shape = _selectedFaceShape;
+    final genderRoot = '$_styleRoot$_genderPath/';
+    if (shape == null) {
+      return _allAssetPaths.where((p) => p.startsWith(genderRoot)).toList();
+    }
 
-    bool suitsShape(String p) =>
-        usesFolder || _suitsFaceShape(p, _selectedFaceShape);
-
-    _visibleHairstyles = _allAssetPaths.where((p) {
-      if (!p.startsWith(targetFolder)) return false;
-      if (!suitsShape(p)) return false;
-      return _matchesCategory(p, _hairCategory, _hairGender);
-    }).toList();
-
-    // If nothing matches this category for the shape, show all suitable styles.
-    if (_visibleHairstyles.isEmpty && _hairCategory != 'Hot') {
-      _visibleHairstyles = _allAssetPaths
-          .where((p) => p.startsWith(targetFolder) && suitsShape(p))
+    final usesFolder = _hairGender == 'Women' && _womenFolderShapes.contains(shape);
+    if (usesFolder) {
+      return _allAssetPaths
+          .where((p) => p.startsWith('$genderRoot$shape/'))
           .toList();
+    }
+    return _allAssetPaths
+        .where((p) => p.startsWith(genderRoot) && _suitsFaceShape(p, shape))
+        .toList();
+  }
+
+  void _updateVisibleHairstyles() {
+    final pool = _shapePool;
+    _visibleHairstyles = pool
+        .where((p) => _matchesCategory(p, _hairCategory, _hairGender))
+        .toList();
+
+    // If nothing matches this category for the shape, fall back to the shape's
+    // full set rather than showing an empty row.
+    if (_visibleHairstyles.isEmpty && _hairCategory != 'Hot') {
+      _visibleHairstyles = pool;
     }
 
     _selectedHairstyle = null;
@@ -338,98 +365,181 @@ class _HaircutScreenState extends State<HaircutScreen> {
   }
 
   Widget _buildFaceShapeSelector(bool isDark, Color accent) {
-    final shapes = [
-      {'name': 'Oval Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/O.jpg'},
-      {'name': 'Round Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/R.jpg'},
-      {'name': 'Square Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/S.jpg'},
-      {'name': 'Diamond Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/D.jpg'},
-      {'name': 'Triangle Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/T.jpg'},
-      {'name': 'Heart Face', 'img': 'pyin-mal-assets/assets/images/HairStyle/H.jpg'},
-    ];
+    final ink = isDark ? Colors.white : AppColors.inkBlack;
+    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
+    final count = _shapePool.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 40, 24, 16),
+          padding: const EdgeInsets.fromLTRB(24, 40, 24, 4),
           child: Text(
             'haircut.select_face_shape'.tr(),
             style: GoogleFonts.rufina(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppColors.inkBlack,
+              color: ink,
             ),
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
+          child: Text(
+            _selectedFaceShape == null
+                ? 'haircut.shape_hint'.tr()
+                : 'haircut.shape_active'.tr(args: ['$count']),
+            style: GoogleFonts.outfit(fontSize: 13, color: muted),
+          ),
+        ),
+
+        // Gender first — it decides which set of face portraits you see below.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                _genderTab('Women', Icons.female_rounded, isDark, accent, ink),
+                _genderTab('Men', Icons.male_rounded, isDark, accent, ink),
+              ],
+            ),
+          ),
+        ),
+
         SizedBox(
-          height: 140,
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+          height: 186,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             scrollDirection: Axis.horizontal,
-            itemCount: shapes.length,
-            itemBuilder: (context, i) {
-              final shape = shapes[i];
-              final isSelected = _selectedFaceShape == shape['name'];
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedFaceShape = shape['name']!;
-                    _updateVisibleHairstyles();
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 110,
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? accent : (isDark ? AppColors.darkWarm : AppColors.creamCard),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      )
-                    ],
-                    border: Border.all(
-                      color: isSelected ? accent : Colors.transparent,
-                      width: 2,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        height: 50,
-                        width: 50,
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.charcoal : AppColors.creamAlt,
-                          shape: BoxShape.circle,
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: CdnImage(
-                          shape['img']!,
-                          fit: BoxFit.contain,
-                          errorBuilder: (c, e, s) => Icon(Icons.face, color: isSelected ? Colors.white : Colors.grey),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        shape['name']!,
-                        style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? (isDark ? AppColors.charcoal : Colors.white) : (isDark ? AppColors.paleText : AppColors.inkGrey),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+            physics: const BouncingScrollPhysics(),
+            itemCount: _faceShapes.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) =>
+                _faceShapeTile(_faceShapes[i], isDark, accent),
           ),
         ),
       ],
+    );
+  }
+
+  /// One face-shape tile. Acts like a filter chip: tap to filter the gallery,
+  /// tap the active one again to clear the filter and see every style.
+  Widget _faceShapeTile(String shape, bool isDark, Color accent) {
+    final isSelected = _selectedFaceShape == shape;
+    final label = 'haircut.face_shapes.$shape'.tr();
+
+    return GestureDetector(
+      onTap: () => setState(() {
+        _selectedFaceShape = isSelected ? null : shape;
+        _updateVisibleHairstyles();
+      }),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        width: 124,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkWarm : AppColors.creamCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? accent : Colors.transparent,
+            width: 2.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? accent.withOpacity(0.28)
+                  : AppColors.charcoal.withOpacity(isDark ? 0.3 : 0.08),
+              blurRadius: isSelected ? 14 : 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(17.5)),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Sources vary in aspect ratio, so cover + top alignment
+                    // keeps every face framed the same way across the row.
+                    CdnImage(
+                      _faceShapeImage(shape),
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                      errorBuilder: (c, e, s) => Container(
+                        color: isDark
+                            ? AppColors.charcoal
+                            : AppColors.creamAlt,
+                        child: Icon(Icons.face_retouching_natural,
+                            color: isSelected ? accent : Colors.grey,
+                            size: 34),
+                      ),
+                    ),
+                    // Dim the unselected tiles so the active one reads first.
+                    AnimatedOpacity(
+                      duration: const Duration(milliseconds: 200),
+                      opacity: _selectedFaceShape == null || isSelected
+                          ? 0.0
+                          : 0.45,
+                      child: Container(
+                        color: isDark ? AppColors.charcoal : Colors.white,
+                      ),
+                    ),
+                    if (isSelected)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: accent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.check_rounded,
+                              size: 14,
+                              color: isDark
+                                  ? AppColors.charcoal
+                                  : Colors.white),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
+              decoration: BoxDecoration(
+                color: isSelected ? accent : Colors.transparent,
+                borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(17.5)),
+              ),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? (isDark ? AppColors.charcoal : Colors.white)
+                      : (isDark ? AppColors.paleText : AppColors.inkGrey),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -479,7 +589,6 @@ class _HaircutScreenState extends State<HaircutScreen> {
   // ── Hairstyle Try-On Gallery ──────────────────────────────────────────────
   Widget _buildHairstyleGallery(bool isDark, Color accent) {
     final ink = isDark ? Colors.white : AppColors.inkBlack;
-    final muted = isDark ? AppColors.paleText : AppColors.inkGrey;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -516,27 +625,12 @@ class _HaircutScreenState extends State<HaircutScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
           child: Text(
-            'hairx.suits_intro'.tr(args: [_selectedFaceShape]),
+            _selectedFaceShape == null
+                ? 'haircut.showing_all'.tr()
+                : 'hairx.suits_intro'.tr(
+                    args: ['haircut.face_shapes.$_selectedFaceShape'.tr()]),
             style: GoogleFonts.outfit(
                 fontSize: 13, fontWeight: FontWeight.w600, color: accent),
-          ),
-        ),
-
-        // ── Women / Men toggle ───────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkWarm : AppColors.creamAlt,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                _genderTab('Women', Icons.female_rounded, isDark, accent, ink),
-                _genderTab('Men', Icons.male_rounded, isDark, accent, ink),
-              ],
-            ),
           ),
         ),
 
@@ -826,20 +920,10 @@ class _HaircutScreenState extends State<HaircutScreen> {
   }
 
   Widget _buildHairstyleSection(BuildContext context, bool isMobile, bool isDark, Color accent) {
-    // Recommendations come from the styles that suit the selected face shape
-    // (women: the face-shape folder; men: filtered by flattering keywords),
-    // spread across cut categories so the picks feel varied.
-    final genderPath = _hairGender == 'Women' ? 'Female' : 'Male';
-    final usesFolder =
-        _hairGender == 'Women' && _womenFolderShapes.contains(_selectedFaceShape);
-    final folder = usesFolder
-        ? 'pyin-mal-assets/assets/images/Hair/$genderPath/$_selectedFaceShape/'
-        : 'pyin-mal-assets/assets/images/Hair/$genderPath/';
-    final pool = _allAssetPaths
-        .where((p) =>
-            p.startsWith(folder) &&
-            (usesFolder || _suitsFaceShape(p, _selectedFaceShape)))
-        .toList();
+    // Recommendations come from the selected face shape's curated folder (or
+    // the whole gender catalogue when no shape is picked), sampled evenly so
+    // the picks feel varied rather than clustered at the top of the folder.
+    final pool = _shapePool;
     final recommended = <String>[];
     if (pool.isNotEmpty) {
       final step = (pool.length / 6).ceil().clamp(1, pool.length);
@@ -1075,29 +1159,18 @@ class _HaircutScreenState extends State<HaircutScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        // First horizontal scrolling row of product cards.
         SizedBox(
-          height: 246,
+          // Tall enough for the fullest card — 2-line name + salon + price —
+          // so nothing overflows once those fields are filled in.
+          height: 252,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 24),
+            physics: const BouncingScrollPhysics(),
             itemCount: _hairCareProducts.length,
             separatorBuilder: (_, __) => const SizedBox(width: 14),
             itemBuilder: (_, i) =>
                 _hairCareCard(_hairCareProducts[i], isDark, accent, ink, muted),
-          ),
-        ),
-        const SizedBox(height: 14),
-        // Second horizontal scrolling row of product cards.
-        SizedBox(
-          height: 246,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            itemCount: _hairCareProducts2.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 14),
-            itemBuilder: (_, i) => _hairCareCard(
-                _hairCareProducts2[i], isDark, accent, ink, muted),
           ),
         ),
       ],
@@ -1125,12 +1198,16 @@ class _HaircutScreenState extends State<HaircutScreen> {
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(19)),
                   child: Container(
-                    height: 130,
+                    height: 150,
                     width: double.infinity,
                     color: accent.withOpacity(0.10),
+                    padding: const EdgeInsets.all(6),
+                    // Product shots are tall bottles on a plain background —
+                    // contain keeps the whole item visible instead of cropping
+                    // it to a band across the middle.
                     child: Image.asset(
                       p.image,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => Center(
                         child: Icon(Icons.spa_rounded,
                             color: accent, size: 36),
@@ -1138,23 +1215,24 @@ class _HaircutScreenState extends State<HaircutScreen> {
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.55),
-                      borderRadius: BorderRadius.circular(20),
+                if (p.salon.isNotEmpty)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(p.salon,
+                          style: GoogleFonts.outfit(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white)),
                     ),
-                    child: Text(p.salon,
-                        style: GoogleFonts.outfit(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white)),
                   ),
-                ),
               ],
             ),
             Padding(
@@ -1170,26 +1248,30 @@ class _HaircutScreenState extends State<HaircutScreen> {
                           fontWeight: FontWeight.w700,
                           height: 1.2,
                           color: ink)),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(Icons.storefront_rounded, size: 12, color: accent),
-                      const SizedBox(width: 3),
-                      Expanded(
-                        child: Text('haircare.from'.tr(args: [p.salon]),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.outfit(
-                                fontSize: 11, color: muted)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(p.price,
-                      style: GoogleFonts.outfit(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: accent)),
+                  if (p.salon.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.storefront_rounded, size: 12, color: accent),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text('haircare.from'.tr(args: [p.salon]),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.outfit(
+                                  fontSize: 11, color: muted)),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (p.price.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(p.price,
+                        style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: accent)),
+                  ],
                 ],
               ),
             ),
@@ -1257,18 +1339,22 @@ class _HaircutScreenState extends State<HaircutScreen> {
                                   fontSize: 19,
                                   fontWeight: FontWeight.bold,
                                   color: ink)),
-                          const SizedBox(height: 4),
-                          Text('haircare.from'.tr(args: [p.salon]),
-                              style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: accent)),
-                          const SizedBox(height: 2),
-                          Text(p.price,
-                              style: GoogleFonts.outfit(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: ink)),
+                          if (p.salon.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text('haircare.from'.tr(args: [p.salon]),
+                                style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: accent)),
+                          ],
+                          if (p.price.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(p.price,
+                                style: GoogleFonts.outfit(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: ink)),
+                          ],
                         ],
                       ),
                     ),
@@ -1283,13 +1369,20 @@ class _HaircutScreenState extends State<HaircutScreen> {
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
+                  // Without a confirmed price there is nothing to charge, so
+                  // ordering stays closed until one is filled in.
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(sheetCtx);
-                      _orderHairCareProduct(p);
-                    },
+                    onPressed: p.price.isEmpty
+                        ? null
+                        : () {
+                            Navigator.pop(sheetCtx);
+                            _orderHairCareProduct(p);
+                          },
                     icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-                    label: Text('haircare.order_now'.tr(),
+                    label: Text(
+                        p.price.isEmpty
+                            ? 'haircare.price_soon'.tr()
+                            : 'haircare.order_now'.tr(),
                         style: GoogleFonts.outfit(
                             fontSize: 14, fontWeight: FontWeight.w700)),
                     style: ElevatedButton.styleFrom(
@@ -1355,20 +1448,23 @@ class _HaircutScreenState extends State<HaircutScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        content: Text('haircare.added'.tr(namedArgs: {'name': p.name, 'salon': p.salon})),
+        content: Text(p.salon.isEmpty
+            ? 'haircare.added_simple'.tr(namedArgs: {'name': p.name})
+            : 'haircare.added'
+                .tr(namedArgs: {'name': p.name, 'salon': p.salon})),
       ),
     );
   }
 }
 
-// Hair care products sold by the 5 partner salons (from the booking screen).
+// Hair care products stocked by the partner salons.
 class _HairCareProduct {
   final String name;
-  final String salon;
-  final String price;
+  final String salon; // Empty until the stocking salon is confirmed.
+  final String price; // Empty until the real price is confirmed.
   final String goodFor;
   final String howToUse;
-  final String image; // salon logo asset
+  final String image; // product photo asset
 
   const _HairCareProduct({
     required this.name,
@@ -1380,101 +1476,73 @@ class _HairCareProduct {
   });
 }
 
-const _hairShopsDir = 'pyin-mal-assets/assets/images/shops';
+const _hairProductsDir = 'pyin-mal-assets/assets/images/Hair/Product';
 
+// The products the partner salons actually stock. Each name mirrors its asset
+// filename.
+//
+// PRICES ARE ESTIMATES, NOT CONFIRMED FIGURES. They are benchmarked against the
+// Myanmar retail market (mass-market shampoo runs ~8,000-27,000 MMK; imported
+// salon styling lines like Reuzel run 54,000+), positioned mid-range for
+// salon-stocked product. Replace each one with the real price before launch.
+//
+// `salon` is left blank on purpose — which partner salon carries which product
+// is a business fact, and the badge names a real shop to the customer. The card
+// and details sheet hide the field while it is empty, so filling it in here is
+// all that is needed.
 const _hairCareProducts = <_HairCareProduct>[
   _HairCareProduct(
-    name: 'Signature Styling Pomade',
-    salon: 'V47',
-    price: '14,000 MMK',
-    goodFor: 'Straight and wavy hair needing all-day medium hold.',
-    howToUse:
-        'Rub a pea-sized amount between palms and work through dry hair, then shape as you like.',
-    image: '$_hairShopsDir/V47/logo.png',
-  ),
-  _HairCareProduct(
-    name: 'Keratin Repair Serum',
-    salon: 'VIP Salon',
-    price: '28,000 MMK',
-    goodFor: 'Dry, damaged and colour-treated hair.',
-    howToUse:
-        'Apply a few drops to towel-dried hair, focus on the ends, do not rinse, then blow-dry.',
-    image: '$_hairShopsDir/VIP salon/logo.png',
-  ),
-  _HairCareProduct(
-    name: 'Volumizing Sea Salt Spray',
-    salon: 'T8',
-    price: '16,000 MMK',
-    goodFor: 'Fine and flat hair that needs texture and volume.',
-    howToUse:
-        'Spray onto damp hair, scrunch with your hands, then air-dry or blow-dry for a beachy finish.',
-    image: '$_hairShopsDir/T8/logo.png',
-  ),
-  _HairCareProduct(
-    name: 'Argan Oil Hair Treatment',
-    salon: 'Tony Tun Tun',
-    price: '32,000 MMK',
-    goodFor: 'Frizzy, curly and very dry hair.',
-    howToUse:
-        'Warm a small amount, massage into mid-lengths and ends, leave 10 minutes (or overnight), then rinse.',
-    image: '$_hairShopsDir/Tony Tun Tun/logo.png',
-  ),
-  _HairCareProduct(
-    name: 'Nourishing Beard and Scalp Oil',
-    salon: 'Neighborhood',
-    price: '12,000 MMK',
-    goodFor: 'Dry scalp and beard grooming.',
-    howToUse:
-        'Massage a few drops into the scalp or beard once a day after washing. No need to rinse.',
-    image: '$_hairShopsDir/the neighbour hood project/logo.png',
-  ),
-];
-
-// Second row of products (one more per salon).
-const _hairCareProducts2 = <_HairCareProduct>[
-  _HairCareProduct(
-    name: 'Hydrating Shampoo',
-    salon: 'V47',
+    name: 'Shampoo',
+    salon: '',
     price: '15,000 MMK',
-    goodFor: 'All hair types, gentle daily cleansing.',
+    goodFor: 'Everyday cleansing for all hair types.',
     howToUse:
         'Massage into wet hair and scalp, lather, then rinse thoroughly. Repeat if needed.',
-    image: '$_hairShopsDir/V47/logo.png',
+    image: '$_hairProductsDir/Shampoo.jpg',
   ),
   _HairCareProduct(
-    name: 'Colour-Protect Conditioner',
-    salon: 'VIP Salon',
-    price: '22,000 MMK',
-    goodFor: 'Colour-treated hair that fades quickly.',
-    howToUse:
-        'After shampooing, apply from mid-lengths to ends, leave 2–3 minutes, then rinse.',
-    image: '$_hairShopsDir/VIP salon/logo.png',
-  ),
-  _HairCareProduct(
-    name: 'Matte Clay Wax',
-    salon: 'T8',
+    name: 'Anti Dandruff Shampoo',
+    salon: '',
     price: '18,000 MMK',
-    goodFor: 'Short and medium hair needing a strong matte finish.',
+    goodFor: 'Flaky, itchy scalp and recurring dandruff.',
     howToUse:
-        'Warm a small amount in your palms and style dry hair for a natural, matte look.',
-    image: '$_hairShopsDir/T8/logo.png',
+        'Massage into a wet scalp and leave for 2-3 minutes so it can work, then rinse. Use 2-3 times a week.',
+    image: '$_hairProductsDir/Anti Dandruff Shampoo.jpg',
   ),
   _HairCareProduct(
-    name: 'Deep Repair Hair Mask',
-    salon: 'Tony Tun Tun',
-    price: '38,000 MMK',
-    goodFor: 'Very dry, over-processed and brittle hair.',
+    name: 'Hair Mask',
+    salon: '',
+    price: '25,000 MMK',
+    goodFor: 'Dry, damaged or over-processed hair that needs deep conditioning.',
     howToUse:
-        'Apply to clean, damp hair, leave 5–10 minutes, then rinse well. Use once a week.',
-    image: '$_hairShopsDir/Tony Tun Tun/logo.png',
+        'Apply to clean, damp hair from mid-lengths to ends, leave 5-10 minutes, then rinse well. Use weekly.',
+    image: '$_hairProductsDir/Hair Mask.jpg',
   ),
   _HairCareProduct(
-    name: 'Anti-Dandruff Tonic',
-    salon: 'Neighborhood',
-    price: '13,000 MMK',
-    goodFor: 'Flaky, itchy scalp.',
+    name: 'One Minute Treatment',
+    salon: '',
+    price: '22,000 MMK',
+    goodFor: 'A fast conditioning boost for dry or brittle hair.',
     howToUse:
-        'Part the hair and apply to the scalp, massage gently, and leave in. Use 3 times a week.',
-    image: '$_hairShopsDir/the neighbour hood project/logo.png',
+        'After shampooing, work through damp hair, leave for one minute, then rinse thoroughly.',
+    image: '$_hairProductsDir/One Minute Treatment.jpg',
+  ),
+  _HairCareProduct(
+    name: 'Hair Coat',
+    salon: '',
+    price: '20,000 MMK',
+    goodFor: 'Frizzy or damaged hair needing a smoothing, protective layer.',
+    howToUse:
+        'Work a small amount through damp mid-lengths and ends before drying. Leave in, do not rinse.',
+    image: '$_hairProductsDir/Hair Coat.jpg',
+  ),
+  _HairCareProduct(
+    name: 'Soft Spray',
+    salon: '',
+    price: '16,000 MMK',
+    goodFor: 'Light, flexible hold that keeps hair moving.',
+    howToUse:
+        'Hold about 30 cm from dry, styled hair and mist evenly. Layer for extra hold.',
+    image: '$_hairProductsDir/Soft Spray.jpg',
   ),
 ];
