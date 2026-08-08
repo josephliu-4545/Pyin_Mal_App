@@ -47,33 +47,44 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back button
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkWarm : Colors.white,
-                            shape: BoxShape.circle,
+                    // Back button beside the title
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            alignment: Alignment.center,
+                            margin: const EdgeInsets.only(top: 4, right: 12),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkWarm : Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.arrow_back_ios_new_rounded,
+                                size: 18, color: ink),
                           ),
-                          child: Icon(Icons.arrow_back_ios_new_rounded,
-                              size: 18, color: ink),
                         ),
-                      ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('delivery.title'.tr(),
+                                  style: GoogleFonts.rufina(
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.bold,
+                                      color: ink)),
+                              const SizedBox(height: 4),
+                              Text('delivery.subtitle'.tr(),
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 13, color: muted)),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    Text('delivery.title'.tr(),
-                        style: GoogleFonts.rufina(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                            color: ink)),
-                    const SizedBox(height: 4),
-                    Text('delivery.subtitle'.tr(),
-                        style: GoogleFonts.outfit(fontSize: 13, color: muted)),
                     const SizedBox(height: 18),
                   ],
                 ),

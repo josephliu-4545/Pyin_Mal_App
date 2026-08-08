@@ -642,7 +642,7 @@ class _HaircutScreenState extends State<HaircutScreen> {
                           // Favourite heart badge
                           Positioned(
                             top: 6,
-                            left: 6,
+                            right: 6,
                             child: GestureDetector(
                               onTap: () => setState(
                                   () => hairstyleFavoritesNotifier.toggle(path)),
