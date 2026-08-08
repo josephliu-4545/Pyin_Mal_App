@@ -10,7 +10,9 @@ import 'package:pyin_mal_app/models/product.dart';
 /// and the floating overlay scanner.
 class AiScanService {
   static const _groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
-  static const _groqModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
+  // Vision-capable. meta-llama/llama-4-scout-17b-16e-instruct was decommissioned
+  // by Groq and now 404s; qwen3.6 is the vision model available on this account.
+  static const _groqModel = 'qwen/qwen3.6-27b';
 
   // PHP proxy on the OpenCart server — used as fallback when
   // api.groq.com DNS fails on certain Myanmar mobile networks.
@@ -43,11 +45,7 @@ class AiScanService {
   /// Identifies up to 4 similar products from the catalog.
   /// Tries Groq directly first, falls back to the PHP proxy on DNS failure.
   static Future<List<Product>> identifyProducts(Uint8List imageBytes) async {
-    final productsContext = ProductRepository.allProducts.map((p) {
-      final desc   = p.description ?? p.name;
-      final tagStr = p.tags.isNotEmpty ? p.tags.join(', ') : p.category;
-      return '- ID: "${p.id}" | ${p.category} | ${p.brand} | Visual: $desc | Tags: $tagStr';
-    }).join('\n');
+    final productsContext = _buildProductsContext();
 
     // Try Groq directly first
     try {
@@ -60,6 +58,42 @@ class AiScanService {
     return await _callViaProxy(imageBytes, productsContext);
   }
 
+  // ── Catalog context ──────────────────────────────────────────────────────
+
+  // The Groq free tier caps this account at 8000 tokens per minute, and the
+  // scanned image alone costs ~1300. Sending the whole catalog verbatim blew
+  // past that ("Request too large ... Requested 13330"), so each entry is kept
+  // terse and the list is capped to a character budget (~4 chars per token).
+  static const _maxCatalogChars = 12000;
+  static const _maxDescChars    = 90;
+
+  static String _buildProductsContext() {
+    final buffer  = StringBuffer();
+    var   used    = 0;
+    var   include = 0;
+    final all     = ProductRepository.allProducts;
+
+    for (final p in all) {
+      var desc = (p.description ?? p.name).replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (desc.length > _maxDescChars) {
+        desc = '${desc.substring(0, _maxDescChars)}…';
+      }
+      final tagStr = p.tags.isNotEmpty ? p.tags.take(5).join(', ') : p.category;
+      final line   = '- ID: "${p.id}" | ${p.category} | ${p.brand} | $desc | $tagStr';
+
+      if (used + line.length + 1 > _maxCatalogChars) break;
+      buffer.writeln(line);
+      used += line.length + 1;
+      include++;
+    }
+
+    if (include < all.length) {
+      debugPrint('AiScanService: catalog truncated to $include/${all.length} '
+          'products to stay under the token budget');
+    }
+    return buffer.toString();
+  }
+
   // ── Direct Groq call ─────────────────────────────────────────────────────
 
   static Future<List<Product>> _callGroqDirect(
@@ -67,6 +101,11 @@ class AiScanService {
     final body = jsonEncode({
       'model': _groqModel,
       'response_format': {'type': 'json_object'},
+      // qwen3.6 is a reasoning model. Left on, it can spend the whole completion
+      // budget in the reasoning field and return empty content, which Groq then
+      // rejects with json_validate_failed. Disabling it also cuts the request
+      // from ~5400 to ~1600 tokens, which matters against the 8000 TPM cap.
+      'reasoning_effort': 'none',
       'messages': [
         {
           'role': 'user',
@@ -93,10 +132,14 @@ class AiScanService {
         'Content-Type': 'application/json',
       },
       body: body,
-    ).timeout(const Duration(seconds: 30));
+      // Unlike the text-only chat calls, this uploads a base64 image plus the
+      // catalog. On Myanmar mobile uplinks 30s was not enough to finish sending.
+    ).timeout(const Duration(seconds: 60));
 
     if (response.statusCode != 200) {
-      throw Exception('Groq returned ${response.statusCode}');
+      // Include the body — a bare status code gives nothing to debug with.
+      throw Exception(
+          'Groq returned ${response.statusCode}: ${response.body}');
     }
 
     final data    = jsonDecode(response.body) as Map<String, dynamic>;
@@ -125,7 +168,16 @@ class AiScanService {
       throw Exception('Proxy returned ${response.statusCode}');
     }
 
-    final proxyData = jsonDecode(response.body) as Map<String, dynamic>;
+    // The free host fronts the proxy with a JS anti-bot challenge, which answers
+    // 200 with an HTML page. Decoding that as JSON throws an opaque
+    // FormatException, so detect it and say what actually happened.
+    final raw = response.body.trimLeft();
+    if (!raw.startsWith('{') && !raw.startsWith('[')) {
+      throw Exception(
+          'Proxy did not return JSON (likely an anti-bot/interstitial page)');
+    }
+
+    final proxyData = jsonDecode(raw) as Map<String, dynamic>;
     if (proxyData.containsKey('error')) {
       throw Exception('Proxy error: ${proxyData['error']}');
     }
@@ -137,10 +189,23 @@ class AiScanService {
   // ── Shared result parser ─────────────────────────────────────────────────
 
   static List<Product> _parseProductIds(String content) {
-    final cleaned = content
+    var cleaned = content
+        // qwen emits a <think>…</think> preamble whenever it is not constrained
+        // by response_format; strip it before looking for the payload.
+        .replaceAll(RegExp(r'<think>[\s\S]*?</think>', caseSensitive: false), '')
         .replaceAll(RegExp(r'```json\s*'), '')
         .replaceAll(RegExp(r'```\s*'), '')
         .trim();
+
+    // Fall back to the first {...} block if the model wrapped it in prose.
+    if (!cleaned.startsWith('{')) {
+      final start = cleaned.indexOf('{');
+      final end   = cleaned.lastIndexOf('}');
+      if (start == -1 || end <= start) {
+        throw const FormatException('No JSON object in model response');
+      }
+      cleaned = cleaned.substring(start, end + 1);
+    }
 
     final json = jsonDecode(cleaned) as Map<String, dynamic>;
     final ids  = (json['matched_product_ids'] as List?)?.cast<String>() ?? [];

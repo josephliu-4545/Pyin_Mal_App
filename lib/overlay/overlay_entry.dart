@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -60,13 +61,26 @@ class _OverlayRootState extends State<_OverlayRoot> {
   bool _projectionReady      = false;
   bool _waitingForProjection = false;
 
+  // Must store subscription — discarding it allows GC to cancel it silently.
+  StreamSubscription? _overlaySubscription;
+  Timer?    _projectionWatchdog;
+  DateTime? _projectionSentAt;
+
   @override
   void initState() {
     super.initState();
-    FlutterOverlayWindow.overlayListener.listen(_handleMessage);
+    _overlaySubscription =
+        FlutterOverlayWindow.overlayListener.listen(_handleMessage);
   }
 
-  void _handleMessage(dynamic raw) {
+  @override
+  void dispose() {
+    _overlaySubscription?.cancel();
+    _projectionWatchdog?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _handleMessage(dynamic raw) async {
     if (raw == null) return;
     final msg = raw is String
         ? (jsonDecode(raw) as Map<String, dynamic>)
@@ -74,18 +88,23 @@ class _OverlayRootState extends State<_OverlayRoot> {
 
     switch (msg['action'] as String?) {
       case 'projectionResult':
-        final granted = msg['granted'] == true;
-        setState(() { _projectionReady = granted; });
-        if (granted && _waitingForProjection) {
-          _waitingForProjection = false;
-          _resize(-1, -1);
-          setState(() => _state = _OverlayState.crop);
-        } else if (!granted) {
-          _waitingForProjection = false;
+        final granted    = msg['granted'] == true;
+        // Always clear the in-flight flag — leaving it set makes every later
+        // tap return early from _onFabTap, which looks like a dead button.
+        final wasWaiting = _waitingForProjection;
+        _cancelProjectionWatchdog();
+        setState(() => _projectionReady = granted);
+        if (!granted) {
           setState(() {
             _state    = _OverlayState.error;
             _errorMsg = 'Screen capture denied. Tap to retry.';
           });
+        } else if (wasWaiting) {
+          // Await the grow before switching, so the crop UI lays out against the
+          // full-screen window rather than the 90x90 bubble.
+          await _resize(-1, -1);
+          if (!mounted) return;
+          setState(() => _state = _OverlayState.crop);
         }
         break;
 
@@ -133,11 +152,45 @@ class _OverlayRootState extends State<_OverlayRoot> {
 
   // ── FAB tap ───────────────────────────────────────────────────────────────
 
+  void _cancelProjectionWatchdog() {
+    _projectionWatchdog?.cancel();
+    _projectionWatchdog   = null;
+    _projectionSentAt     = null;
+    _waitingForProjection = false;
+  }
+
+  // A tap while a request is in flight is normally a double-tap and should be
+  // ignored. But the main engine can stop listening (it is a separate engine —
+  // a hot restart desyncs them), and then the reply never comes and every tap
+  // is swallowed. So after this long, treat a tap as "retry" instead.
+  static const _resendAfter = Duration(seconds: 6);
+
   Future<void> _onFabTap() async {
     debugPrint('overlayMain: FAB tapped');
     if (!_projectionReady) {
-      if (_waitingForProjection) return;
+      if (_waitingForProjection) {
+        final sentAt = _projectionSentAt;
+        if (sentAt != null &&
+            DateTime.now().difference(sentAt) < _resendAfter) {
+          debugPrint('overlayMain: request already in flight — ignoring tap');
+          return;
+        }
+        debugPrint('overlayMain: no reply yet — resending requestProjection');
+      }
       _waitingForProjection = true;
+      _projectionSentAt     = DateTime.now();
+      // The reply is fire-and-forget over shareData; if it never lands the FAB
+      // would stay stuck on the guard above, so release it ourselves.
+      _projectionWatchdog?.cancel();
+      _projectionWatchdog = Timer(const Duration(seconds: 45), () {
+        if (!mounted) return;
+        debugPrint('overlayMain: projection reply timed out');
+        _cancelProjectionWatchdog();
+        setState(() {
+          _state    = _OverlayState.error;
+          _errorMsg = 'Screen capture timed out. Tap to retry.';
+        });
+      });
       debugPrint('overlayMain: sending requestProjection');
       FlutterOverlayWindow.shareData(
           jsonEncode({'action': 'requestProjection'}));
@@ -483,8 +536,11 @@ class _CropWidgetState extends State<_CropWidget> {
             painter: _CropPainter(rect: rect),
           ),
 
-          // Instructions (before selection)
-          if (rect == null)
+          // Instructions (before selection). Skipped until the overlay window has
+          // actually grown to full screen — resizeOverlay is async, so the first
+          // frame or two still arrive at the 90x90 bubble size and this card
+          // cannot fit in them.
+          if (rect == null && size.height > 200)
             Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Container(

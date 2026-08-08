@@ -10,10 +10,14 @@ class Product360StudioScreen extends StatelessWidget {
   final String productName;
   final String? modelAsset;
 
+  /// Product photo shown while the 3D model is loading.
+  final String? posterImage;
+
   const Product360StudioScreen({
     super.key,
     required this.productName,
     this.modelAsset,
+    this.posterImage,
   });
 
   @override
@@ -58,6 +62,7 @@ class Product360StudioScreen extends StatelessWidget {
                 height: size.height * 0.62,
                 isDark: isDark,
                 modelAsset: modelAsset,
+                posterImage: posterImage,
               ),
             ),
           ),

@@ -13,7 +13,9 @@ import 'package:pyin_mal_app/services/image_host_service.dart';
 /// (but freely — no catalog matching), and persists it via [DatabaseService].
 class WardrobeService {
   static const _groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
-  static const _groqModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
+  // Vision-capable. meta-llama/llama-4-scout-17b-16e-instruct was decommissioned
+  // by Groq and now 404s; qwen3.6 is the vision model available on this account.
+  static const _groqModel = 'qwen/qwen3.6-27b';
 
   // Same PHP proxy AiScanService falls back to when Groq's DNS is blocked
   // on certain Myanmar mobile networks.
@@ -51,6 +53,9 @@ class WardrobeService {
     final body = jsonEncode({
       'model': _groqModel,
       'response_format': {'type': 'json_object'},
+      // Same reason as AiScanService: reasoning can consume the whole completion
+      // budget and yield empty content, which Groq rejects as json_validate_failed.
+      'reasoning_effort': 'none',
       'messages': [
         {
           'role': 'user',

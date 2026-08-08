@@ -28,9 +28,12 @@ class MainActivity : FlutterActivity() {
                             result.success(true)
                             return@setMethodCallHandler
                         }
-                        // Ignore if a request is already in-flight (e.g. double-tap).
+                        // A request is already in-flight (e.g. double-tap). Answer this
+                        // caller immediately — dropping it would leave the Dart future
+                        // hanging until its 60s timeout.
                         if (ScreenCaptureChannel.hasPending()) {
-                            android.util.Log.d("PyinMal", "requestProjection: already pending, ignoring")
+                            android.util.Log.d("PyinMal", "requestProjection: already pending, declining duplicate")
+                            result.success(false)
                             return@setMethodCallHandler
                         }
                         ScreenCaptureChannel.setPending(result)

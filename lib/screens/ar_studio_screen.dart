@@ -2,8 +2,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
+import '../core/constants/api_constants.dart';
 import '../main.dart'; // AppColors
 import '../services/image_host_service.dart';
 import '../services/nanobanana_api_service.dart';
@@ -18,7 +20,19 @@ import 'try_on_video_screen.dart';
 /// user never has to run separately — this screen generates it and hands the
 /// URL to [TryOnVideoScreen], which creates and plays the video.
 class ARStudioScreen extends StatefulWidget {
-  const ARStudioScreen({super.key});
+  /// Product photo to pre-fill the garment slot with (asset path or full URL),
+  /// so arriving from a product page doesn't ask the user to pick it again.
+  final String? initialGarmentImage;
+
+  /// Product category — decides whether the photo lands in the top or the
+  /// bottom slot.
+  final String? initialGarmentCategory;
+
+  const ARStudioScreen({
+    super.key,
+    this.initialGarmentImage,
+    this.initialGarmentCategory,
+  });
 
   @override
   State<ARStudioScreen> createState() => _ARStudioScreenState();
@@ -40,6 +54,56 @@ class _ARStudioScreenState extends State<ARStudioScreen> {
   // recorded movement (Kling motion control, video-to-video).
   bool _useMotion = false;
   XFile? _motionVideo;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialGarment();
+  }
+
+  /// Downloads the product photo passed in from the product page and drops it
+  /// into the right garment slot. Mirrors [TryOnScreen]'s initial-item load.
+  Future<void> _loadInitialGarment() async {
+    final source = widget.initialGarmentImage;
+    if (source == null || source.isEmpty) return;
+    try {
+      String imageUrl = source;
+      if (!imageUrl.startsWith('http')) {
+        // Product paths arrive as "assets/images/..." or with a repo prefix.
+        // cdnBaseUrl already ends in ".../assets/images/", so take everything
+        // after the last such segment to avoid a doubled path.
+        const marker = 'assets/images/';
+        final idx = imageUrl.lastIndexOf(marker);
+        final cdnPath =
+            idx >= 0 ? imageUrl.substring(idx + marker.length) : imageUrl;
+        imageUrl = '${ApiConstants.cdnBaseUrl}$cdnPath';
+      }
+      final response = await http.get(Uri.parse(Uri.encodeFull(imageUrl)));
+      if (response.statusCode != 200) {
+        debugPrint('❗ Studio garment HTTP ${response.statusCode}');
+        return;
+      }
+      if (!mounted) return;
+      final bytes = response.bodyBytes;
+      final file = XFile.fromData(bytes, name: 'product_garment.jpg');
+      final cat = widget.initialGarmentCategory?.toLowerCase() ?? '';
+      final isBottom = cat.contains('pant') ||
+          cat.contains('skirt') ||
+          cat.contains('bottom') ||
+          cat.contains('short');
+      setState(() {
+        if (isBottom) {
+          _pants = file;
+          _pantsBytes = bytes;
+        } else {
+          _shirt = file;
+          _shirtBytes = bytes;
+        }
+      });
+    } catch (e) {
+      debugPrint('Failed to load studio garment: $e');
+    }
+  }
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
   Color get _accent => _isDark ? AppColors.gold : AppColors.burgundy;

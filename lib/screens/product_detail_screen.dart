@@ -21,7 +21,7 @@ import 'package:pyin_mal_app/models/body_measurements.dart';
 import 'package:pyin_mal_app/widgets/size_fit_banner.dart';
 import 'package:pyin_mal_app/data/size_chart_presets.dart';
 import 'package:pyin_mal_app/screens/try_on_screen.dart';
-import 'package:pyin_mal_app/screens/product_360_studio_screen.dart';
+import 'package:pyin_mal_app/screens/ar_studio_screen.dart';
 import 'package:pyin_mal_app/core/favorites_notifier.dart';
 import 'package:pyin_mal_app/screens/shop_products_screen.dart';
 import 'package:pyin_mal_app/data/product_repository.dart';
@@ -746,21 +746,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     ),
                                   ),
 
-                                  // 3D VIEW — only for products that ship a model
-                                  if (_has3DModel)
-                                    AnimatedOpacity(
-                                      opacity: _show3DView ? 1.0 : 0.0,
-                                      duration:
-                                          const Duration(milliseconds: 260),
-                                      curve: Curves.easeInOut,
-                                      child: IgnorePointer(
-                                        ignoring: !_show3DView,
-                                        child: Product3DViewer(
-                                          height: _heroH,
-                                          isDark: isDark,
-                                          modelAsset: _model3dAsset,
-                                        ),
-                                      ),
+                                  // 3D VIEW — only for products that ship a
+                                  // model, and only once the user switches to
+                                  // it. Mounting Product3DViewer boots a
+                                  // WebView + loopback server and parses the
+                                  // whole GLB, so it must not run behind a
+                                  // transparent overlay while Photo is showing.
+                                  if (_has3DModel && _show3DView)
+                                    Product3DViewer(
+                                      height: _heroH,
+                                      isDark: isDark,
+                                      modelAsset: _model3dAsset,
+                                      posterImage: widget.image,
                                     ),
 
                                   // VIEW TOGGLE PILL (top-center) — only shown
@@ -1050,9 +1047,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   onPressed: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => Product360StudioScreen(
-                                        productName: widget.name,
-                                        modelAsset: _model3dAsset,
+                                      builder: (_) => ARStudioScreen(
+                                        initialGarmentImage: widget.image,
+                                        initialGarmentCategory:
+                                            widget.category,
                                       ),
                                     ),
                                   ),

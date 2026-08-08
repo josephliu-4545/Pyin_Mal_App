@@ -150,12 +150,31 @@ class ScreenCaptureService : Service() {
             val ch = h.coerceIn(1, screenH - cy)
 
             val cropped = Bitmap.createBitmap(fullBitmap, cx, cy, cw, ch)
+
+            // The bytes get base64'd into a Groq request over mobile data, where
+            // upload bandwidth — not recognition detail — is the bottleneck.
+            // 512px on the long edge is ample for identifying a garment.
+            val scaled = scaleToMax(cropped, 512)
             val out = ByteArrayOutputStream()
-            cropped.compress(Bitmap.CompressFormat.JPEG, 85, out)
+            scaled.compress(Bitmap.CompressFormat.JPEG, 70, out)
+            Log.d("PyinMal", "captureRegion: ${cw}x${ch} -> ${scaled.width}x${scaled.height}, ${out.size()} bytes")
             out.toByteArray()
         } finally {
             image.close()
         }
+    }
+
+    /** Scales [src] down so its longest edge is at most [max]. No-op if smaller. */
+    private fun scaleToMax(src: Bitmap, max: Int): Bitmap {
+        val longest = maxOf(src.width, src.height)
+        if (longest <= max) return src
+        val ratio = max.toFloat() / longest
+        return Bitmap.createScaledBitmap(
+            src,
+            (src.width * ratio).toInt().coerceAtLeast(1),
+            (src.height * ratio).toInt().coerceAtLeast(1),
+            true
+        )
     }
 
     private fun tearDown() {

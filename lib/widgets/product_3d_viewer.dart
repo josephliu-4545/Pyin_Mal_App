@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import '../main.dart';
+import 'cdn_image.dart';
 
 /// Widget to display 3D product model with rotation and zoom
 class Product3DViewer extends StatefulWidget {
@@ -13,11 +16,16 @@ class Product3DViewer extends StatefulWidget {
   /// 'assets/models/w_star_wear_p1.glb'). When null, a placeholder is shown.
   final String? modelAsset;
 
+  /// Product photo shown while the model is still being parsed, so the user
+  /// sees the product instead of a blank WebView. Optional.
+  final String? posterImage;
+
   const Product3DViewer({
     super.key,
     this.height = 400,
     required this.isDark,
     this.modelAsset,
+    this.posterImage,
   });
 
   @override
@@ -25,16 +33,25 @@ class Product3DViewer extends StatefulWidget {
 }
 
 class _Product3DViewerState extends State<Product3DViewer> {
-  String? modelPath;
-  bool isLoading = true;
-  String? errorMessage;
-  double rotation = 0;
-  double zoom = 1.0;
+  /// True once `<model-viewer>` reports the GLB is decoded and on screen.
+  bool _modelReady = false;
+
+  /// JS injected into the viewer page: tells Flutter when the model is up.
+  static const _readyScript = '''
+const mv = document.querySelector('model-viewer');
+mv.addEventListener('load', () => ModelReady.postMessage('load'));
+mv.addEventListener('error', () => ModelReady.postMessage('error'));
+''';
+
+  Timer? _coverTimeout;
+
+  bool get _hasModel =>
+      widget.modelAsset != null && widget.modelAsset!.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
-    _initializeModel();
+    _armCover();
   }
 
   @override
@@ -42,25 +59,29 @@ class _Product3DViewerState extends State<Product3DViewer> {
     super.didUpdateWidget(oldWidget);
     // Reload when the model asset changes (e.g. user switches color variant).
     if (oldWidget.modelAsset != widget.modelAsset) {
-      setState(() {
-        isLoading = true;
-        modelPath = null;
-      });
-      _initializeModel();
+      setState(() => _modelReady = false);
+      _armCover();
     }
   }
 
-  void _initializeModel() {
-    // A real GLB asset is loaded directly (ModelViewer reads Flutter asset
-    // paths). When none is supplied, the placeholder state is shown.
-    final asset = widget.modelAsset;
-    if (mounted) {
-      setState(() {
-        modelPath = (asset != null && asset.isNotEmpty) ? asset : null;
-        isLoading = false;
-        errorMessage = null;
-      });
+  @override
+  void dispose() {
+    _coverTimeout?.cancel();
+    super.dispose();
+  }
+
+  /// JS channels only exist on mobile, so on web the model is treated as ready
+  /// straight away. Everywhere else the cover lifts on the `load` event, with a
+  /// timeout so a silent failure can never leave the spinner up forever.
+  void _armCover() {
+    _coverTimeout?.cancel();
+    if (kIsWeb) {
+      _modelReady = true;
+      return;
     }
+    _coverTimeout = Timer(const Duration(seconds: 12), () {
+      if (mounted && !_modelReady) setState(() => _modelReady = true);
+    });
   }
 
   @override
@@ -87,49 +108,12 @@ class _Product3DViewerState extends State<Product3DViewer> {
   }
 
   Widget _buildContent() {
-    if (isLoading) {
-      return _buildLoadingState();
-    }
-
-    // Show 3D viewer if model loaded successfully
-    if (modelPath != null && modelPath!.isNotEmpty) {
-      return _build3DViewer();
-    }
-
-    // Show fallback/placeholder (not an error)
-    return _buildPlaceholder();
+    if (!_hasModel) return _buildPlaceholder();
+    return _build3DViewer();
   }
 
-  Widget _buildLoadingState() {
-    return Container(
-      color: widget.isDark ? AppColors.darkWarm : Colors.white,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 50,
-            height: 50,
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation(
-                widget.isDark ? AppColors.gold : AppColors.burgundy,
-              ),
-              strokeWidth: 2,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Generating 3D Model...',
-            style: GoogleFonts.outfit(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: widget.isDark ? Colors.white : AppColors.inkBlack,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  /// Shown for products that simply do not ship a model — this is a final
+  /// state, so no spinner.
   Widget _buildPlaceholder() {
     return Container(
       color: widget.isDark ? AppColors.darkWarm : Colors.white,
@@ -150,7 +134,7 @@ class _Product3DViewerState extends State<Product3DViewer> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Loading 3D Model...',
+            'No 3D view for this item',
             style: GoogleFonts.outfit(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -159,22 +143,11 @@ class _Product3DViewerState extends State<Product3DViewer> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Your 3D product viewer is being prepared',
+            'Browse the photos instead',
             style: GoogleFonts.outfit(
               fontSize: 13,
               fontWeight: FontWeight.w400,
               color: widget.isDark ? Colors.white60 : Colors.grey.withOpacity(0.7),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: 30,
-            height: 30,
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation(
-                widget.isDark ? AppColors.gold : AppColors.burgundy,
-              ),
-              strokeWidth: 2,
             ),
           ),
         ],
@@ -182,21 +155,71 @@ class _Product3DViewerState extends State<Product3DViewer> {
     );
   }
 
-  Widget _build3DViewer() {
-    if (modelPath == null || modelPath!.isEmpty) {
-      return _buildPlaceholder();
-    }
+  /// Covers the WebView until `<model-viewer>` fires `load`. Without it the
+  /// user stares at a blank white page for the whole parse.
+  Widget _buildLoadingCover() {
+    final accent = widget.isDark ? AppColors.gold : AppColors.burgundy;
+    return Container(
+      color: widget.isDark ? AppColors.darkWarm : Colors.white,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (widget.posterImage != null)
+            Opacity(
+              opacity: 0.45,
+              child: CdnImage(widget.posterImage!, fit: BoxFit.contain),
+            ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 34,
+                height: 34,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation(accent),
+                  strokeWidth: 2,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Preparing 360° view…',
+                style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: widget.isDark ? Colors.white70 : AppColors.inkGrey,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _build3DViewer() {
     return Stack(
       children: [
         // 3D Model Viewer using ModelViewerPlus
         Container(
           color: widget.isDark ? AppColors.darkWarm : Colors.white,
           child: ModelViewer(
-            src: modelPath!,
+            key: ValueKey(widget.modelAsset),
+            src: widget.modelAsset!,
             alt: '3D Product Model',
             autoRotate: false,
             cameraControls: true,
+            relatedJs: _readyScript,
+            javascriptChannels: {
+              JavascriptChannel(
+                'ModelReady',
+                onMessageReceived: (_) {
+                  _coverTimeout?.cancel();
+                  if (mounted && !_modelReady) {
+                    setState(() => _modelReady = true);
+                  }
+                },
+              ),
+            },
             backgroundColor: Color.lerp(
               widget.isDark ? AppColors.darkWarm : Colors.white,
               Colors.transparent,
@@ -205,15 +228,19 @@ class _Product3DViewerState extends State<Product3DViewer> {
           ),
         ),
 
+        // Poster + spinner over the WebView until the model is actually up.
+        if (!_modelReady) Positioned.fill(child: _buildLoadingCover()),
+
         // Rotation handle — circle + curved arcs with arrowheads
-        Positioned(
-          bottom: 16,
-          left: 0,
-          right: 0,
-          child: const Center(
-            child: _RotationHandle(),
+        if (_modelReady)
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: const Center(
+              child: _RotationHandle(),
+            ),
           ),
-        ),
       ],
     );
   }

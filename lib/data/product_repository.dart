@@ -44,6 +44,28 @@ class ProductRepository {
   // Keep for backwards compat — used by shop_screen and elsewhere.
   static Future<void> loadFromOpenCart() => load();
 
+  /// Product ids pinned to the front of the shop grid, in this order.
+  static const List<String> featuredIds = [
+    'male_classydock_star_wear',
+  ];
+
+  /// Returns a new list with any [featuredIds] moved to the front,
+  /// preserving the original order of everything else.
+  static List<Product> pinFeatured(List<Product> products) {
+    final featured = <Product>[];
+    final rest = <Product>[];
+    for (final p in products) {
+      if (featuredIds.contains(p.id)) {
+        featured.add(p);
+      } else {
+        rest.add(p);
+      }
+    }
+    featured.sort((a, b) =>
+        featuredIds.indexOf(a.id).compareTo(featuredIds.indexOf(b.id)));
+    return [...featured, ...rest];
+  }
+
   static Product? getProductById(String id) {
     try {
       return allProducts.firstWhere((p) => p.id == id);

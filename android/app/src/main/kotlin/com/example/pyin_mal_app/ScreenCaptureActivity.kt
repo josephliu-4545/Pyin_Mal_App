@@ -20,15 +20,28 @@ class ScreenCaptureActivity : Activity() {
         private const val REQUEST_PROJECTION = 1001
     }
 
+    // Set once the consent dialog reports back. If we are destroyed without it,
+    // nobody would ever answer the pending result and the scanner would wedge.
+    private var resultDelivered = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val mgr = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         startActivityForResult(mgr.createScreenCaptureIntent(), REQUEST_PROJECTION)
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        if (!resultDelivered) {
+            Log.d("PyinMal", "ScreenCaptureActivity destroyed without a result — denying")
+            ScreenCaptureChannel.onDenied()
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_PROJECTION) {
+            resultDelivered = true
             Log.d("PyinMal", "ScreenCaptureActivity.onActivityResult resultCode=$resultCode")
             if (resultCode == RESULT_OK && data != null) {
                 // Start the foreground service that will own the MediaProjection

@@ -147,14 +147,15 @@ class _ShopScreenState extends State<ShopScreen> {
           .where((p) => (p.brand == _selectedShop) || (p.shopName == _selectedShop))
           .toList();
     }
-    if (_selectedCategory == 'New in') return products;
     if (_selectedCategory == 'Women') {
-      return products.where((p) => p.gender == 'Female').toList();
+      products = products.where((p) => p.gender == 'Female').toList();
+    } else if (_selectedCategory == 'Men') {
+      products = products.where((p) => p.gender == 'Male').toList();
+    } else if (_selectedCategory != 'New in') {
+      products = products.where((p) => p.category == _selectedCategory).toList();
     }
-    if (_selectedCategory == 'Men') {
-      return products.where((p) => p.gender == 'Male').toList();
-    }
-    return products.where((p) => p.category == _selectedCategory).toList();
+    // Featured items always sit at the top of the grid.
+    return ProductRepository.pinFeatured(products);
   }
 
   @override

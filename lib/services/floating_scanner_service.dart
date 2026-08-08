@@ -211,8 +211,11 @@ class FloatingScannerService {
       }
 
       // 2 — identify products (Groq direct → proxy fallback)
+      // Must exceed the inner Groq (60s) + proxy (35s) budgets, or this cap
+      // silently truncates them. Returning [] here would also surface a slow
+      // upload as "No matching items found", which sends debugging the wrong way.
       final products = await AiScanService.identifyProducts(bytes)
-          .timeout(const Duration(seconds: 35), onTimeout: () => []);
+          .timeout(const Duration(seconds: 100));
 
       if (products.isEmpty) {
         await FlutterOverlayWindow.shareData(
