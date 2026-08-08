@@ -123,7 +123,10 @@
     "try_hairstyle": "Try a hairstyle",
     "discover_subtitle": "Discover styles that suit your face shape.",
     "women": "Women",
-    "men": "Men"
+    "men": "Men",
+    "shape_hint": "Tap a face shape to filter styles.",
+    "shape_active": "{} styles for this face shape. Tap again to clear.",
+    "showing_all": "Showing all styles."
   },
   "favorites": {
     "title": "Saved Wardrobe",
@@ -945,7 +948,9 @@
     "good_for": "Good for",
     "how_to_use": "How to use",
     "order_now": "Order now",
-    "added": "{name} added to cart, order from {salon}."
+    "added": "{name} added to cart, order from {salon}.",
+    "price_soon": "Price coming soon",
+    "added_simple": "{name} added to cart."
   },
   "savedx": {
     "title": "Saved",
